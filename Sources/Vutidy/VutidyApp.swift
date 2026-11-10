@@ -103,6 +103,7 @@ struct VutidyApp: App {
         .commands {
             CommandGroup(replacing: .appInfo) {
                 Button(tr("Giới thiệu Vutidy")) { AboutPanel.show() }
+                Button(tr("Kiểm tra cập nhật…")) { state.openSettings(.general); Task { await state.checkForUpdates() } }
             }
             // View: bỏ "Hiện thanh bên/thanh công cụ" mặc định (app tự dựng sidebar), thay bằng điều hướng các trang.
             CommandGroup(replacing: .toolbar) {}

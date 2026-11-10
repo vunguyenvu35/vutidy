@@ -666,18 +666,21 @@ struct VSelect<T: Hashable>: View {
         }
         .buttonStyle(.plain).onHover { hover = $0 }.pointerCursor()
         .popover(isPresented: $open, arrowEdge: .bottom) {
-            // Danh sách dài (ví dụ phông chữ) cuộn được thay vì tràn khỏi màn hình.
-            ScrollView(options.count > 10 ? .vertical : []) {
-                VStack(alignment: .leading, spacing: 2) {
-                    ForEach(options.indices, id: \.self) { i in
-                        SelectRow(title: options[i].title, symbol: symbol?(options[i].value), selected: options[i].value == selection) {
-                            selection = options[i].value; open = false
-                        }
+            // Danh sách dài (ví dụ phông chữ) cuộn được thay vì tràn khỏi màn hình. Danh sách ngắn KHÔNG bọc ScrollView:
+            // `ScrollView([])` không có trục cuộn nên không có chiều cao riêng và popover co thành một thanh trống.
+            let rows = VStack(alignment: .leading, spacing: 2) {
+                ForEach(options.indices, id: \.self) { i in
+                    SelectRow(title: options[i].title, symbol: symbol?(options[i].value), selected: options[i].value == selection) {
+                        selection = options[i].value; open = false
                     }
                 }
-                .padding(6)
             }
-            .frame(minWidth: max(width ?? 0, 160), maxHeight: options.count > 10 ? 360 : nil)
+            .padding(6)
+            if options.count > 10 {
+                ScrollView(.vertical) { rows }.frame(minWidth: max(width ?? 0, 160), maxHeight: 360)
+            } else {
+                rows.frame(minWidth: max(width ?? 0, 160))
+            }
         }
     }
 }

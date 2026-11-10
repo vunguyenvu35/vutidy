@@ -196,6 +196,7 @@ struct SettingsOverlay: View {
 
     var general: some View {
         VStack(alignment: .leading, spacing: 18) {
+            UpdateSettingsGroup()
             SettingsGroup(title: tr("Giao diện")) {
                 SettingRow(title: tr("Ngôn ngữ"), desc: tr("Ngôn ngữ của menu, trang và thông báo. Tự động theo ngôn ngữ hệ thống.")) {
                     VSelect(selection: $state.language, options: Language.allCases.map { ($0, $0.menuTitle) }, width: 200)

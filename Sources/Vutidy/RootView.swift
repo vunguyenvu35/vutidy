@@ -289,6 +289,10 @@ private struct ToastCard: View {
             }
             Spacer(minLength: 8)
 
+            if toast.action == .openUpdate {
+                Button(tr("Cập nhật ngay")) { state.openSettings(.general); state.dismissToast(toast.id) }
+                    .buttonStyle(TextActionStyle(color: kind.color))
+            }
             if toast.undo {
                 Button(tr("Hoàn tác")) { state.section = .quarantine; state.dismissToast(toast.id) }
                     .buttonStyle(TextActionStyle(color: kind.color))

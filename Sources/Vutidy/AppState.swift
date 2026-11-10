@@ -43,11 +43,24 @@ enum Page: String, CaseIterable, Identifiable {
     }
 }
 
+/// Nút hành động tuỳ chọn của thông báo (ngoài "Hoàn tác").
+enum ToastAction: Equatable { case openUpdate }
+
 struct AppToast: Identifiable, Equatable {
     let id = UUID()
     let text: String
     let kind: ToastKind
     let undo: Bool
+    var action: ToastAction? = nil
+}
+
+/// Trạng thái cập nhật chính Vutidy.
+enum UpdateState: Equatable {
+    case idle, checking, upToDate
+    case available(ReleaseInfo)
+    case downloading(Double)
+    case installing
+    case failed(String)
 }
 
 @MainActor
@@ -79,9 +92,9 @@ final class AppState: ObservableObject {
     }
 
     /// Hiện thông báo với loại (thành công/cảnh báo/lỗi) và tuỳ chọn nút "Hoàn tác".
-    func notify(_ text: String, _ kind: ToastKind = .success, undo: Bool = false) {
+    func notify(_ text: String, _ kind: ToastKind = .success, undo: Bool = false, action: ToastAction? = nil) {
         toasts.removeAll { $0.text == text }                      // trùng nội dung → làm mới thay vì xếp chồng
-        toasts.append(AppToast(text: text, kind: kind, undo: undo))
+        toasts.append(AppToast(text: text, kind: kind, undo: undo, action: action))
         if toasts.count > Self.maxToasts { toasts.removeFirst(toasts.count - Self.maxToasts) }
     }
 
@@ -121,6 +134,12 @@ final class AppState: ObservableObject {
     @Published var reduceMotion: Bool = UserDefaults.standard.bool(forKey: "reduceMotion") {
         didSet { UserDefaults.standard.set(reduceMotion, forKey: "reduceMotion") }
     }
+    /// Cập nhật Vutidy: chỉ hỏi GitHub số phiên bản mới nhất (không gửi gì về máy bạn).
+    @Published var appUpdate: UpdateState = .idle
+    @Published var autoCheckUpdates: Bool = UserDefaults.standard.object(forKey: "autoCheckUpdates") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(autoCheckUpdates, forKey: "autoCheckUpdates") }
+    }
+    @Published var lastUpdateCheck: Date? = UserDefaults.standard.object(forKey: "lastUpdateCheck") as? Date
     @Published var realtimeAtLaunch: Bool = UserDefaults.standard.bool(forKey: "realtimeAtLaunch") {
         didSet { UserDefaults.standard.set(realtimeAtLaunch, forKey: "realtimeAtLaunch") }
     }
@@ -203,6 +222,20 @@ final class AppState: ObservableObject {
             MainActor.assumeIsolated { self?.checkFDA() }
         }
         if realtimeAtLaunch { setRealtime(true) }
+        // Tự kiểm tra bản mới tối đa mỗi 24 giờ, chỉ khi chạy từ .app (bản swift run không tự cập nhật được).
+        if autoCheckUpdates, AppDelegate.canRelaunch, ProcessInfo.processInfo.environment["VUTIDY_PAGE"] == nil,
+           Date().timeIntervalSince(lastUpdateCheck ?? .distantPast) > 24 * 3600 {
+            Task { @MainActor in try? await Task.sleep(nanoseconds: 4_000_000_000); await self.checkForUpdates(silent: true) }
+        }
+        // Thử luồng cập nhật: VUTIDY_UPDATE_FEED=file://… (xem UpdateChecker) + VUTIDY_UPDATE_AUTOINSTALL=1 tự cài khi có bản mới.
+        if ProcessInfo.processInfo.environment["VUTIDY_UPDATE_FEED"] != nil {
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                await self.checkForUpdates()
+                if ProcessInfo.processInfo.environment["VUTIDY_UPDATE_AUTOINSTALL"] != nil { await self.installUpdate() }
+                if case .failed(let m) = self.appUpdate { FileHandle.standardError.write(Data("UPDATE FAILED: \(m)\n".utf8)) }
+            }
+        }
         // Dùng cho kiểm thử/chụp màn hình: VUTIDY_PAGE=<trang>, VUTIDY_OPEN=palette|settings|shortcuts|support
         if let p = ProcessInfo.processInfo.environment["VUTIDY_PAGE"], let page = Page(rawValue: p) { section = page }
         switch ProcessInfo.processInfo.environment["VUTIDY_OPEN"] {

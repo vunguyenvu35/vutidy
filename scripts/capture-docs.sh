@@ -21,6 +21,12 @@ print(best.0)
 S
 swiftc -O $TMP/wid.swift -o $TMP/wid
 
+# Feed giả cho ảnh "có bản cập nhật" (không tải gì; chỉ để màn Cài đặt hiện nút Cập nhật).
+cat > $TMP/feed.json <<J
+[{"tag_name":"v0.2.0","draft":false,"prerelease":true,"html_url":"https://github.com/vunguyenvu35/vutidy/releases/tag/v0.2.0",
+"body":"# Vutidy 0.2.0\n- Check for updates and update from inside the app.\n- Smart Scan now lists what it will clean before you press Clean.\n- Fixes for the Large & Old Files filter menus.",
+"assets":[{"name":"vutidy-0.2.0-macos.zip","browser_download_url":"https://example.invalid/vutidy-0.2.0-macos.zip"}]}]
+J
 # name | page | extra env | wait(s)
 SHOTS=(
   "smart-scan-start|smartScan||3"
@@ -43,6 +49,7 @@ SHOTS=(
   "quick-open|smartScan|VUTIDY_OPEN=palette|3"
   "confirm|systemJunk|VUTIDY_OPEN=confirm|3"
   "settings-general|smartScan|VUTIDY_SETTINGS=general|3"
+  "settings-update|smartScan|VUTIDY_SETTINGS=general VUTIDY_UPDATE_FEED=file://$TMP/feed.json|8"
   "settings-cleaning|smartScan|VUTIDY_SETTINGS=cleaning|3"
   "settings-protection|smartScan|VUTIDY_SETTINGS=protection|3"
   "settings-shortcuts|smartScan|VUTIDY_SETTINGS=shortcuts|3"
