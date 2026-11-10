@@ -7,6 +7,7 @@ import Modules
 struct PopoverView: View {
     @EnvironmentObject var state: AppState
     @ViewState private var devices: [BluetoothDevice] = []
+    @ViewState private var devicesLoaded = false
     @ViewState private var speed: SpeedResult?
     @ViewState private var testing = false
     @ViewState private var showAllCards = false
@@ -28,7 +29,7 @@ struct PopoverView: View {
             }.padding(14)
         }
         .frame(width: 400)
-        .task { devices = await ConnectedDevices.bluetooth() }
+        .task { devices = await ConnectedDevices.bluetooth(); devicesLoaded = true }
         .onAppear { state.openMainWindow = { openWindow(id: "main") } }
     }
 
@@ -168,11 +169,70 @@ struct PopoverView: View {
         }
     }
 
+    /// Ô thiết bị: mỗi thiết bị Bluetooth đang kết nối một hàng (biểu tượng theo loại · tên · loại/trạng thái · pin). Tối đa 2 hàng, huy hiệu ở tiêu đề cho biết tổng.
     var devicesTile: some View {
-        tile(tr("Thiết bị"), symbol: "v.command", tint: Page.privacy.palette.glow,
-             value: devices.isEmpty ? tr("Không có") : "\(devices.count)",
-             sub: devices.isEmpty ? nil : devices.map { "\($0.name) \($0.batteryPercent)%" }.joined(separator: " · ")) {
-            Color.clear
+        let shown = Array(devices.prefix(2))
+        let tint = Page.privacy.palette.glow
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 7) {
+                IconTile(symbol: "v.command", tint: tint, size: 22)
+                Text(tr("Thiết bị")).font(.vt(size: 11, weight: .semibold)).foregroundStyle(Theme.Text.secondary).textCase(.uppercase).lineLimit(1)
+                Spacer(minLength: 0)
+                if devices.count > 0 {
+                    Text(devices.count > 2 ? "+\(devices.count - 2)" : "\(devices.count)")
+                        .font(.vt(size: 11, weight: .bold, design: .rounded)).monospacedDigit().foregroundStyle(Theme.Text.primary)
+                        .padding(.horizontal, 7).frame(minWidth: 20, minHeight: 18)
+                        .background(Capsule().fill(Color.white.opacity(0.16)))
+                }
+            }.frame(height: 22)
+            if devices.isEmpty {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(devicesLoaded ? tr("Không có") : tr("Đang kiểm tra…")).font(.vt(size: 19, weight: .bold, design: .rounded)).foregroundStyle(.white).lineLimit(1)
+                    if devicesLoaded { Text("Bluetooth").font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary) }
+                }.padding(.top, 14)
+            } else {
+                VStack(alignment: .leading, spacing: 8) { ForEach(shown) { deviceRow($0, tint: tint) } }.padding(.top, 10)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, minHeight: 128, maxHeight: 128, alignment: .topLeading)
+        .glassSurface(radius: 14, strong: false)
+    }
+
+    func deviceRow(_ d: BluetoothDevice, tint: Color) -> some View {
+        HStack(spacing: 9) {
+            Image(systemName: deviceSymbol(d.kind)).font(.system(size: 13, weight: .semibold)).foregroundStyle(.white)
+                .frame(width: 30, height: 30)
+                .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(LinearGradient(colors: [tint, tint.opacity(0.6)], startPoint: .top, endPoint: .bottom)))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(d.name).font(.vt(size: 13, weight: .semibold)).foregroundStyle(.white).lineLimit(1).truncationMode(.tail)
+                HStack(spacing: 5) {
+                    Circle().fill(Theme.Signal.base).frame(width: 5, height: 5)
+                    Text(d.kind.isEmpty ? tr("Đã kết nối") : d.kind).font(.vt(size: 11)).foregroundStyle(Theme.Text.secondary).lineLimit(1)
+                }
+            }
+            Spacer(minLength: 4)
+            if let b = d.batteryPercent {
+                HStack(spacing: 3) {
+                    Image(systemName: b <= 20 ? "battery.25" : (b <= 60 ? "battery.50" : "battery.100")).font(.system(size: 11))
+                    Text("\(b)%").font(.vt(size: 11, weight: .semibold)).monospacedDigit()
+                }.foregroundStyle(b <= 20 ? Theme.danger : Theme.Text.primary)
+                .padding(.horizontal, 7).frame(height: 20).background(Capsule().fill(Color.white.opacity(0.12)))
+            }
+        }
+    }
+
+    func deviceSymbol(_ kind: String) -> String {
+        switch kind.lowercased() {
+        case "mouse": return "computermouse.fill"
+        case "keyboard": return "keyboard.fill"
+        case "trackpad": return "rectangle.and.hand.point.up.left.fill"
+        case "headphones", "headset": return "headphones"
+        case "speaker": return "hifispeaker.fill"
+        case "gamepad": return "gamecontroller.fill"
+        case "phone": return "iphone"
+        default: return "dot.radiowaves.left.and.right"
         }
     }
 

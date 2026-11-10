@@ -333,6 +333,7 @@ enum Japanese {
         "Tạo lúc %@": "作成日時 %@",
         "Mở thư mục chứa trong Finder": "含まれるフォルダを開く",
         "Gồm nhiều mục nhỏ hơn nên không hiện riêng lẻ. Mở thư mục chứa để xem và xử lý từng mục.": "小さな項目が多数あるため個別には表示されません。含まれるフォルダを開いて確認してください。",
+        "Đã kết nối": "接続済み",
         "Xóa vĩnh viễn": "完全に削除",
         "bị chặn: %@": "ブロック：%@",
         "chưa rõ lần dùng": "最終使用日不明",

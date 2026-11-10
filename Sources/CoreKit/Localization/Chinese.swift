@@ -334,6 +334,7 @@ enum Chinese {
         "Tạo lúc %@": "创建于 %@",
         "Mở thư mục chứa trong Finder": "打开所在文件夹",
         "Gồm nhiều mục nhỏ hơn nên không hiện riêng lẻ. Mở thư mục chứa để xem và xử lý từng mục.": "这些是多个较小的项目,不会单独显示。打开所在文件夹即可逐项查看和处理。",
+        "Đã kết nối": "已连接",
         "Xóa vĩnh viễn": "永久删除",
         "bị chặn: %@": "已拦截：%@",
         "chưa rõ lần dùng": "上次使用时间未知",

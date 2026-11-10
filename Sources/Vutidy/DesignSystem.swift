@@ -980,38 +980,108 @@ extension View {
 struct ConfirmDialogView: View {
     @EnvironmentObject var state: AppState
     let request: ConfirmRequest
+    @ViewState private var shown = false
+
+    private var accent: Color { request.destructive ? Color(hex: 0xFF5C74) : state.section.palette.glow }
 
     var body: some View {
-        let page = state.section
         ZStack {
-            Color.black.opacity(0.5).ignoresSafeArea().onTapGesture { state.confirmRequest = nil }
-            VStack(spacing: 20) {
-                SolidIcon(symbol: request.symbol, tint: request.destructive ? Color(hex: 0xFF6B7A) : page.palette.glow, size: 44)
-                VStack(spacing: 6) {
-                    Text(request.title).font(.vt(size: 17, weight: .semibold)).foregroundStyle(.white).multilineTextAlignment(.center)
-                    Text(request.message).font(.vt(size: 13)).foregroundStyle(Color.white.opacity(0.6)).multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
+            Color.black.opacity(0.38).ignoresSafeArea().onTapGesture { dismiss() }
+            VStack(spacing: 0) {
+                icon.padding(.top, 28)
+                VStack(spacing: 8) {
+                    Text(request.title).font(.vt(size: 18, weight: .bold)).foregroundStyle(.white)
+                        .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+                    Text(request.message).font(.vt(size: 13.5)).foregroundStyle(Color.white.opacity(0.80)).lineSpacing(2)
+                        .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
                 }
-                HStack(spacing: 10) {
-                    Button { state.confirmRequest = nil } label: { Text(tr("Hủy")).frame(maxWidth: .infinity) }
-                        .buttonStyle(SecondaryButtonStyle()).controlSize(.large)
-                    Button {
+                .padding(.top, 18).padding(.horizontal, 28)
+
+                // Hai nút luôn bằng nhau: cùng chiều cao, chia đều chiều ngang (không phụ thuộc độ dài chữ).
+                HStack(spacing: 12) {
+                    DialogButton(title: tr("Hủy"), role: .cancel, accent: accent) { dismiss() }
+                        .keyboardShortcut(.cancelAction)
+                    DialogButton(title: request.confirmTitle, role: request.destructive ? .destructive : .primary, accent: accent) {
                         let run = request.action
                         state.confirmRequest = nil
                         run()
-                    } label: { Text(request.confirmTitle).frame(maxWidth: .infinity) }
-                        .modifier(ConfirmButtonStyle(destructive: request.destructive)).controlSize(.large)
+                    }.keyboardShortcut(.defaultAction)
                 }
+                .padding(.horizontal, 24).padding(.top, 26).padding(.bottom, 24)
             }
-            .padding(.horizontal, 24).padding(.top, 26).padding(.bottom, 22).frame(width: 340)
-            .background(Color(white: 0.11).opacity(0.96))
-            .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Color.white.opacity(0.12), lineWidth: 1))
-            .shadow(color: .black.opacity(0.5), radius: 30, y: 12)
+            .frame(width: 380)
+            // Kính mờ trắng đục kiểu macOS: làm mờ nội dung phía sau + lớp phủ trắng trong, viền sáng ở mép trên.
+            .background(
+                ZStack {
+                    Rectangle().fill(.regularMaterial)
+                    LinearGradient(colors: [Color.white.opacity(0.26), Color.white.opacity(0.12)], startPoint: .top, endPoint: .bottom)
+                }
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .strokeBorder(LinearGradient(colors: [Color.white.opacity(0.55), Color.white.opacity(0.12)], startPoint: .top, endPoint: .bottom), lineWidth: 1))
+            .shadow(color: .black.opacity(0.38), radius: 40, y: 18)
+            .scaleEffect(shown ? 1 : 0.94).opacity(shown ? 1 : 0)
         }
+        .onAppear { withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) { shown = true } }
         .transition(.opacity)
         .accessibilityAddTraits(.isModal)
+    }
+
+    private func dismiss() { state.confirmRequest = nil }
+
+    /// Biểu tượng trong vòng tròn kính có quầng sáng màu hành động (đỏ khi phá hủy).
+    private var icon: some View {
+        ZStack {
+            Circle().fill(RadialGradient(colors: [accent.opacity(0.55), .clear], center: .center, startRadius: 4, endRadius: 56)).frame(width: 112, height: 112)
+            Circle().fill(LinearGradient(colors: [accent.mixed(with: .white, 0.25), accent.opacity(0.78)], startPoint: .top, endPoint: .bottom))
+                .frame(width: 60, height: 60)
+                .overlay(Circle().strokeBorder(Color.white.opacity(0.45), lineWidth: 1))
+                .shadow(color: accent.opacity(0.5), radius: 14, y: 4)
+            Glyph(symbol: request.symbol, size: 28, stroke: Color(hex: 0x0B1020, opacity: 0.86), fill: .white)
+        }
+        .frame(height: 64).accessibilityHidden(true)
+    }
+}
+
+/// Nút của hộp thoại: chiếm đúng một nửa chiều ngang, cùng chiều cao, nhãn dài tự thu nhỏ nhẹ thay vì làm nút phình ra.
+private struct DialogButton: View {
+    enum Role { case cancel, primary, destructive }
+    let title: String
+    let role: Role
+    let accent: Color
+    let action: () -> Void
+    @ViewState private var hover = false
+    @Environment(\.isEnabled) private var enabled
+
+    var body: some View {
+        Button(action: action) {
+            Text(title).font(.vt(size: 14.5, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.8)
+                .foregroundStyle(.white).frame(maxWidth: .infinity).frame(height: 44)
+                .background(fill, in: Capsule())
+                .overlay(Capsule().strokeBorder(LinearGradient(colors: [Color.white.opacity(role == .cancel ? 0.45 : 0.6), Color.white.opacity(0.10)],
+                                                               startPoint: .top, endPoint: .bottom), lineWidth: 1))
+                .shadow(color: role == .cancel ? .black.opacity(0.18) : accent.opacity(hover ? 0.55 : 0.38), radius: hover ? 12 : 8, y: 3)
+                .contentShape(Capsule())
+        }
+        .buttonStyle(DialogPressStyle())
+        .frame(maxWidth: .infinity)
+        .onHover { hover = $0 }.pointerCursor()
+    }
+
+    private var fill: AnyShapeStyle {
+        switch role {
+        case .cancel:
+            return AnyShapeStyle(LinearGradient(colors: [Color.white.opacity(hover ? 0.30 : 0.22), Color.white.opacity(hover ? 0.16 : 0.10)], startPoint: .top, endPoint: .bottom))
+        case .primary, .destructive:
+            return AnyShapeStyle(LinearGradient(colors: [accent.mixed(with: .white, hover ? 0.28 : 0.18), accent.mixed(with: .black, 0.12)], startPoint: .top, endPoint: .bottom))
+        }
+    }
+}
+
+private struct DialogPressStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.scaleEffect(configuration.isPressed ? 0.97 : 1).animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
 

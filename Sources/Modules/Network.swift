@@ -33,7 +33,14 @@ public enum SpeedTest {
     }
 }
 
-public struct BluetoothDevice: Identifiable, Sendable { public var id: String { name }; public let name: String; public let batteryPercent: Int }
+public struct BluetoothDevice: Identifiable, Sendable {
+    public var id: String { name }
+    public let name: String
+    public let batteryPercent: Int?
+    /// Loại thiết bị theo macOS ("Mouse", "Keyboard", "Headphones"…); rỗng nếu không rõ.
+    public let kind: String
+    public init(name: String, batteryPercent: Int?, kind: String = "") { self.name = name; self.batteryPercent = batteryPercent; self.kind = kind }
+}
 
 public enum ConnectedDevices {
     /// Pin thiết bị Bluetooth qua system_profiler (chậm — chỉ gọi khi cần, nên cache).
@@ -42,13 +49,15 @@ public enum ConnectedDevices {
         guard r.ok, let j = try? JSONSerialization.jsonObject(with: Data(r.stdout.utf8)) as? [String: Any],
               let root = (j["SPBluetoothDataType"] as? [[String: Any]])?.first,
               let connected = root["device_connected"] as? [[String: Any]] else { return [] }
+        // Liệt kê mọi thiết bị đang kết nối; pin chỉ có ở một số thiết bị (AirPods, bàn phím/chuột Apple…), thiếu thì để nil.
+        func pct(_ v: Any?) -> Int? { (v as? String).flatMap { Int($0.replacingOccurrences(of: "%", with: "")) } }
         return connected.flatMap { dict in
             dict.compactMap { (name, v) -> BluetoothDevice? in
                 guard let p = v as? [String: Any] else { return nil }
-                let raw = (p["device_batteryLevelMain"] as? String) ?? (p["device_batteryLevel"] as? String)
-                guard let s = raw?.replacingOccurrences(of: "%", with: ""), let n = Int(s) else { return nil }
-                return BluetoothDevice(name: name, batteryPercent: n)
+                let sides = [pct(p["device_batteryLevelLeft"]), pct(p["device_batteryLevelRight"])].compactMap { $0 }
+                let battery = pct(p["device_batteryLevelMain"]) ?? pct(p["device_batteryLevel"]) ?? sides.min()
+                return BluetoothDevice(name: name, batteryPercent: battery, kind: (p["device_minorType"] as? String) ?? "")
             }
-        }
+        }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 }

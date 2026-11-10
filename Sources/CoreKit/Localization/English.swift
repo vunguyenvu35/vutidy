@@ -334,6 +334,7 @@ enum English {
         "Tạo lúc %@": "Created %@",
         "Mở thư mục chứa trong Finder": "Open containing folder",
         "Gồm nhiều mục nhỏ hơn nên không hiện riêng lẻ. Mở thư mục chứa để xem và xử lý từng mục.": "These are many smaller items not shown individually. Open the containing folder to review them one by one.",
+        "Đã kết nối": "Connected",
         "Xóa vĩnh viễn": "Delete permanently",
         "bị chặn: %@": "blocked: %@",
         "chưa rõ lần dùng": "last use unknown",
