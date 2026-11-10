@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/usr/bin/env bash
 # Lists relative links and images in the Markdown files that point to nothing.
 # usage: scripts/check-doc-links.sh        (exit 1 if any are broken)
 cd "$(dirname "$0")/.." || exit 1
