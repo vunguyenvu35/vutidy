@@ -118,8 +118,13 @@ struct VutidyApp: App {
                 Button(tr("Tìm tính năng…")) { state.paletteOpen = true; state.showMainWindow() }
                 Divider()
                 ForEach(Page.groups, id: \.0) { name, pages in
-                    Section(name) {
+                    // Nhóm không tên (Smart Scan) không có tiêu đề: một Section rỗng chừa khoảng trắng trong menu.
+                    if name.isEmpty {
                         ForEach(pages) { p in Button(p.title) { state.section = p; state.settingsOpen = false; state.showMainWindow() } }
+                    } else {
+                        Section(name) {
+                            ForEach(pages) { p in Button(p.title) { state.section = p; state.settingsOpen = false; state.showMainWindow() } }
+                        }
                     }
                 }
             }
@@ -131,6 +136,8 @@ struct VutidyApp: App {
                 Button(tr("Thoát hẳn Vutidy")) { AppDelegate.quitCompletely() }.keyboardShortcut("q", modifiers: [.command, .option])
             }
             CommandGroup(replacing: .help) {
+                Button(tr("Kiểm tra cập nhật…")) { state.openSettings(.general); Task { await state.checkForUpdates() } }
+                Divider()
                 Button(tr("Phím tắt")) { state.openSettings(.shortcuts); state.showMainWindow() }
                 Button(tr("Ủng hộ Vutidy")) { state.openSettings(.support); state.showMainWindow() }
             }

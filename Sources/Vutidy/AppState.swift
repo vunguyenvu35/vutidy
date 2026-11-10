@@ -29,14 +29,14 @@ enum Page: String, CaseIterable, Identifiable {
         case .largeFiles: "doc.badge.clock"; case .duplicates: "square.on.square"; case .cloud: "icloud"; case .quarantine: "archivebox"
         }
     }
-    static var groups: [(String, [Page])] = [
+    static var groups: [(String, [Page])] { [
         ("", [.smartScan]),
         (tr("Dọn dẹp"), [.systemJunk, .devJunk, .trash, .privacy]),
         (tr("Bảo vệ"), [.protection, .malware]),
         (tr("Tốc độ"), [.optimization, .maintenance]),
         (tr("Ứng dụng"), [.uninstaller, .updater]),
         (tr("File"), [.spaceLens, .largeFiles, .duplicates, .cloud]),
-    ]
+    ] }
     /// Module dọn dẹp tương ứng, nếu có.
     var cleanupID: String? {
         switch self { case .systemJunk: "system-junk"; case .devJunk: "dev-junk"; case .trash: "trash"; case .privacy: "privacy"; default: nil }

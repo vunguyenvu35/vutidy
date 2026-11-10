@@ -129,6 +129,7 @@ struct Sidebar: View {
                 }.padding(.horizontal, 12).padding(.bottom, 8)
             }
 
+            UpdateBadgeCard()
             QuarantineCard().padding(.horizontal, 12).padding(.top, 6)
             footer.padding(.horizontal, 14).padding(.vertical, 10)
         }
@@ -148,7 +149,10 @@ struct Sidebar: View {
                 }.foregroundStyle(Theme.Text.secondary)
             }.buttonStyle(PlainPointerStyle())
             .help(state.realtimeOn ? tr("Real-time bật") : tr("Real-time tắt"))
-            Button { state.openSettings(.general) } label: { Image(systemName: "gearshape").font(.system(size: 14)) }
+            Button { state.openSettings(.general) } label: {
+                Image(systemName: "gearshape").font(.system(size: 14))
+                    .overlay(alignment: .topTrailing) { if state.hasUpdate { Circle().fill(Theme.Signal.base).frame(width: 7, height: 7).offset(x: 3, y: -3) } }
+            }
                 .buttonStyle(PlainPointerStyle()).foregroundStyle(Theme.Text.secondary).help(tr("Mở Cài đặt") + " (⌘,)")
         }
     }

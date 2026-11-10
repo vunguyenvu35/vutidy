@@ -66,3 +66,45 @@ struct UpdateSettingsGroup: View {
         return text.isEmpty ? tr("Không có ghi chú.") : text
     }
 }
+
+/// Thẻ cố định ở đáy sidebar khi có bản Vutidy mới (hoặc đang tải/cài): luôn thấy ở mọi trang, bấm để mở Cài đặt → Cập nhật.
+struct UpdateBadgeCard: View {
+    @EnvironmentObject var state: AppState
+
+    private var info: (title: String, sub: String, busy: Bool)? {
+        switch state.appUpdate {
+        case .available(let r): return (trf("Có Vutidy %@ mới", "\(r.version)"), tr("Bấm để cập nhật"), false)
+        case .downloading(let p): return (tr("Đang cập nhật…"), trf("Đang tải… %@%%", "\(Int(p * 100))"), true)
+        case .installing: return (tr("Đang cập nhật…"), tr("Đang xác minh và cài đặt…"), true)
+        default: return nil
+        }
+    }
+
+    var body: some View {
+        if let i = info {
+            Button { state.openSettings(.general) } label: {
+                HStack(spacing: 10) {
+                    ZStack {
+                        Circle().fill(Theme.Signal.base.opacity(0.22))
+                        if i.busy { VSpinner(size: 14, lineWidth: 2) }
+                        else { Image(systemName: "arrow.down.circle.fill").font(.system(size: 16)).foregroundStyle(Theme.Signal.base) }
+                    }.frame(width: 30, height: 30)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(i.title).font(.vt(size: 12.5, weight: .semibold)).foregroundStyle(Theme.Text.primary).lineLimit(1)
+                        Text(i.sub).font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary).lineLimit(1)
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(Theme.Text.tertiary)
+                }
+                .padding(.horizontal, 10).padding(.vertical, 8)
+                .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Theme.Signal.base.opacity(0.12)))
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.Signal.base.opacity(0.35)))
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(PlainPointerStyle())
+            .padding(.horizontal, 12).padding(.top, 6)
+            .transition(.opacity.combined(with: .move(edge: .bottom)))
+            .help(tr("Cập nhật Vutidy"))
+        }
+    }
+}

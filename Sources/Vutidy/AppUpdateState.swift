@@ -4,6 +4,8 @@ import Modules
 import SafetyLayer
 
 extension AppState {
+    var hasUpdate: Bool { if case .available = appUpdate { return true }; return false }
+
     var isBusyUpdating: Bool {
         switch appUpdate { case .checking, .downloading, .installing: return true; default: return false }
     }

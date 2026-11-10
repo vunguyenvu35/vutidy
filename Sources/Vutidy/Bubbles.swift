@@ -245,7 +245,7 @@ struct BubbleLegend: View {
                     Text(s.label).font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary)
                 }
             }
-            Spacer()
         }
+        .frame(maxWidth: .infinity, alignment: .center)   // căn giữa dưới biểu đồ
     }
 }
