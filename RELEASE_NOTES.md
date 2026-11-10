@@ -1,5 +1,21 @@
 <p align="center"><img src="docs/assets/brand/logo-mark-256.png" alt="Vutidy" width="88"></p>
 
+# Vutidy 0.2.1
+
+Release date: 2026-11-10 · Platform: macOS 13 or later (only tried on Apple Silicon) · Status: **pre-release**. The [known issues of 0.1.0](#vutidy-010) still apply.
+
+## What's new in 0.2.1
+
+- **An update card that stays in view.** When a new version exists, a card at the bottom of the sidebar (and a dot on the gear) says so on every page; it shows the progress while Vutidy updates itself. Click it to open *Settings → General → Updates*.
+- **Help → Check for Updates…** opens Settings and checks at once.
+- **Smart Scan** lists *What will be cleaned*, open by default, so you see each group and its size before you press *Clean*. The confirmation also summarises the biggest groups.
+- **Menu bar popover** closes after you press one of its buttons (for example *Free up memory*).
+- **Space Lens**: the legend under the bubble chart is centred.
+- Fixed untranslated text ("About Vutidy", the *Navigation*/*Actions* headers of the shortcut list, *Other* in the Uninstaller) and an empty gap above *Smart Scan* in the View menu.
+- Fixed the **Select all / Deselect all** button on the cleanup pages (now a pill with an icon).
+- Fixed the empty bar that short drop-down lists (such as the filters of *Large & Old Files*) showed.
+- New **README** with the download first, and the stable download links work again (releases below 1.0 are no longer marked as pre-releases, which made GitHub's "latest" answer 404).
+
 # Vutidy 0.2.0
 
 Release date: 2026-11-10 · Platform: macOS 13 or later (only tried on Apple Silicon) · Status: **pre-release**. The [known issues of 0.1.0](#vutidy-010) still apply.
