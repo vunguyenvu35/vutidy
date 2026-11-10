@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Vutidy · Space Lens</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#07090D}
+a{color:#A6B0BD}a:hover{color:#EDF0F4}
+input::placeholder{color:#8A95A3}
+</style>
+</helmet>
+<div style="min-height: 1000px; box-sizing: border-box; padding: 40px; background-color: #07090D; background-image: radial-gradient(ellipse 60% 50% at 12% 0%, rgba(61,220,151,0.13), transparent 70%), radial-gradient(ellipse 55% 60% at 95% 100%, rgba(90,169,255,0.14), transparent 70%), radial-gradient(ellipse 40% 40% at 60% 40%, rgba(167,139,250,0.06), transparent 70%); font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.45; color: #EDF0F4">
+<div style="max-width: 1360px; margin: 0 auto; display: flex; flex-wrap: wrap; border-radius: 14px; overflow: hidden; border: 1px solid rgba(255,255,255,0.09); box-shadow: 0 50px 120px rgba(0,0,0,0.55), 0 12px 30px rgba(0,0,0,0.35)">
+
+  <nav aria-label="Điều hướng chính" style="flex: 1 1 248px; max-width: 100%; box-sizing: border-box; background: rgba(26,30,39,0.66); backdrop-filter: blur(40px) saturate(160%); -webkit-backdrop-filter: blur(40px) saturate(160%); border-right: 1px solid rgba(255,255,255,0.07); padding: 16px 12px 16px; display: flex; flex-direction: column; gap: 18px">
+    <div aria-hidden="true" style="display: flex; gap: 8px; padding: 4px 8px 6px">
+      <span style="width: 12px; height: 12px; border-radius: 50%; background: #FF5F57; box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.25)"></span>
+      <span style="width: 12px; height: 12px; border-radius: 50%; background: #FEBC2E; box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.25)"></span>
+      <span style="width: 12px; height: 12px; border-radius: 50%; background: #28C840; box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.25)"></span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px; padding: 0 8px">
+      <div aria-hidden="true" style="width: 32px; height: 32px; border-radius: 9px; background: #0F1A15; border: 1px solid rgba(61,220,151,0.35); box-shadow: 0 0 18px rgba(61,220,151,0.25), inset 0 1px 0 rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{accent}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"></path></svg>
+      </div>
+      <div style="display: flex; flex-direction: column">
+        <span style="font-family: 'Space Grotesk', Inter, sans-serif; font-weight: 700; font-size: 17px; letter-spacing: -0.01em; line-height: 1.1">Vutidy</span>
+        <span style="font-size: 11px; color: #8A95A3">macOS 15 · M1 · 16 GB</span>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px; flex-grow: 1">
+      <sc-for list="{{groups}}" as="g" hint-placeholder-count="5">
+        <div style="display: flex; flex-direction: column; gap: 1px">
+          <sc-if value="{{g.label}}" hint-placeholder-val="{{true}}">
+            <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.04em; color: #8A95A3; padding: 0 10px 5px">{{g.label}}</div>
+          </sc-if>
+          <sc-for list="{{g.items}}" as="it" hint-placeholder-count="3">
+            <a href="{{it.href}}" aria-current="{{it.current}}" style="{{it.style}}">
+              <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="{{it.iconColor}}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{it.d}}"></path></svg>
+              <span style="flex-grow: 1">{{it.label}}</span>
+              <sc-if value="{{it.meta}}" hint-placeholder-val="{{false}}">
+                <span style="font-size: 11px; font-weight: 600; color: #A6B0BD; background: rgba(255,255,255,0.06); padding: 1px 7px; border-radius: 999px; font-variant-numeric: tabular-nums">{{it.meta}}</span>
+              </sc-if>
+            </a>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="border-radius: 12px; padding: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; align-items: center; justify-content: space-between">
+        <span style="font-size: 12px; font-weight: 600">Quarantine</span>
+        <span style="font-size: 11px; color: #A6B0BD">tự xóa sau 7 ngày</span>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 6px"><span style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; font-weight: 700">2,1 GB</span><span style="font-size: 12px; color: #A6B0BD">· 3 lần dọn</span></div>
+      <a href="Main.dc.html#quarantine" style="font-size: 12px; font-weight: 600; color: {{accent}}; text-decoration: none">Khôi phục…</a>
+    </div>
+  </nav>
+
+  <div style="flex: 999 1 640px; min-width: 0; background: #0F1217; display: flex; flex-direction: column">
+    <div style="height: 54px; box-sizing: border-box; padding: 0 20px; display: flex; align-items: center; gap: 14px; border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(15,18,23,0.9)">
+      <div style="display: flex; gap: 2px">
+        <button type="button" aria-label="Quay lại" style="width: 30px; height: 30px; border-radius: 7px; border: none; background: transparent; color: #8A95A3; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg></button>
+        <button type="button" aria-label="Tiến tới" style="width: 30px; height: 30px; border-radius: 7px; border: none; background: transparent; color: #5C6672; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg></button>
+      </div>
+      <span style="font-weight: 600; font-size: 14px">Space Lens</span>
+      <label style="margin: 0 auto; flex: 0 1 360px; min-width: 140px; height: 32px; box-sizing: border-box; display: flex; align-items: center; gap: 8px; padding: 0 10px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.07)">
+        <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8A95A3" stroke-width="2" stroke-linecap="round"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"></path></svg>
+        <span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Tìm kiếm</span>
+        <input type="search" placeholder="Tìm file, app, thao tác…" style="flex: 1 1 auto; min-width: 0; border: none; background: transparent; color: #EDF0F4; font: 400 13px Inter, sans-serif; outline: none">
+        <kbd style="font: 500 11px Inter, sans-serif; color: #8A95A3; border: 1px solid rgba(255,255,255,0.1); border-radius: 5px; padding: 1px 5px">⌘K</kbd>
+      </label>
+      <span style="display: flex; align-items: center; gap: 7px; height: 28px; padding: 0 10px; border-radius: 999px; background: rgba(61,220,151,0.1); border: 1px solid rgba(61,220,151,0.22); font-size: 12px; font-weight: 600; color: #8EF0C2; white-space: nowrap"><span aria-hidden="true" style="width: 7px; height: 7px; border-radius: 50%; background: {{accent}}; box-shadow: 0 0 8px {{accent}}"></span>Real-time đang bật</span>
+    </div>
+
+    <main style="padding: 28px 32px 32px; display: flex; flex-direction: column; gap: 20px">
+      <header style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; justify-content: space-between">
+        <div>
+          <nav aria-label="Đường dẫn" style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 13px; margin-bottom: 6px">
+            <a href="#" style="text-decoration: none; padding: 2px 8px; border-radius: 6px; background: rgba(255,255,255,0.04)">Macintosh HD</a>
+            <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5C6672" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"></path></svg>
+            <a href="#" style="text-decoration: none; padding: 2px 8px; border-radius: 6px; background: rgba(255,255,255,0.04)">Users</a>
+            <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5C6672" stroke-width="2.2" stroke-linecap="round"><path d="M9 6l6 6-6 6"></path></svg>
+            <span aria-current="page" style="padding: 2px 8px; border-radius: 6px; background: rgba(255,255,255,0.09); color: #FFFFFF; font-weight: 600">john</span>
+          </nav>
+          <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 34px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.1">Space Lens <span style="color: #8A95A3; font-weight: 600">86,9 GB</span></h1>
+        </div>
+        <div role="group" aria-label="Kiểu hiển thị" style="display: flex; gap: 2px; padding: 3px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px">
+          <button type="button" aria-pressed="true" style="height: 32px; padding: 0 12px; border-radius: 7px; border: none; background: rgba(255,255,255,0.1); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06); color: #FFFFFF; font: 600 13px Inter, sans-serif">Treemap</button>
+          <button type="button" aria-pressed="false" style="height: 32px; padding: 0 12px; border-radius: 7px; border: none; background: transparent; color: #A6B0BD; font: 600 13px Inter, sans-serif">Sunburst</button>
+          <button type="button" aria-pressed="false" style="height: 32px; padding: 0 12px; border-radius: 7px; border: none; background: transparent; color: #A6B0BD; font: 600 13px Inter, sans-serif">Danh sách</button>
+        </div>
+      </header>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: stretch">
+        <section aria-label="Bản đồ dung lượng" style="flex: 999 1 520px; min-width: 0; height: 640px; box-sizing: border-box; display: flex; gap: 5px; padding: 6px; border-radius: 18px; background: #0B0E12; border: 1px solid rgba(255,255,255,0.07); box-shadow: inset 0 1px 0 rgba(255,255,255,0.04); overflow-x: auto">
+          <div style="flex: 38.2 1 0; min-width: 130px; display: flex; flex-direction: column; gap: 5px">
+            <div style="display: flex; justify-content: space-between; padding: 6px 10px 2px; font-size: 12px; font-weight: 600"><span style="color: #8EC5FF">Library</span><span style="color: #A6B0BD">38,2 GB</span></div>
+            <button type="button" aria-label="Containers, 22,1 GB, đang chọn" style="flex: 22.1 1 0; border-radius: 12px; border: 2px solid {{accent}}; background: linear-gradient(160deg, rgba(90,169,255,0.30), rgba(90,169,255,0.14)); box-shadow: 0 0 0 4px rgba(61,220,151,0.12), inset 0 1px 0 rgba(255,255,255,0.08); color: #FFFFFF; text-align: left; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; font-family: inherit">
+              <span style="display: flex; justify-content: space-between; width: 100%; align-items: center"><span style="font-weight: 600; font-size: 15px">Containers</span><span style="font-size: 11px; font-weight: 700; color: #062014; background: {{accent}}; border-radius: 999px; padding: 2px 8px">Đang chọn</span></span>
+              <span><span style="display: block; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 40px; font-weight: 700; letter-spacing: -0.02em; line-height: 1">22,1 GB</span><span style="font-size: 12px; color: #CFE3FF">Docker.raw chiếm 21,4 GB</span></span>
+            </button>
+            <button type="button" aria-label="Application Support, 9,3 GB" style="flex: 9.3 1 0; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); background: rgba(90,169,255,0.17); color: #FFFFFF; text-align: left; padding: 14px; display: flex; justify-content: space-between; align-items: flex-end; font-family: inherit"><span style="font-weight: 600">Application Support</span><span style="font-family: 'Space Grotesk', Inter, sans-serif; font-weight: 700; font-size: 18px">9,3 GB</span></button>
+            <button type="button" aria-label="Caches, 6,8 GB" style="flex: 6.8 1 0; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); background: rgba(90,169,255,0.11); color: #FFFFFF; text-align: left; padding: 14px; display: flex; justify-content: space-between; align-items: flex-end; font-family: inherit"><span style="font-weight: 600">Caches</span><span style="font-family: 'Space Grotesk', Inter, sans-serif; font-weight: 700; font-size: 18px">6,8 GB</span></button>
+          </div>
+
+          <div style="flex: 24.6 1 0; min-width: 120px; display: flex; flex-direction: column; gap: 5px">
+            <div style="display: flex; justify-content: space-between; padding: 6px 10px 2px; font-size: 12px; font-weight: 600"><span style="color: #8EF0C2">Projects</span><span style="color: #A6B0BD">24,6 GB</span></div>
+            <button type="button" aria-label="api-backend, 9,8 GB" style="flex: 9.8 1 0; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); background: linear-gradient(160deg, rgba(61,220,151,0.26), rgba(61,220,151,0.12)); color: #FFFFFF; text-align: left; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; font-family: inherit"><span style="font-weight: 600">api-backend</span><span style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 26px; font-weight: 700">9,8 GB</span></button>
+            <button type="button" aria-label="12 project khác, 5,1 GB" style="flex: 5.1 1 0; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); background: rgba(61,220,151,0.10); color: #FFFFFF; text-align: left; padding: 14px; display: flex; justify-content: space-between; align-items: flex-end; font-family: inherit"><span style="font-weight: 600">12 project khác</span><span style="font-weight: 700">5,1 GB</span></button>
+            <div style="flex: 9.7 1 0; display: flex; gap: 5px">
+              <button type="button" aria-label="event-hub, 4,2 GB" style="flex: 4.2 1 0; min-width: 0; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); background: rgba(61,220,151,0.15); color: #FFFFFF; text-align: left; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; font-family: inherit"><span style="font-weight: 600; font-size: 13px">event-hub</span><span style="font-weight: 700; font-size: 15px">4,2 GB</span></button>
+              <div style="flex: 5.5 1 0; min-width: 0; display: flex; flex-direction: column; gap: 5px">
+                <button type="button" aria-label="terminal-app, 3,1 GB" style="flex: 3.1 1 0; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); background: rgba(61,220,151,0.12); color: #FFFFFF; text-align: left; padding: 10px 12px; font: 600 13px Inter, sans-serif; display: flex; flex-direction: column; justify-content: space-between"><span>terminal-app</span><span style="font-weight: 700">3,1 GB</span></button>
+                <button type="button" aria-label="crawler, 2,4 GB" style="flex: 2.4 1 0; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); background: rgba(61,220,151,0.09); color: #FFFFFF; text-align: left; padding: 10px 12px; font: 600 13px Inter, sans-serif">crawler · 2,4</button>
+              </div>
+            </div>
+          </div>
+
+          <div style="flex: 24.1 1 0; min-width: 120px; display: flex; flex-direction: column; gap: 5px">
+            <div style="display: flex; justify-content: space-between; padding: 6px 10px 2px; font-size: 12px; font-weight: 600"><span style="color: #CDD3DB">Khác</span><span style="color: #A6B0BD">24,1 GB</span></div>
+            <button type="button" aria-label="Downloads, 8,9 GB" style="flex: 8.9 1 0; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); background: linear-gradient(160deg, rgba(242,177,58,0.26), rgba(242,177,58,0.12)); color: #FFFFFF; text-align: left; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; font-family: inherit"><span style="font-weight: 600">Downloads</span><span><span style="display: block; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 26px; font-weight: 700">8,9 GB</span><span style="font-size: 12px; color: #F6DDA8">14 file .dmg, .pkg</span></span></button>
+            <button type="button" aria-label="Documents, 5,1 GB" style="flex: 5.1 1 0; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); background: rgba(167,139,250,0.17); color: #FFFFFF; text-align: left; padding: 14px; display: flex; justify-content: space-between; align-items: flex-end; font-family: inherit"><span style="font-weight: 600">Documents</span><span style="font-weight: 700">5,1 GB</span></button>
+            <button type="button" aria-label=".ollama, 4,7 GB" style="flex: 4.7 1 0; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.08); color: #FFFFFF; text-align: left; padding: 14px; display: flex; justify-content: space-between; align-items: flex-end; font-family: inherit"><span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 500; font-size: 13px">.ollama</span><span style="font-weight: 700">4,7 GB</span></button>
+            <div style="flex: 5.4 1 0; display: flex; gap: 5px">
+              <button type="button" aria-label="Pictures, 3,4 GB" style="flex: 3.4 1 0; min-width: 0; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); background: rgba(167,139,250,0.11); color: #FFFFFF; text-align: left; padding: 10px 12px; font: 600 13px Inter, sans-serif; display: flex; flex-direction: column; justify-content: space-between"><span>Pictures</span><span style="font-weight: 700">3,4 GB</span></button>
+              <button type="button" aria-label="Còn lại, 2,0 GB" style="flex: 2 1 0; min-width: 0; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.05); color: #CDD3DB; text-align: left; padding: 10px 12px; font: 600 13px Inter, sans-serif">2,0</button>
+            </div>
+          </div>
+        </section>
+
+        <aside aria-label="Chi tiết mục đang chọn" style="flex: 1 1 330px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+          <div style="border-radius: 18px; background: linear-gradient(180deg, #171C25 0%, #131720 100%); border: 1px solid rgba(255,255,255,0.07); box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 20px 40px rgba(0,0,0,0.25); padding: 22px; display: flex; flex-direction: column; gap: 16px">
+            <div style="display: flex; align-items: center; gap: 12px">
+              <span aria-hidden="true" style="width: 40px; height: 40px; border-radius: 11px; background: rgba(90,169,255,0.14); box-shadow: inset 0 0 0 1px rgba(90,169,255,0.25); display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8EC5FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v10H3zM7 13h.01M11 13h.01"></path></svg></span>
+              <div style="min-width: 0"><div style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; font-weight: 700">Docker.raw</div><div style="font-size: 12px; color: #A6B0BD">Ổ đĩa ảo · sửa lần cuối hôm qua</div></div>
+            </div>
+            <div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11.5px; color: #8A95A3; background: #0A0C10; border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 8px 10px; word-break: break-all">~/Library/Containers/com.docker.docker/Data/vms/0/data/Docker.raw</div>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+              <div style="border-radius: 12px; background: rgba(255,255,255,0.03); padding: 12px"><div style="font-size: 12px; color: #A6B0BD">Dung lượng thực</div><div style="font-family: 'Space Grotesk', Inter, sans-serif; font-weight: 700; font-size: 22px">21,4 GB</div></div>
+              <div style="border-radius: 12px; background: rgba(61,220,151,0.07); padding: 12px"><div style="font-size: 12px; color: #A6B0BD">Có thể prune</div><div style="font-family: 'Space Grotesk', Inter, sans-serif; font-weight: 700; font-size: 22px; color: {{accent}}">10,3 GB</div></div>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: flex-start; border-radius: 12px; background: rgba(242,177,58,0.08); border: 1px solid rgba(242,177,58,0.22); padding: 12px; font-size: 13px; color: #F6DDA8">
+              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F2B13A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px"><path d="M12 3l9 16H3zM12 10v4M12 17h.01"></path></svg>
+              <span>Không xóa trực tiếp: sẽ mất toàn bộ images và volumes. Prune trong Dev Junk, sau đó compact.</span>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px">
+              <a href="DevJunk.dc.html" style="flex: 1 1 auto; height: 44px; padding: 0 18px; border-radius: 12px; background: {{accent}}; color: #062014; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; box-shadow: 0 8px 24px rgba(61,220,151,0.25), inset 0 1px 0 rgba(255,255,255,0.35)">Mở Dev Junk</a>
+              <button type="button" style="height: 44px; padding: 0 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.03); color: #EDF0F4; font: 600 14px Inter, sans-serif">Hiện trong Finder</button>
+            </div>
+          </div>
+
+          <div style="border-radius: 16px; background: #151920; border: 1px solid rgba(255,255,255,0.06); box-shadow: inset 0 1px 0 rgba(255,255,255,0.04); padding: 18px 20px; display: flex; flex-direction: column; gap: 14px">
+            <h2 style="margin: 0; font-size: 15px; font-weight: 600">Lớn nhất trong ~/</h2>
+            <sc-for list="{{top}}" as="t" hint-placeholder-count="5">
+              <div style="display: flex; flex-direction: column; gap: 6px">
+                <div style="display: flex; justify-content: space-between; font-size: 13px"><span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12.5px; color: #E3E7EC; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{t.name}}</span><span style="font-weight: 600; flex-shrink: 0; padding-left: 8px; font-variant-numeric: tabular-nums">{{t.size}}</span></div>
+                <div aria-hidden="true" style="height: 4px; border-radius: 2px; background: rgba(255,255,255,0.06)"><div style="{{t.bar}}"></div></div>
+              </div>
+            </sc-for>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#3DDC97","options":["#3DDC97","#5AA9FF","#F2B13A","#A78BFA"]},"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const accent = this.props.accent ?? '#3DDC97';
+    const active = 'lens';
+    const I = {
+      scan: 'M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6',
+      junk: 'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5M14 11v5',
+      dev: 'M8 8l-4 4 4 4M16 8l4 4-4 4M14 5l-4 14',
+      bin: 'M5 8h14l-1 12H6zM3 8h18M10 4h4',
+      shield: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z',
+      eye: 'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',
+      speed: 'M4 18a8 8 0 1 1 16 0M12 18l4-6',
+      tune: 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M14 4v4M8 10v4M16 16v4',
+      apps: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
+      update: 'M12 4v11M7 10l5 5 5-5M5 20h14',
+      lens: 'M11 4a8 8 0 1 0 9 9h-9zM14 2v8h8a8 8 0 0 0-8-8z',
+      file: 'M6 3h8l4 4v14H6zM14 3v4h4M9 13h6M9 17h6',
+      dup: 'M8 8h12v12H8zM16 8V4H4v12h4'
+    };
+    const mk = (id, label, d, href, meta) => {
+      const on = id === active;
+      return {
+        label, d, href: href || '#', meta: meta || '',
+        current: on ? 'page' : 'false',
+        iconColor: on ? accent : '#A6B0BD',
+        style: 'display: flex; align-items: center; gap: 10px; min-height: 32px; padding: 0 10px; border-radius: 8px; text-decoration: none; font-size: 13.5px; font-weight: ' + (on ? '600' : '500') + '; color: ' + (on ? '#FFFFFF' : '#CDD3DB') + '; background: ' + (on ? 'rgba(255,255,255,0.09)' : 'transparent') + (on ? '; box-shadow: inset 0 1px 0 rgba(255,255,255,0.06)' : '')
+      };
+    };
+    const groups = [
+      { label: '', items: [mk('scan', 'Smart Scan', I.scan, 'Main.dc.html')] },
+      { label: 'Dọn dẹp', items: [mk('junk', 'Rác hệ thống', I.junk, '#', '6,1 GB'), mk('dev', 'Dev Junk', I.dev, 'DevJunk.dc.html', '14,2 GB'), mk('bin', 'Thùng rác', I.bin, '#', '3,2 GB')] },
+      { label: 'Bảo vệ', items: [mk('mal', 'Malware', I.shield, '#', '2'), mk('priv', 'Quyền riêng tư', I.eye)] },
+      { label: 'Tốc độ', items: [mk('opt', 'Tối ưu', I.speed), mk('mnt', 'Bảo trì', I.tune)] },
+      { label: 'Ứng dụng', items: [mk('uni', 'Gỡ cài đặt', I.apps), mk('upd', 'Cập nhật', I.update, '#', '4')] },
+      { label: 'File', items: [mk('lens', 'Space Lens', I.lens, 'SpaceLens.dc.html'), mk('large', 'File lớn & cũ', I.file), mk('dup', 'File trùng lặp', I.dup)] }
+    ];
+
+    const t = [['Docker.raw', 21.4, '#5AA9FF'], ['Projects/api-backend', 9.8, accent], ['Library/Application Support', 9.3, '#5AA9FF'], ['Downloads', 8.9, '#F2B13A'], ['.ollama/models', 4.7, '#CDD3DB']];
+    const top = t.map(([name, gb, c]) => ({
+      name, size: gb.toFixed(1).replace('.', ',') + ' GB',
+      bar: 'height: 100%; border-radius: 2px; width: ' + (gb / 21.4 * 100).toFixed(1) + '%; background: ' + c
+    }));
+    return { accent, groups, top };
+  }
+}
+</script>
+</body>
+</html>

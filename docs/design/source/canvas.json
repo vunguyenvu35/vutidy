@@ -1,0 +1,77 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-11-10T01:36:08Z"
+  },
+  "title": "Vutidy — Mac Cleaner UI",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1140,
+      "title": "01 · Smart Scan",
+      "expand": "fill"
+    },
+    "DevJunk.dc.html": {
+      "x": 1520,
+      "y": 0,
+      "w": 1440,
+      "h": 1200,
+      "title": "02 · Dev Junk",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "SpaceLens.dc.html": {
+      "x": 3040,
+      "y": 0,
+      "w": 1440,
+      "h": 1000,
+      "title": "03 · Space Lens",
+      "expand": "fill"
+    },
+    "Popover.dc.html": {
+      "x": 0,
+      "y": 1700,
+      "w": 480,
+      "h": 980,
+      "title": "04 · Menu Bar Popover"
+    },
+    "Styles.dc.html": {
+      "x": 560,
+      "y": 1700,
+      "w": 1280,
+      "h": 900,
+      "title": "05 · Design tokens"
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "DevJunk.dc.html",
+    "SpaceLens.dc.html",
+    "Popover.dc.html",
+    "Styles.dc.html"
+  ],
+  "notes": {
+    "t1": {
+      "x": 0,
+      "y": -300,
+      "text": "Màn hình ứng dụng",
+      "kind": "title1",
+      "maxW": 4480
+    },
+    "t2": {
+      "x": 0,
+      "y": 1400,
+      "text": "Menu bar & Design system",
+      "kind": "title1",
+      "maxW": 1760
+    }
+  },
+  "designSystems": []
+}

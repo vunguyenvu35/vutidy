@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="Vutidy">
+  <title>Vutidy</title>
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#171C25"/><stop offset="1" stop-color="#0A0C10"/></linearGradient></defs>
+  <rect width="1024" height="1024" rx="228" fill="url(#bg)"/>
+  <g transform="translate(0 55)"><defs><clipPath id="l"><rect x="0" y="0" width="512" height="1024"/></clipPath><clipPath id="r"><rect x="512" y="0" width="512" height="1024"/></clipPath></defs><g fill="none" stroke-width="120" stroke-linecap="round" stroke-linejoin="round"><polyline points="260,270 512,610 764,270" stroke="#5AA9FF" clip-path="url(#l)"/><polyline points="260,270 512,610 764,270" stroke="#3DDC97" clip-path="url(#r)"/></g><rect x="427" y="250" width="170" height="100" rx="24" fill="#EDF0F4"/></g>
+</svg>

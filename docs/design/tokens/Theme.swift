@@ -1,0 +1,106 @@
+// Graphite Glass v2 — design tokens cho SwiftUI
+import SwiftUI
+
+extension Color {
+    init(hex: UInt32, opacity: Double = 1) {
+        self.init(.sRGB,
+                  red: Double((hex >> 16) & 0xFF) / 255,
+                  green: Double((hex >> 8) & 0xFF) / 255,
+                  blue: Double(hex & 0xFF) / 255,
+                  opacity: opacity)
+    }
+}
+
+enum Theme {
+    enum Bg {
+        static let content = Color(hex: 0x0F1217)
+        static let card    = Color(hex: 0x151920)
+        static let heroTop = Color(hex: 0x171C25)
+        static let heroBottom = Color(hex: 0x131720)
+        static let code    = Color(hex: 0x0A0C10)
+        static let hero = LinearGradient(colors: [heroTop, heroBottom], startPoint: .top, endPoint: .bottom)
+    }
+    enum Border {
+        static let subtle  = Color.white.opacity(0.06)
+        static let `default` = Color.white.opacity(0.10)
+    }
+    enum Text {
+        static let primary   = Color(hex: 0xEDF0F4)
+        static let secondary = Color(hex: 0xA6B0BD)
+        static let tertiary  = Color(hex: 0x8A95A3)
+    }
+    enum Signal {
+        static let base = Color(hex: 0x3DDC97)
+        static let text = Color(hex: 0x8EF0C2)
+        static let on   = Color(hex: 0x062014)
+        static let tint = Color(hex: 0x3DDC97, opacity: 0.12)
+    }
+    enum Review {
+        static let base = Color(hex: 0xF2B13A)
+        static let text = Color(hex: 0xF6C766)
+        static let tint = Color(hex: 0xF2B13A, opacity: 0.12)
+    }
+    enum Info {
+        static let base = Color(hex: 0x5AA9FF)
+        static let text = Color(hex: 0x8EC5FF)
+    }
+    static let apps   = Color(hex: 0xA78BFA)
+    static let danger = Color(hex: 0xFF8A7A)
+
+    enum Category {
+        static let system    = Info.base
+        static let apps      = Theme.apps
+        static let developer = Signal.base
+        static let documents = Review.base
+        static let purgeable = Color(hex: 0x7D8796)
+        static let free      = Color.white.opacity(0.25)
+    }
+
+    enum Font {
+        static let display = SwiftUI.Font.system(size: 36, weight: .bold, design: .rounded).monospacedDigit()
+        static let title   = SwiftUI.Font.system(size: 32, weight: .bold)
+        static let heading = SwiftUI.Font.system(size: 15, weight: .semibold)
+        static let body    = SwiftUI.Font.system(size: 14)
+        static let caption = SwiftUI.Font.system(size: 12)
+        static let label   = SwiftUI.Font.system(size: 11, weight: .semibold)
+        static let mono    = SwiftUI.Font.system(size: 12, design: .monospaced)
+    }
+
+    enum Radius {
+        static let nav: CGFloat = 8
+        static let button: CGFloat = 12
+        static let card: CGFloat = 16
+        static let hero: CGFloat = 18
+    }
+
+    enum Space {
+        static let xs: CGFloat = 4, s: CGFloat = 8, m: CGFloat = 12, l: CGFloat = 16
+        static let xl: CGFloat = 24, xxl: CGFloat = 32
+    }
+
+    enum Layout {
+        static let sidebarWidth: CGFloat = 248
+        static let toolbarHeight: CGFloat = 54
+        static let popoverWidth: CGFloat = 400
+    }
+}
+
+struct CardStyle: ViewModifier {
+    var hero = false
+    func body(content: Content) -> some View {
+        content
+            .padding(hero ? 28 : 20)
+            .background {
+                RoundedRectangle(cornerRadius: hero ? Theme.Radius.hero : Theme.Radius.card)
+                    .fill(hero ? AnyShapeStyle(Theme.Bg.hero) : AnyShapeStyle(Theme.Bg.card))
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: hero ? Theme.Radius.hero : Theme.Radius.card)
+                    .strokeBorder(Theme.Border.subtle)
+            }
+    }
+}
+
+extension View {
+    func card(hero: Bool = false) -> some View { modifier(CardStyle(hero: hero)) }
+}

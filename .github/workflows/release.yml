@@ -1,0 +1,146 @@
+name: release
+# Builds Vutidy for macOS and attaches the files to a GitHub Release.
+# Start it by merging a change of VERSION into main (the tag is made here), by pushing a tag, or by hand
+# (Actions tab -> release -> Run workflow: builds only, publishes nothing).
+on:
+  push:
+    tags: ['v*']
+    branches: [main]
+    paths: [VERSION]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.t.outputs.tag }}
+      publish: ${{ steps.t.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: t
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            # a pushed tag must match VERSION, or the files would carry the wrong version
+            if [ "$GITHUB_REF_NAME" != "v$(cat VERSION)" ]; then
+              echo "::error::tag $GITHUB_REF_NAME does not match VERSION $(cat VERSION)"
+              exit 1
+            fi
+            echo "tag=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+            echo publish=true >> "$GITHUB_OUTPUT"
+          elif [ "$GITHUB_EVENT_NAME" = push ]; then
+            TAG="v$(cat VERSION)"
+            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+            if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
+              echo publish=false >> "$GITHUB_OUTPUT"   # this version is already released
+            else
+              echo publish=true >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo publish=false >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: prepare
+    if: needs.prepare.outputs.publish == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: macos-latest
+    # Optional secrets (docs/development/release.md). Without them the app is signed ad-hoc, which still works
+    # but needs the "Open Anyway" step on first launch.
+    env:
+      MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+      MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+      MACOS_SIGN_IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: |
+          swift --version
+          sw_vers
+
+      - name: Test
+        run: swift test
+
+      - name: Import the signing certificate (optional)
+        if: env.MACOS_CERTIFICATE != '' && env.MACOS_SIGN_IDENTITY != ''
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/build.keychain-db"
+          KEYCHAIN_PASSWORD="$(uuidgen)"
+          echo "$MACOS_CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/certificate.p12" -P "$MACOS_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" >/dev/null
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          rm -f "$RUNNER_TEMP/certificate.p12"
+          echo "CODESIGN_IDENTITY=$MACOS_SIGN_IDENTITY" >> "$GITHUB_ENV"
+
+      - name: "Build and sign (universal - Apple silicon and Intel)"
+        env:
+          ARCHS: universal
+        run: scripts/make-app.sh
+
+      - name: Notarize (optional)
+        if: env.MACOS_CERTIFICATE != '' && env.APPLE_ID != '' && env.APPLE_TEAM_ID != '' && env.APPLE_APP_PASSWORD != ''
+        run: |
+          ditto -c -k --keepParent dist/Vutidy.app "$RUNNER_TEMP/notarize.zip"
+          xcrun notarytool submit "$RUNNER_TEMP/notarize.zip" \
+            --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD" --wait
+          xcrun stapler staple dist/Vutidy.app
+          xcrun stapler validate dist/Vutidy.app
+
+      - name: Package (dmg + zip)
+        run: scripts/package-macos.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vutidy-macos
+          path: |
+            dist/vutidy-*-macos.dmg
+            dist/vutidy-*-macos.zip
+            dist/THIRD_PARTY_NOTICES.md
+          if-no-files-found: error
+
+  release:
+    needs: [prepare, build]
+    if: needs.prepare.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      # A copy of every file without the version in its name (vutidy-macos.dmg), so that the links of the README never change:
+      # https://github.com/<owner>/vutidy/releases/latest/download/vutidy-macos.dmg is always the newest release.
+      - name: Names without a version
+        run: |
+          VERSION="$(cat VERSION)"
+          cd dist
+          for f in vutidy-"$VERSION"-*; do cp "$f" "${f/-$VERSION/}"; done
+          ls
+      - name: Checksums
+        run: cd dist && rm -f *.sha256 && sha256sum vutidy-* > SHA256SUMS && cat SHA256SUMS
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          VERSION="$(cat VERSION)"
+          # the notes of this version: the section that starts with "# Vutidy <version>" in RELEASE_NOTES.md
+          awk -v h="# Vutidy $VERSION" '$0==h{f=1;next} /^# Vutidy /{f=0} f' RELEASE_NOTES.md > notes.md
+          if [ ! -s notes.md ]; then echo "See RELEASE_NOTES.md." > notes.md; fi
+          # versions below 1.0 are marked as pre-releases
+          PRE=""; case "$VERSION" in 0.*) PRE="--prerelease" ;; esac
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            # a release made by hand for this tag: add (or replace) the files
+            gh release upload "$TAG" dist/* --clobber
+          else
+            gh release create "$TAG" dist/* --title "Vutidy $VERSION" --notes-file notes.md $PRE --target "$GITHUB_SHA"
+          fi

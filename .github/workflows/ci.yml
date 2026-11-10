@@ -1,0 +1,49 @@
+name: ci
+# Runs on every push to main and on pull requests: build, test and check the documentation links.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# the jobs only read the repository
+permissions:
+  contents: read
+
+# a newer push to the same branch cancels the run that is still going
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: swift --version
+      - run: swift build
+      - run: swift test
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/check-doc-links.sh
+
+  package:
+    # makes sure the release packaging still works (universal build, app bundle, dmg and zip) before a release needs it
+    needs: test
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the app and package it
+        env:
+          ARCHS: universal
+        run: |
+          scripts/make-app.sh
+          scripts/package-macos.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vutidy-macos-ci
+          path: dist/vutidy-*-macos.*
+          retention-days: 7

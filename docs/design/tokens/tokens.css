@@ -1,0 +1,41 @@
+/* Graphite Glass v2 — design tokens */
+:root {
+  --bg-desktop: #07090D;
+  --bg-content: #0F1217;
+  --bg-card: #151920;
+  --bg-hero: linear-gradient(180deg, #171C25 0%, #131720 100%);
+  --bg-code: #0A0C10;
+  --bg-sidebar: rgba(26,30,39,0.66);
+  --border-subtle: rgba(255,255,255,0.06);
+  --border-default: rgba(255,255,255,0.10);
+  --highlight-inset: inset 0 1px 0 rgba(255,255,255,0.05);
+
+  --text-primary: #EDF0F4;
+  --text-secondary: #A6B0BD;
+  --text-tertiary: #8A95A3;
+
+  --signal: #3DDC97;
+  --signal-text: #8EF0C2;
+  --signal-on: #062014;
+  --signal-tint: rgba(61,220,151,0.12);
+  --review: #F2B13A;
+  --review-text: #F6C766;
+  --review-tint: rgba(242,177,58,0.12);
+  --info: #5AA9FF;
+  --info-text: #8EC5FF;
+  --apps: #A78BFA;
+  --danger: #FF8A7A;
+
+  --font-display: 'Space Grotesk', 'SF Pro Rounded', -apple-system, sans-serif;
+  --font-text: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, Menlo, monospace;
+
+  --radius-nav: 8px;
+  --radius-button: 12px;
+  --radius-card: 16px;
+  --radius-hero: 18px;
+  --radius-window: 14px;
+
+  --sidebar-width: 248px;
+  --toolbar-height: 54px;
+}

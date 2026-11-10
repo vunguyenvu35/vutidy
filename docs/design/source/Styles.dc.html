@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Vutidy · Design tokens</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#0D0F12}
+a{color:#A9B2BE}a:hover{color:#ECEFF3}
+</style>
+</helmet>
+<div style="width: 1280px; height: 900px; box-sizing: border-box; background-color: #07090D; background-image: radial-gradient(ellipse 80% 50% at 10% 0%, rgba(61,220,151,0.16), transparent 70%), radial-gradient(ellipse 80% 60% at 100% 100%, rgba(90,169,255,0.18), transparent 70%); color: #ECEFF3; font-family: Inter, -apple-system, sans-serif; font-size: 14px; line-height: 1.45; padding: 48px 56px; display: flex; flex-direction: column; gap: 36px">
+  <header style="display: flex; justify-content: space-between; align-items: flex-end">
+    <div>
+      <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8C96A3">Design system</div>
+      <h1 style="margin: 4px 0 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 40px; font-weight: 700; letter-spacing: -0.02em">Graphite Glass</h1>
+    </div>
+    <p style="margin: 0; max-width: 460px; color: #A9B2BE">Cửa sổ macOS với sidebar vibrancy trên nền tối. Một màu tín hiệu cho hành động an toàn, amber cho mọi thứ cần xem lại, số liệu luôn là nhân vật chính.</p>
+  </header>
+
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px">
+    <section aria-label="Màu" style="display: flex; flex-direction: column; gap: 16px">
+      <h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #8C96A3">Màu</h2>
+      <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px">
+        <sc-for list="{{colors}}" as="c" hint-placeholder-count="10">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <div style="{{c.swatch}}"></div>
+            <div style="font-size: 12px; font-weight: 600">{{c.name}}</div>
+            <div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; color: #8C96A3">{{c.hex}}</div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section aria-label="Chữ" style="display: flex; flex-direction: column; gap: 14px">
+      <h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #8C96A3">Chữ</h2>
+      <div style="display: flex; align-items: baseline; gap: 16px"><span style="width: 120px; font-size: 12px; color: #8C96A3">Display 34/700</span><span style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 34px; font-weight: 700; letter-spacing: -0.02em">109,6 GB</span></div>
+      <div style="display: flex; align-items: baseline; gap: 16px"><span style="width: 120px; font-size: 12px; color: #8C96A3">Title 30/700</span><span style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 700; letter-spacing: -0.02em">Smart Scan</span></div>
+      <div style="display: flex; align-items: baseline; gap: 16px"><span style="width: 120px; font-size: 12px; color: #8C96A3">Heading 15/600</span><span style="font-size: 15px; font-weight: 600">Dọn dẹp an toàn</span></div>
+      <div style="display: flex; align-items: baseline; gap: 16px"><span style="width: 120px; font-size: 12px; color: #8C96A3">Body 14/400</span><span>Mọi thứ đi vào Quarantine 7 ngày.</span></div>
+      <div style="display: flex; align-items: baseline; gap: 16px"><span style="width: 120px; font-size: 12px; color: #8C96A3">Label 11/600</span><span style="font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #8C96A3">Bảo vệ</span></div>
+      <div style="display: flex; align-items: baseline; gap: 16px"><span style="width: 120px; font-size: 12px; color: #8C96A3">Mono 12/400</span><span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; color: #A9B2BE">~/Library/Caches/JetBrains</span></div>
+      <div style="font-size: 12px; color: #8C96A3">Space Grotesk cho số &amp; tiêu đề · Inter cho UI · JetBrains Mono cho path &amp; lệnh. Bản native dùng SF Pro / SF Mono.</div>
+    </section>
+  </div>
+
+  <section aria-label="Thành phần" style="display: flex; flex-direction: column; gap: 16px">
+    <h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #8C96A3">Thành phần</h2>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px">
+      <div style="background: #151920; border: 1px solid rgba(255,255,255,0.07); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 10px">
+        <div style="font-size: 12px; color: #8C96A3">Nút</div>
+        <button type="button" style="height: 44px; border-radius: 12px; border: none; background: {{accent}}; color: #0B1F15; font: 700 14px Inter, sans-serif">Dọn 24,8 GB</button>
+        <button type="button" style="height: 44px; border-radius: 12px; border: 1px solid #262C34; background: transparent; color: #ECEFF3; font: 600 14px Inter, sans-serif">Tùy chỉnh</button>
+        <button type="button" style="height: 36px; border-radius: 10px; border: none; background: #262C34; color: #ECEFF3; font: 600 13px Inter, sans-serif">Kiểm tra</button>
+      </div>
+      <div style="background: #151920; border: 1px solid rgba(255,255,255,0.07); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+        <div style="font-size: 12px; color: #8C96A3">Nhãn mức an toàn</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px">
+          <span style="font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; color: {{accent}}; background: #1F2A25">An toàn</span>
+          <span style="font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; color: #F2B13A; background: #2A2418">Cần xem lại</span>
+          <span style="font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; color: #FF8A7A; background: #2D1C1A">Nguy hiểm</span>
+          <span style="font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; color: #8EC5FF; background: #1B2433">Thông tin</span>
+        </div>
+        <div style="font-size: 12px; color: #8C96A3">Luôn kèm chữ, không chỉ dựa vào màu.</div>
+      </div>
+      <div style="background: #151920; border: 1px solid rgba(255,255,255,0.07); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+        <div style="font-size: 12px; color: #8C96A3">Điều khiển</div>
+        <div role="group" aria-label="Ví dụ bộ lọc" style="display: flex; gap: 4px; padding: 4px; background: #0D0F12; border: 1px solid #262C34; border-radius: 12px">
+          <button type="button" aria-pressed="true" style="flex: 1 1 0; height: 32px; border-radius: 8px; border: none; background: #2A313B; color: #ECEFF3; font: 600 13px Inter, sans-serif">Tất cả</button>
+          <button type="button" aria-pressed="false" style="flex: 1 1 0; height: 32px; border-radius: 8px; border: none; background: transparent; color: #A9B2BE; font: 600 13px Inter, sans-serif">An toàn</button>
+        </div>
+        <label style="display: flex; align-items: center; gap: 10px"><input type="checkbox" checked style="width: 18px; height: 18px; margin: 0; accent-color: {{accent}}">Docker · Build cache</label>
+        <label style="display: flex; align-items: center; gap: 10px"><input type="checkbox" style="width: 18px; height: 18px; margin: 0; accent-color: {{accent}}">Ollama models</label>
+      </div>
+      <div style="background: #151920; border: 1px solid rgba(255,255,255,0.07); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+        <div style="font-size: 12px; color: #8C96A3">Spacing &amp; bo góc</div>
+        <div style="display: flex; align-items: flex-end; gap: 8px">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 4px"><div style="width: 8px; height: 8px; background: #2A313B"></div><span style="font-size: 11px; color: #8C96A3">4</span></div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 4px"><div style="width: 12px; height: 12px; background: #2A313B"></div><span style="font-size: 11px; color: #8C96A3">8</span></div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 4px"><div style="width: 16px; height: 16px; background: #2A313B"></div><span style="font-size: 11px; color: #8C96A3">12</span></div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 4px"><div style="width: 22px; height: 22px; background: #2A313B"></div><span style="font-size: 11px; color: #8C96A3">16</span></div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 4px"><div style="width: 30px; height: 30px; background: #2A313B"></div><span style="font-size: 11px; color: #8C96A3">24</span></div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 4px"><div style="width: 40px; height: 40px; background: #2A313B"></div><span style="font-size: 11px; color: #8C96A3">36</span></div>
+        </div>
+        <div style="display: flex; gap: 8px">
+          <div style="width: 40px; height: 40px; border-radius: 8px; border: 1px solid #3A424D"></div>
+          <div style="width: 40px; height: 40px; border-radius: 12px; border: 1px solid #3A424D"></div>
+          <div style="width: 40px; height: 40px; border-radius: 16px; border: 1px solid #3A424D"></div>
+        </div>
+        <div style="font-size: 12px; color: #8C96A3">8 nav · 12 nút · 16 card · 18 popover</div>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#3DDC97","options":["#3DDC97","#5AA9FF","#F2B13A","#A78BFA"]},"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const accent = this.props.accent ?? '#3DDC97';
+    const list = [
+      ['Desktop', '#07090D'], ['Content', '#0F1217'], ['Card', '#151920'], ['Hero', '#171C25'], ['Code', '#0A0C10'],
+      ['Text', '#EDF0F4'], ['Text 2', '#A6B0BD'], ['Signal', accent], ['Review', '#F2B13A'], ['Info', '#5AA9FF']
+    ];
+    const colors = list.map(([name, hex]) => ({
+      name, hex: hex.toUpperCase(),
+      swatch: 'height: 56px; border-radius: 12px; border: 1px solid #2A313B; background: ' + hex
+    }));
+    return { accent, colors };
+  }
+}
+</script>
+</body>
+</html>
