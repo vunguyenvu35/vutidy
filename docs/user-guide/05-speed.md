@@ -5,6 +5,7 @@ Two pages: **Optimization** (⌘7) shows what is using your Mac and what starts 
 ## Contents
 
 - [Optimization](#optimization)
+- [Opens at login](#opens-at-login)
 - [Startup items](#startup-items)
 - [Maintenance](#maintenance)
 - [Limits](#limits)
@@ -26,6 +27,12 @@ At the top, three gauges refresh every few seconds:
 | **Startup items** | How many launch items are on, and how many are off |
 
 **CPU-hungry processes** lists the busiest processes with their app icon, memory, CPU % and a bar. The top six are shown; **Show all** expands the list. For a regular app (not Finder, not Vutidy itself) a **Quit app** button asks it to quit politely. Helper processes and system services have no button.
+
+## Opens at login
+
+The card **Opens at login** (just under the gauges) lists the apps that start by themselves when you log in to macOS: the same list as *System Settings → General → Login Items*. Each row shows the app, its developer, its path, whether it is **On** or **Disabled**, and a **File missing** badge when the app was deleted, is in the Trash or runs from a temporary folder (turn those off). Filters: *On*, *Disabled*, *File missing*, *All*.
+
+macOS lets only you change these switches, so **Manage** (and **Open Login Items**) opens that page in System Settings. Vutidy reads the list from the Background Task Management store of your account; it does not ask for an administrator password. Launch agents and daemons are in the next section, and those you *can* switch here.
 
 ## Startup items
 

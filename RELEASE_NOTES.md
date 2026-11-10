@@ -1,5 +1,19 @@
 <p align="center"><img src="docs/assets/brand/logo-mark-256.png" alt="Vutidy" width="88"></p>
 
+# Vutidy 0.3.0
+
+Release date: 2026-11-10 · Platform: macOS 13 or later (only tried on Apple Silicon) · Status: **pre-release**. The [known issues of 0.1.0](#vutidy-010) still apply.
+
+## What's new in 0.3.0
+
+- **Smart Care.** Smart Scan now ends with **Your Mac's health**: five groups (Cleanup, Protection, Performance, Applications, Large & Old Files), each with one line and a **Review** button. It also runs the malware check, looks for Homebrew updates and apps you have not opened for 90 days, and finds large old files in Downloads. Only Cleanup is acted on by *Clean*; the other groups just report.
+- **See what opens at login.** *Optimization → Opens at login* lists the apps that start with macOS, whether each is on, and which ones point to a file that is gone. **Manage** opens *System Settings → Login Items* (macOS lets only you flip those switches). No administrator password is asked.
+- **Grant Full Disk Access with a guide.** *Grant access…* opens System Settings and a small panel beside it with the app icon to drag into the list, notices when you are done, and offers **Restart Vutidy**. **Reset permission** clears a stuck permission (`tccutil reset`) first.
+- **Smart Scan fits small windows.** The hero drops its picture, then the ring, instead of pushing the page past the window edge.
+- **Menu bar popover** no longer leaves a blank area at the top after you hide a recommendation.
+- **Help → Check for Updates…**, and a card in the sidebar that stays visible while a new version is available or installing.
+- Plan for what comes next: [malware checks and startup control](docs/development/plan-security-and-startup.md).
+
 # Vutidy 0.2.1
 
 Release date: 2026-11-10 · Platform: macOS 13 or later (only tried on Apple Silicon) · Status: **pre-release**. The [known issues of 0.1.0](#vutidy-010) still apply.
