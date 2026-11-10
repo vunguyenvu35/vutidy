@@ -90,6 +90,7 @@ struct OptimizationView: View {
                            }
                        }.buttonStyle(SecondaryButtonStyle()).disabled(loading)))
             gauges
+            LoginItemsCard()
             memoryCleaner
             processes
             startup

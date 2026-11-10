@@ -253,6 +253,9 @@ final class AppState: ObservableObject {
             }
         }
         if let sp = ProcessInfo.processInfo.environment["VUTIDY_SETTINGS"], let p = SettingsPage(rawValue: sp) { settingsPage = p; settingsOpen = true }
+        if ProcessInfo.processInfo.environment["VUTIDY_OPEN"] == "fdaguide" {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [self] in PermissionGuide.shared.show(state: self, openSettings: false) }
+        }
         if ProcessInfo.processInfo.environment["VUTIDY_OPEN"] == "popover" {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [self] in
                 let host = NSHostingView(rootView: PopoverView().environmentObject(self).environmentObject(shortcuts).preferredColorScheme(.dark))
@@ -315,7 +318,8 @@ final class AppState: ObservableObject {
     }
 
     func checkFDA() {
-        hasFDA = Self.probeFullDiskAccess() ?? true
+        // VUTIDY_FAKE_NOFDA: chỉ để chụp tài liệu / thử giao diện "chưa cấp quyền", không đụng tới quyền thật.
+        hasFDA = ProcessInfo.processInfo.environment["VUTIDY_FAKE_NOFDA"] != nil ? false : (Self.probeFullDiskAccess() ?? true)
         trashBlocked = TrashModule.isBlocked
     }
 

@@ -106,6 +106,7 @@ struct EmptyStateView: View {
 }
 
 struct FDABanner: View {
+    @EnvironmentObject var state: AppState
     var message: String = tr("Thiếu Full Disk Access — một số mục (Mail, Photos, Safari) sẽ không quét được.")
     var onDismiss: (() -> Void)? = nil
     var body: some View {
@@ -114,16 +115,13 @@ struct FDABanner: View {
             Text(message)
                 .font(Theme.Font.caption).foregroundStyle(Theme.Text.primary)
             Spacer()
-            // Chạy bằng `swift run` thì không có .app để cấp quyền — chỉ hiện nút khi đang chạy từ bundle.
+            // Cấp quyền có hướng dẫn: mở System Settings + bảng nổi để kéo/bật Vutidy, tự nhận khi đã cấp.
+            Button { state.grantFullDiskAccess() } label: { Label(tr("Cấp quyền…"), systemImage: "lock.open") }
+                .buttonStyle(PrimaryButtonStyle()).controlSize(.small)
             if Bundle.main.bundleURL.pathExtension == "app" {
-                Button(tr("Hiện app trong Finder")) { NSWorkspace.shared.activateFileViewerSelecting([Bundle.main.bundleURL]) }
-                    .buttonStyle(SecondaryButtonStyle())
                 Button(tr("Khởi động lại Vutidy")) { AppDelegate.relaunch() }
-                    .buttonStyle(SecondaryButtonStyle()).help(tr("Sau khi bật quyền trong System Settings, hãy khởi động lại Vutidy để macOS áp dụng."))
+                    .buttonStyle(SecondaryButtonStyle()).controlSize(.small).help(tr("Sau khi bật quyền trong System Settings, hãy khởi động lại Vutidy để macOS áp dụng."))
             }
-            Button(tr("Mở System Settings")) {
-                NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles")!)
-            }.buttonStyle(SecondaryButtonStyle())
             if let onDismiss {
                 Button(action: onDismiss) { Image(systemName: "xmark") }.buttonStyle(PlainPointerStyle())
                     .foregroundStyle(Theme.Text.secondary).help(tr("Ẩn thông báo"))

@@ -32,6 +32,7 @@ Machine-readable design tokens live in [design/tokens](design/tokens) (`tokens.j
 | [Development guide](development/development.md) | Build, test, package, add a rule, add a language, regenerate the brand assets |
 | [Releasing](development/release.md) | Publish a version with GitHub Actions: tag, build, sign, notarize, checksums |
 | [Test plan](development/test-plan.md) | Run the manual checklist on a real Mac |
+| [Plan: malware checks and startup control](development/plan-security-and-startup.md) | See what is planned for Protection and login items, and what is built |
 
 ## Images and brand
 

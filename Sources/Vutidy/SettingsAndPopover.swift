@@ -15,20 +15,21 @@ struct PopoverView: View {
 
     var body: some View {
         let s = state.snapshot
-        ZStack {
-            PageBackground(page: .smartScan)
-            Color.black.opacity(0.18)
-            VStack(alignment: .leading, spacing: 12) {
-                header
-                recommendations
-                realtimeRow
-                LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
-                    diskTile(s); memoryTile(s); cpuTile(s); batteryTile(s); networkTile(s); devicesTile
-                }
-                footer
-            }.padding(14)
+        // Nền gắn vào chính nội dung (không dùng ZStack căn giữa): khi một thẻ gợi ý bị ẩn, cửa sổ co theo nội dung
+        // và nội dung luôn bám mép trên, không còn khoảng trống phía trên header.
+        VStack(alignment: .leading, spacing: 12) {
+            header
+            recommendations
+            realtimeRow
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+                diskTile(s); memoryTile(s); cpuTile(s); batteryTile(s); networkTile(s); devicesTile
+            }
+            footer
         }
-        .frame(width: 400)
+        .padding(14)
+        .frame(width: 400, alignment: .top)
+        .background(ZStack { PageBackground(page: .smartScan); Color.black.opacity(0.18) })
+        .fixedSize(horizontal: false, vertical: true)
         .task { devices = await ConnectedDevices.bluetooth(); devicesLoaded = true }
         .onAppear { state.openMainWindow = { openWindow(id: "main") } }
     }

@@ -75,6 +75,7 @@ struct SettingsOverlay: View {
     @EnvironmentObject var state: AppState
     @ViewState private var maximized = false
     @ViewState private var confirmEmpty = false
+    @ViewState private var confirmResetFDA = false
 
     var version: String { (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String) ?? "dev" }
 
@@ -105,6 +106,11 @@ struct SettingsOverlay: View {
                        message: tr("Mọi mục trong Quarantine sẽ bị xóa vĩnh viễn và không thể khôi phục."),
                        confirmTitle: tr("Xóa vĩnh viễn"), destructive: true, symbol: "v.trash") {
             Task { await emptyQuarantine() }
+        }
+        .confirmDialog(isPresented: $confirmResetFDA, title: tr("Đặt lại quyền Full Disk Access?"),
+                       message: tr("Vutidy sẽ bị gỡ khỏi danh sách Full Disk Access của macOS. Dùng khi quyền bị kẹt hoặc có nhiều dòng Vutidy. Sau đó bạn bật lại quyền theo hướng dẫn."),
+                       confirmTitle: tr("Đặt lại và cấp lại"), symbol: "v.protection") {
+            Task { await state.resetFullDiskAccess() }
         }
     }
 
@@ -292,18 +298,19 @@ struct SettingsOverlay: View {
         }
     }
 
-    /// Nút của mục Full Disk Access, chia thành hai nhóm để có thể xuống hàng gọn gàng.
+    /// Nút của mục Full Disk Access: cấp quyền có hướng dẫn, kiểm tra lại, đặt lại, khởi động lại.
     @ViewBuilder func fdaButtons(first: Bool) -> some View {
         if first {
-            Button(tr("Kiểm tra lại")) { state.checkFDA() }.buttonStyle(SecondaryButtonStyle())
-            if Bundle.main.bundleURL.pathExtension == "app" {
-                Button(tr("Hiện app trong Finder")) { NSWorkspace.shared.activateFileViewerSelecting([Bundle.main.bundleURL]) }.buttonStyle(SecondaryButtonStyle())
+            if state.hasFDA {
+                Button { state.grantFullDiskAccess() } label: { Label(tr("Cấp quyền…"), systemImage: "lock.open") }.buttonStyle(SecondaryButtonStyle())
+            } else {
+                Button { state.grantFullDiskAccess() } label: { Label(tr("Cấp quyền…"), systemImage: "lock.open") }.buttonStyle(PrimaryButtonStyle())
             }
+            Button(tr("Kiểm tra lại")) { state.checkFDA() }.buttonStyle(SecondaryButtonStyle())
         } else {
+            Button(tr("Đặt lại quyền")) { confirmResetFDA = true }.buttonStyle(SecondaryButtonStyle())
+                .help(tr("Dùng khi Vutidy đã bật nhưng vẫn báo thiếu quyền, hoặc có nhiều dòng Vutidy trong danh sách."))
             if AppDelegate.canRelaunch { Button(tr("Khởi động lại Vutidy")) { AppDelegate.relaunch() }.buttonStyle(SecondaryButtonStyle()) }
-            Button(tr("Mở System Settings")) {
-                NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles")!)
-            }.buttonStyle(SecondaryButtonStyle())
         }
     }
 

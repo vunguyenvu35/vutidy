@@ -16,7 +16,7 @@
 
 ## Vutidy is missing from Full Disk Access
 
-You started it with `swift run Vutidy`. A bare executable has no bundle ID, name or icon, so macOS cannot list it as an app. Build the real app with `scripts/make-app.sh`, open `dist/Vutidy.app`, then use **+** in *Full Disk Access* (the banner's **Reveal app in Finder** shows where it is) and restart Vutidy.
+You started it with `swift run Vutidy`. A bare executable has no bundle ID, name or icon, so macOS cannot list it as an app. Build the real app with `scripts/make-app.sh`, open `dist/Vutidy.app`, then use **+** in *Full Disk Access* (or drag the icon from the **Grant access…** guide panel into the list) and restart Vutidy.
 
 ## I granted Full Disk Access and it asks again after a rebuild
 
@@ -63,6 +63,10 @@ Occasionally the first `swift test` right after a `swift build` reports *externa
 Quit Vutidy, restore anything you still need from the Quarantine, then delete `~/Library/Application Support/Vutidy` and remove the app's defaults (for the packaged app: `defaults delete com.vutidy.app`).
 
 ## The banner stays after I turned Full Disk Access on
+
+Shortcut: press **Reset permission** (*Settings → Protection*, or in the guide panel of **Grant access…**). Vutidy runs `tccutil reset SystemPolicyAllFiles com.vutidy.app`, which clears the saved permission, then guides you through granting it again. The same in Terminal: `tccutil reset SystemPolicyAllFiles com.vutidy.app`.
+
+By hand:
 
 Check these in order:
 

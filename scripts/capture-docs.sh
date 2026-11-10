@@ -56,6 +56,7 @@ SHOTS=(
   "settings-storage|smartScan|VUTIDY_SETTINGS=storage|3"
   "settings-support|smartScan|VUTIDY_SETTINGS=support|3"
   "menu-bar-popover|smartScan|VUTIDY_OPEN=popover|6"
+  "fda-guide|smartScan|VUTIDY_FAKE_NOFDA=1 VUTIDY_OPEN=fdaguide|6"
   "lang-vi|systemJunk|VUTIDY_LANG=vi VUTIDY_SCAN=system-junk|20"
   "lang-ja|systemJunk|VUTIDY_LANG=ja VUTIDY_SCAN=system-junk|20"
   "lang-zh|systemJunk|VUTIDY_LANG=zh VUTIDY_SCAN=system-junk|20"
@@ -66,7 +67,7 @@ for s in $SHOTS; do
   pkill -f "Vutidy.app/Contents/MacOS/Vutidy" 2>/dev/null || true; sleep 1
   env VUTIDY_LANG=en VUTIDY_PAGE=$page ${=extra} $BIN >/dev/null 2>&1 &
   pid=$!; sleep $wait
-  if [[ $name == menu-bar-popover ]]; then id=$($TMP/wid $pid --small); else id=$($TMP/wid $pid); fi
+  if [[ $name == menu-bar-popover || $name == fda-guide ]]; then id=$($TMP/wid $pid --small); else id=$($TMP/wid $pid); fi
   if [[ $id == 0 ]]; then echo "skip $name (no window)"; kill $pid 2>/dev/null; continue; fi
   screencapture -x -o -l $id "$TMP/$name.png"
   sips -Z 1800 "$TMP/$name.png" --out "$TMP/$name.s.png" >/dev/null

@@ -14,6 +14,7 @@ Vutidy CLI
   vutidy-cli large <path> [--min-mb N] [--days N]
   vutidy-cli quarantine <list|restore ID|purge-expired>
   vutidy-cli audit
+  vutidy-cli startup          (apps that open at login, from System Settings → Login Items)
 Mặc định `clean` chạy dry-run. Chỉ mục an toàn được chọn, trừ khi có --include-review.
 """
 
@@ -105,5 +106,9 @@ case "malware":
     for c in r.posture { print("[\(c.ok == true ? "OK " : (c.ok == false ? "BAD" : "?  "))] \(c.title): \(c.detail)") }
     for f in r.findings { print("[\(["HIGH", "MED ", "LOW "][f.severity.rawValue])] \(f.title) — \(f.detail) \(f.path ?? "")") }
     print("apps: \(r.appsChecked) · launch items: \(r.launchItemsChecked) · findings: \(r.findings.count) · \(String(format: "%.1f", Date().timeIntervalSince(t0)))s")
+case "startup":
+    for e in await LoginItems.list() {
+        print("[\(e.enabled ? "ON " : "OFF")] \(e.name) · \(e.developer ?? "-") · \(e.kind.rawValue)\(e.orphaned ? " · MISSING" : "") \(e.path ?? "")")
+    }
 default: print(usage)
 }

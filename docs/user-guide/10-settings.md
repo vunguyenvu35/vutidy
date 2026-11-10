@@ -65,7 +65,7 @@ Changes apply **immediately**; there is no Save button.
 
 | Setting | What it does |
 | --- | --- |
-| **Full Disk Access** | Shows *Granted* or *Not granted*, with **Check again**, **Open System Settings** and **Reveal app in Finder**. |
+| **Full Disk Access** | Shows *Granted* or *Not granted*. **Grant access…** opens System Settings and a guide panel (switch Vutidy on, or drag its icon into the list) and notices when it is done. **Check again** re-reads it, **Reset permission** removes Vutidy from the list (after a confirmation) when the permission is stuck, and **Restart Vutidy** applies a new grant. |
 | **Real-time monitor** | The same switch as in the Protection page, with a reminder that it detects after the fact. |
 
 ## Shortcuts

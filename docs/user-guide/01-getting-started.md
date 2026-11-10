@@ -45,7 +45,19 @@ What you see in the screenshot:
 
 macOS protects some folders (Mail downloads, the Photos cache, the Safari cache, parts of iCloud Drive). Without **Full Disk Access** Vutidy skips them and a banner on Smart Scan, System Junk, Privacy and Cloud Cleanup says so. You can dismiss the banner with **×**.
 
-To grant it, Vutidy has to run as a real app: build `dist/Vutidy.app` with `scripts/make-app.sh` and add it in *System Settings → Privacy & Security → Full Disk Access*. The step-by-step is in [Installing on macOS](../getting-started/install-macos.md#grant-full-disk-access). A bare `swift run Vutidy` has no bundle ID or icon and will not show up properly in that list.
+Press **Grant access…** in the banner (or in *Settings → Protection*). Vutidy opens *System Settings → Privacy & Security → Full Disk Access* and shows a small panel next to it:
+
+![The Full Disk Access guide panel](../assets/screens/fda-guide.webp)
+
+*The guide panel. It stays on top of System Settings while you work.*
+
+1. In the System Settings list, **turn on the switch for Vutidy**.
+2. If Vutidy is not in the list, **drag the icon from the panel** into it.
+3. Enter your password or use Touch ID if macOS asks.
+
+Vutidy notices the moment the permission is on and the panel says **Access granted!**; press **Restart Vutidy** so macOS applies it to the whole app. If it still says the permission is missing, or the list has several Vutidy entries, use **Reset permission** in the panel (or in *Settings → Protection*): it removes Vutidy from the list so you can grant it cleanly. See [Troubleshooting](15-troubleshooting.md#the-banner-stays-after-i-turned-full-disk-access-on).
+
+Vutidy has to run as a real app for this: a bare `swift run Vutidy` has no bundle ID or icon, so the guide tells you to open `dist/Vutidy.app` instead (build it with `scripts/make-app.sh`). Step by step in [Installing on macOS](../getting-started/install-macos.md#grant-full-disk-access).
 
 ## What is selected by default
 

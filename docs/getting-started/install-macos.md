@@ -52,9 +52,11 @@ A build you made yourself is not quarantined by macOS, so this step is usually n
 
 Mail attachments, the Photos cache and the Safari cache live in folders macOS protects. Without **Full Disk Access** Vutidy still works but cannot scan those. A banner at the top of the relevant pages says so and can be dismissed.
 
+The quick way: press **Grant access…** in the banner (or in *Settings → Protection*). Vutidy opens System Settings and shows a guide panel with the app icon to drag into the list; it notices when the permission is on. If the permission is stuck, **Reset permission** clears it first. The manual steps are below.
+
 1. Run `dist/Vutidy.app` (not `swift run`).
-2. Click **Open System Settings** in the banner (or open *System Settings → Privacy & Security → Full Disk Access*).
-3. Click **+**, choose `Vutidy.app` (the banner's **Reveal app in Finder** button shows you where it is, and you can drag it into the list), and switch it on.
+2. Open *System Settings → Privacy & Security → Full Disk Access* (**Grant access…** opens it for you).
+3. Click **+**, choose `Vutidy.app` (or drag the icon from the guide panel into the list; *Finder → right-click Vutidy → Show in Finder* if you need the file), and switch it on.
 4. Quit and reopen Vutidy. *Settings → Protection* shows **Granted** when it works; **Check again** re-reads it.
 
 If Vutidy's name or icon is missing from the list, you started it with `swift run`. See [Troubleshooting](../user-guide/15-troubleshooting.md#vutidy-is-missing-from-full-disk-access).
