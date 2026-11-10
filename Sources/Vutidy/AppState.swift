@@ -187,6 +187,8 @@ final class AppState: ObservableObject {
     /// Kết quả kiểm tra malware gần nhất — giữ ở đây để không mất khi chuyển trang.
     @Published var malwareReport: MalwareReport?
     @Published var malwareScanning = false
+    /// Phần Smart Care ngoài dọn dẹp (cập nhật app, app ít dùng, file lớn và cũ, mục mở khi đăng nhập) — chỉ để xem.
+    @Published var care: SmartCareSummary?
     @Published var malwareStatus = ""
     @Published var fdaDismissed = false
     @Published var lastDeepScan: Date? = UserDefaults.standard.object(forKey: "lastDeepScan") as? Date
@@ -431,8 +433,13 @@ final class AppState: ObservableObject {
         let rules = RuleLoader.loadAll()
         let roots = projectRoots.map { URL(fileURLWithPath: expandTilde($0)) }
         let mods: [CleanerModule] = [Cleaners.systemJunk(rules: rules), DevJunkModule(rules: rules, projectRoots: roots, staleProjectDays: staleProjectDays), TrashModule()]
+        // Chạy song song: dọn dẹp + persistence + tối ưu, kiểm tra malware, và phần Smart Care (ứng dụng, file lớn…).
+        async let careTask = SmartCare.gather()
+        async let malwareTask: Void = runMalwareCheck()
         let r = await SmartScan.run(modules: mods, progress: { [weak self] s in Task { @MainActor in self?.status["smart"] = s } })
         smart = r
+        care = await careTask
+        await malwareTask
         lastDeepScan = Date(); UserDefaults.standard.set(lastDeepScan, forKey: "lastDeepScan")
         // Chia kết quả về từng module để các màn chi tiết dùng lại.
         for id in ["system-junk", "dev-junk", "trash"] { results[id] = [] }

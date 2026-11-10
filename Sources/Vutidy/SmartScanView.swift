@@ -13,30 +13,9 @@ struct SmartScanView: View {
         VStack(alignment: .leading, spacing: 16) {
             hero(disk: disk, cleanable: cleanable).frame(minHeight: 280, maxHeight: .infinity)
             if cleanable > 0 { detailsPanel }
-            HStack(alignment: .top, spacing: 14) {
-                moduleCard(tr("Dọn dẹp"), symbol: "v.systemJunk", tint: Page.systemJunk.palette.glow, page: .systemJunk) {
-                    ForEach([(tr("Rác hệ thống"), "system-junk"), ("Dev Junk", "dev-junk"), (tr("Thùng rác"), "trash")], id: \.1) { name, id in
-                        row(name, id == "trash" && state.trashBlocked && (state.results[id] ?? []).isEmpty
-                                ? tr("Cần Full Disk Access")
-                                : ByteFormat.string((state.results[id] ?? []).filter { $0.safety == .safe }.reduce(0) { $0 + $1.allocatedSize }))
-                    }
-                    row(tr("Cần xem lại"), ByteFormat.string(state.smart?.reviewBytes ?? 0))
-                }
-                moduleCard(tr("Bảo vệ"), symbol: "v.protection", tint: Page.protection.palette.glow, page: .protection) {
-                    row(tr("Launch items"), "\(state.smart?.persistence.count ?? 0)")
-                    row(tr("Chưa ký / thiếu file"), "\(state.smart?.suspiciousCount ?? 0)")
-                    row(tr("Cảnh báo real-time"), "\(state.alerts.count)")
-                    row("Real-time", state.realtimeOn ? tr("Đang chạy") : tr("Đã tắt"))
-                }
-                moduleCard(tr("Tăng tốc"), symbol: "v.optimization", tint: Page.optimization.palette.glow, page: .optimization) {
-                    row(tr("Launch agent (user)"), "\(state.smart?.launchItems.filter { $0.scope == .userAgent }.count ?? 0)")
-                    row("RAM", state.snapshot.map { ByteFormat.string($0.memory.available) + tr(" khả dụng") } ?? "—")
-                    row("CPU", "\(Int((state.snapshot?.cpuLoad ?? 0) * 100))%")
-                    row("Swap", state.snapshot.map { ByteFormat.string($0.memory.swapUsed) } ?? "—")
-                }
-            }
+            SmartCareCard()
         }
-        .frame(maxHeight: .infinity, alignment: .top)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .smooth(showDetails).smooth(state.smartScanning).smooth(state.smart == nil).smooth(state.cleaning.isEmpty)
         .confirmDialog(isPresented: $confirm, title: trf("Dọn %@?", ByteFormat.string(cleanable)),
                        message: breakdownLine + "\n\n" + trf("Chỉ các mục an toàn. Bạn có thể khôi phục trong %@ ngày. Thùng rác sẽ được dọn vĩnh viễn và mục dùng lệnh CLI (docker, go, brew) không hoàn tác được.", "\(state.retentionDays)"),
@@ -62,7 +41,7 @@ struct SmartScanView: View {
     /// Một dòng tóm tắt cho hộp thoại xác nhận: "Cache 2,44 GB · Docker 7,18 GB · …" (6 nhóm lớn nhất).
     var breakdownLine: String {
         let g = safeGroups
-        let top = g.prefix(6).map { "\($0.name) \(ByteFormat.string($0.size))" }.joined(separator: " Â· ")
+        let top = g.prefix(6).map { "\($0.name) \(ByteFormat.string($0.size))" }.joined(separator: " · ")
         return g.count > 6 ? top + trf(" · +%@ nhóm khác", "\(g.count - 6)") : top
     }
 
@@ -99,13 +78,27 @@ struct SmartScanView: View {
             } }
         }
         .glassSurface(radius: Theme.Radius.card, strong: false)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: Hero
 
+    /// Hero co theo bề ngang: đủ chỗ thì có vòng đo + hình minh họa; hẹp thì bỏ hình, rồi bỏ cả vòng đo.
+    /// (Cửa sổ nhỏ trước đây bị tràn vì hàng ba nút Clean · Preview · Rescan cộng vòng đo và hình cần ~900 pt.)
     func hero(disk: DiskInfo?, cleanable: Int64) -> some View {
+        ViewThatFits(in: .horizontal) {
+            heroRow(disk: disk, cleanable: cleanable, ring: true, art: true)
+            heroRow(disk: disk, cleanable: cleanable, ring: true, art: false)
+            heroRow(disk: disk, cleanable: cleanable, ring: false, art: false)
+        }
+        .padding(.horizontal, 26).padding(.vertical, 20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .glassSurface(radius: Theme.Radius.hero, strong: true)
+    }
+
+    func heroRow(disk: DiskInfo?, cleanable: Int64, ring showRing: Bool, art showArt: Bool) -> some View {
         HStack(spacing: 30) {
-            ZStack {
+            if showRing { ZStack {
                 Ring(segments: ringSegments(disk), lineWidth: 14)
                 VStack(spacing: 1) {
                     Text(ByteFormat.string(disk?.availableImportant ?? 0)).font(.vt(size: 26, weight: .bold, design: .rounded)).monospacedDigit().foregroundStyle(.white)
@@ -113,7 +106,7 @@ struct SmartScanView: View {
                     Text(cleanable > 0 ? trf("→ %@ sau khi dọn", ByteFormat.string((disk?.availableImportant ?? 0) + cleanable)) : tr("trống"))
                         .font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary).lineLimit(1).minimumScaleFactor(0.7)
                 }.multilineTextAlignment(.center).frame(width: 172 - 14 * 2 - 24)
-            }.frame(width: 172, height: 172)
+            }.frame(width: 172, height: 172) }
 
             VStack(alignment: .leading, spacing: 10) {
                 Text(state.smart.map { trf("Quét lúc %@", $0.date.formatted(date: .abbreviated, time: .shortened)) } ?? tr("Chưa quét"))
@@ -143,10 +136,8 @@ struct SmartScanView: View {
                 }.padding(.top, 2)
             }
             Spacer(minLength: 0)
-            HeroArt(page: .smartScan, size: 132).frame(width: 150, height: 150).padding(.trailing, 8)
+            if showArt { HeroArt(page: .smartScan, size: 132).frame(width: 150, height: 150).padding(.trailing, 8) }
         }
-        .padding(.horizontal, 26).padding(.vertical, 20)
-        .glassSurface(radius: Theme.Radius.hero, strong: true)
     }
 
     func ringSegments(_ d: DiskInfo?) -> [Ring.Segment] {
@@ -156,24 +147,4 @@ struct SmartScanView: View {
                 .init(value: Double(d.availableImportant), color: Color.white.opacity(0.16))]
     }
 
-    func row(_ l: String, _ v: String) -> some View {
-        HStack { Text(l).foregroundStyle(Theme.Text.secondary); Spacer(); Text(v).foregroundStyle(Theme.Text.primary).monospacedDigit() }.font(Theme.Font.body)
-    }
-
-    func moduleCard<C: View>(_ title: String, symbol: String, tint: Color, page: Page, @ViewBuilder content: () -> C) -> some View {
-        Button { state.section = page } label: {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 10) {
-                    SolidIcon(symbol: symbol, tint: tint, size: 28)
-                    Text(title).font(Theme.Font.heading).foregroundStyle(Theme.Text.primary)
-                    Spacer()
-                    Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.Text.tertiary)
-                }
-                content()
-            }
-            .padding(16).frame(maxWidth: .infinity, minHeight: 184, maxHeight: 184, alignment: .topLeading)
-            .glassSurface(radius: Theme.Radius.card, strong: false)
-            .contentShape(Rectangle())
-        }.buttonStyle(PlainPointerStyle())
-    }
 }
