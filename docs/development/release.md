@@ -10,6 +10,7 @@ Vutidy is released by the **release** GitHub Actions workflow ([`.github/workflo
 - [Signing and notarization](#signing-and-notarization)
 - [Building a release by hand](#building-a-release-by-hand)
 - [The ci workflow](#the-ci-workflow)
+- [How the app updates itself](#how-the-app-updates-itself)
 - [Limits](#limits)
 
 ## How to release
@@ -94,6 +95,18 @@ To publish files built by hand, create the release with `gh release create v<ver
 - **package**: the same universal build and packaging as a release, so a broken packaging step shows up in a pull request and not on release day. The result is kept as an artifact for seven days.
 
 A newer push to the same branch cancels a run that is still going.
+
+## How the app updates itself
+
+The in-app updater ([user guide](../user-guide/16-updating-vutidy.md)) reads `https://api.github.com/repos/vunguyenvu35/vutidy/releases` and needs from each release:
+
+- a zip named `vutidy-<version>-macos.zip` (the workflow already makes it; the unversioned copy is ignored);
+- a `SHA256SUMS` asset that lists that zip. **A release without it cannot be installed by the app.**
+- the app inside must have the same bundle ID and version as the tag, and a valid signature (the same Team ID when the installed app has one).
+
+GitHub marks every version below `1.0.0` as a pre-release, so the updater lists all releases instead of using `/releases/latest`. A draft is never offered.
+
+To try the whole flow without publishing, point it at a local JSON file shaped like the GitHub response: `VUTIDY_UPDATE_FEED=file:///path/releases.json` (add `VUTIDY_UPDATE_AUTOINSTALL=1` to install straight away). The asset URLs may be `file://` too.
 
 ## Limits
 

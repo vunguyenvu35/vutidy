@@ -25,6 +25,7 @@ A guide to every screen of Vutidy, from your first scan to shortcuts, languages 
 | 13 | [Command line](13-cli.md) | `vutidy-cli` |
 | 14 | [Support Vutidy](14-support.md) | Where the Donate card is |
 | 15 | [Troubleshooting](15-troubleshooting.md) | Common problems, where your data lives |
+| 16 | [Updating Vutidy](16-updating-vutidy.md) | Check for a new version, update from the app, what is verified |
 
 ## Screen tour
 
@@ -48,6 +49,7 @@ Every page at a glance. Click a title to open its chapter.
 | Stop an app from starting at login | [Startup items](05-speed.md#startup-items) |
 | Jump to any feature from the keyboard | [Quick Open](11-shortcuts.md#quick-open) |
 | Change a shortcut | [Change a shortcut](11-shortcuts.md#change-a-shortcut) |
+| Update Vutidy to a new version | [Updating Vutidy](16-updating-vutidy.md) |
 | Switch the interface language | [Languages](12-languages.md) |
 | Run a scan from a script | [Command line](13-cli.md) |
 | Use Vutidy from a terminal over SSH | [Command line](13-cli.md) |

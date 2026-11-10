@@ -34,6 +34,8 @@ Get the newest release from the [Releases page](https://github.com/vunguyenvu35/
 
 The app is universal (Apple silicon and Intel) and needs macOS 13 or later. Until releases are signed with an Apple Developer ID, macOS asks you to confirm the first launch: see [Installing on macOS](docs/getting-started/install-macos.md). Releases are built by GitHub Actions; see [Releasing](docs/development/release.md).
 
+Once installed, Vutidy can check for a newer version and update itself (**Settings → General → Updates**, or **Vutidy → Check for Updates…**). It verifies the SHA-256 and the code signature before it replaces the app; see [Updating Vutidy](docs/user-guide/16-updating-vutidy.md).
+
 ## Run it
 
 You need Xcode or the Command Line Tools with Swift 5.9 or later.

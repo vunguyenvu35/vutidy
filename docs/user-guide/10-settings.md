@@ -36,6 +36,7 @@ Changes apply **immediately**; there is no Save button.
 
 | Setting | What it does |
 | --- | --- |
+| **Updates** | The version you run, **Check**, release notes and **Update and restart** when a new version exists, and **Check for updates automatically** (on by default). See [Updating Vutidy](16-updating-vutidy.md). |
 | **Language** | *Automatic* (follows macOS, English if unsupported), *English*, *Tiếng Việt*, *日本語*, *中文*. The whole interface switches at once. See [Languages](12-languages.md). |
 | **Reduce motion** | Turns animations and transitions off. |
 | **Confirm before cleaning** | On by default. Turn it off to run *Clean* without the confirmation dialog (preview and the safety layer still apply). |

@@ -27,7 +27,7 @@ This is maintained in spare time, so these are goals, not guarantees: an acknowl
 - **Your files from Vutidy's own mistakes.** A hard blocklist (`/System`, `/usr`, keychains, `~/Documents`, `~/Desktop`, `~/.ssh`, `~/.gnupg`, the Photos library originals and more, including `..` paths and symlinks into them) overrides every rule and every selection.
 - **Reversibility.** The default mode moves items to a Quarantine that restores to the exact original path (and refuses to overwrite). Every action, dry runs included, is written to a local audit log.
 - **No surprises.** Scanning never changes anything; only safe items are preselected; the commands that will run are shown first.
-- **Your privacy.** No telemetry, no account, no network use except what you trigger (the speed test, a Homebrew update check, opening the donation link in your browser). Nothing from your Mac is uploaded.
+- **Your privacy.** No telemetry, no account, no network use except what you trigger (the speed test, a Homebrew update check, a check for a new Vutidy version on GitHub that sends no information about your Mac, opening the donation link in your browser). Nothing from your Mac is uploaded.
 - **Least privilege.** There is no background root helper. Administrator tasks use the standard macOS password dialog each time, and Vutidy never stores or sees the password.
 
 ## What it does not protect
