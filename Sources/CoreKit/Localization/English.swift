@@ -328,6 +328,12 @@ enum English {
         "Đã tắt": "Disabled",
         "Đã xóa %@": "Deleted %@",
         "Đường dẫn gốc đã tồn tại: %@": "The original path already exists: %@",
+        "Xóa %@ vĩnh viễn?": "Delete %@ permanently?",
+        "Bỏ chọn": "Deselect",
+        "Ngày tạo": "Created",
+        "Tạo lúc %@": "Created %@",
+        "Mở thư mục chứa trong Finder": "Open containing folder",
+        "Gồm nhiều mục nhỏ hơn nên không hiện riêng lẻ. Mở thư mục chứa để xem và xử lý từng mục.": "These are many smaller items not shown individually. Open the containing folder to review them one by one.",
         "đã xóa vĩnh viễn": "deleted permanently",
         "Ổ ngoài": "External drive",
         "Ổ đĩa": "Disk",
@@ -514,6 +520,9 @@ enum English {
 
         "Đã giải phóng %@": "Freed %@",
         "%@ mục đã xử lý": "%@ items processed",
+        "Đang lập bản đồ dung lượng, chưa có gì bị thay đổi.": "Mapping your disk usage. Nothing is being changed.",
+        "Dung lượng": "Size",
+        "%@ file/giây": "%@ files/s",
         "Xem Quarantine": "View Quarantine",
 
         "App chiếm nhiều RAM thật (kể cả máy ảo và phần đã bị nén/swap). App đang bận không được chọn sẵn. Bạn xác nhận trước khi thoát.": "Apps using a lot of real RAM (including virtual machines and compressed/swapped memory). Busy apps aren't preselected. You confirm before quitting.",

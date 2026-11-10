@@ -91,6 +91,8 @@ final class AppState: ObservableObject {
 
     @Published var smart: SmartScanResult?
     @Published var smartScanning = false
+    /// Trang đang hiện thanh hành động ghim ở đáy (không phải trang dọn dẹp) → chồng thông báo tránh đè lên.
+    @Published var pinnedBarVisible = false
     @Published var snapshot: SystemSnapshot?
     @Published var cpuHistory: [Double] = []
     @Published var recommendations: [Recommendation] = []

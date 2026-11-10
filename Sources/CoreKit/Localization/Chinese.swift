@@ -328,6 +328,12 @@ enum Chinese {
         "Đã tắt": "已禁用",
         "Đã xóa %@": "已删除 %@",
         "Đường dẫn gốc đã tồn tại: %@": "原路径已存在：%@",
+        "Xóa %@ vĩnh viễn?": "永久删除 %@?",
+        "Bỏ chọn": "取消选择",
+        "Ngày tạo": "创建时间",
+        "Tạo lúc %@": "创建于 %@",
+        "Mở thư mục chứa trong Finder": "打开所在文件夹",
+        "Gồm nhiều mục nhỏ hơn nên không hiện riêng lẻ. Mở thư mục chứa để xem và xử lý từng mục.": "这些是多个较小的项目,不会单独显示。打开所在文件夹即可逐项查看和处理。",
         "đã xóa vĩnh viễn": "已永久删除",
         "Ổ ngoài": "外置磁盘",
         "Ổ đĩa": "磁盘",
@@ -514,6 +520,9 @@ enum Chinese {
 
         "Đã giải phóng %@": "已释放 %@",
         "%@ mục đã xử lý": "已处理 %@ 项",
+        "Đang lập bản đồ dung lượng, chưa có gì bị thay đổi.": "正在绘制磁盘占用图,不会更改任何内容。",
+        "Dung lượng": "大小",
+        "%@ file/giây": "%@ 个文件/秒",
         "Xem Quarantine": "查看隔离区",
 
         "App chiếm nhiều RAM thật (kể cả máy ảo và phần đã bị nén/swap). App đang bận không được chọn sẵn. Bạn xác nhận trước khi thoát.": "占用大量真实内存的应用（包括虚拟机以及已压缩/交换的内存）。繁忙的应用不会默认选中。退出前需要您确认。",

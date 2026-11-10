@@ -10,6 +10,8 @@ public final class DirNode: Identifiable, @unchecked Sendable {
     public var children: [DirNode]
     /// Nút gộp "…khác" (không drill-down được).
     public let isAggregate: Bool
+    /// Thời điểm tạo file/thư mục. Đọc lười (chỉ khi giao diện cần) để không làm chậm lúc quét.
+    public lazy var created: Date? = isAggregate ? nil : (try? url.resourceValues(forKeys: [.creationDateKey]))?.creationDate
 
     public init(url: URL, name: String? = nil, size: Int64, isDir: Bool,
                 children: [DirNode] = [], isAggregate: Bool = false) {

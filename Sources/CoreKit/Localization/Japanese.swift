@@ -327,6 +327,12 @@ enum Japanese {
         "Đã tắt": "無効にしました",
         "Đã xóa %@": "%@ を削除しました",
         "Đường dẫn gốc đã tồn tại: %@": "元のパスが既に存在します：%@",
+        "Xóa %@ vĩnh viễn?": "%@ を完全に削除しますか?",
+        "Bỏ chọn": "選択解除",
+        "Ngày tạo": "作成日",
+        "Tạo lúc %@": "作成日時 %@",
+        "Mở thư mục chứa trong Finder": "含まれるフォルダを開く",
+        "Gồm nhiều mục nhỏ hơn nên không hiện riêng lẻ. Mở thư mục chứa để xem và xử lý từng mục.": "小さな項目が多数あるため個別には表示されません。含まれるフォルダを開いて確認してください。",
         "đã xóa vĩnh viễn": "完全に削除しました",
         "Ổ ngoài": "外部ドライブ",
         "Ổ đĩa": "ディスク",
@@ -513,6 +519,9 @@ enum Japanese {
 
         "Đã giải phóng %@": "%@ を解放しました",
         "%@ mục đã xử lý": "%@ 件を処理しました",
+        "Đang lập bản đồ dung lượng, chưa có gì bị thay đổi.": "ディスク使用量をマッピング中です。何も変更されません。",
+        "Dung lượng": "サイズ",
+        "%@ file/giây": "%@ ファイル/秒",
         "Xem Quarantine": "隔離を表示",
 
         "App chiếm nhiều RAM thật (kể cả máy ảo và phần đã bị nén/swap). App đang bận không được chọn sẵn. Bạn xác nhận trước khi thoát.": "実メモリを多く使うアプリ（仮想マシンや圧縮／スワップ分を含む）。処理中のアプリは初期状態では選択されません。終了前に確認します。",

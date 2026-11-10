@@ -69,8 +69,11 @@ struct SpaceLensView: View {
     @ViewState private var live = ScanSnapshot()
     @ViewState private var scanTask: Task<Void, Never>?
     @ViewState private var selection: DirNode?
+    @ViewState private var checked: Set<String> = []
+    @ViewState private var anchor: String?
     @ViewState private var style = 0
     @ViewState private var confirm = false
+    @ViewState private var confirmDelete = false
     @ViewState private var picking = false
 
     var rootName: String {
@@ -78,21 +81,46 @@ struct SpaceLensView: View {
         return r.path == SpacePaths.dataRoot ? SpacePaths.volumeName : (r.path == NSHomeDirectory() ? "~" : r.lastPathComponent)
     }
 
+    /// Mục sẽ bị tác động: các mục được tick (chế độ Danh sách) hoặc, nếu chưa tick gì, mục đang chọn.
+    var targets: [DirNode] {
+        let ticked = (current?.children ?? []).filter { checked.contains($0.id) && !$0.isAggregate }
+        if !ticked.isEmpty { return ticked }
+        if let s = selection, !s.isAggregate { return [s] }
+        return []
+    }
+    var canAct: Bool { !scanning && !picking && current != nil && !targets.isEmpty }
+    var targetsLabel: String { targets.count == 1 ? targets[0].name : trf("%@ mục", "\(targets.count)") }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            if scanning { scanningView }
-            else if scanRoot == nil || picking || current == nil { picker }
-            else { results }
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    FDABannerIfNeeded()
+                    if scanning { scanningView }
+                    else if scanRoot == nil || picking || current == nil { picker }
+                    else { results }
+                }
+                .padding(.horizontal, 28).padding(.top, 32).padding(.bottom, 20).frame(maxWidth: .infinity, alignment: .topLeading)
+            }
+            // Thanh hành động ghim đáy: danh sách dài kéo xuống vẫn thấy nút Quarantine / Xóa.
+            if canAct { actionBar.transition(.move(edge: .bottom).combined(with: .opacity)) }
         }
-        .smooth(scanning).smooth(scanRoot == nil).smooth(picking).smooth(current?.id).smooth(style).smooth(selection?.id, 0.2)
+        .onChange(of: canAct) { state.pinnedBarVisible = $0 }
+        .onDisappear { state.pinnedBarVisible = false }
+        .smooth(canAct).smooth(scanning).smooth(scanRoot == nil).smooth(picking).smooth(current?.id).smooth(style).smooth(selection?.id, 0.2).smooth(checked.count)
         .task {
             // Kiểm thử/chụp màn hình: VUTIDY_SPACE=<thư mục> quét ngay thay vì hiện màn chọn phạm vi.
             if scanRoot == nil, let p = ProcessInfo.processInfo.environment["VUTIDY_SPACE"] { start(URL(fileURLWithPath: p)) }
         }
-        .confirmDialog(isPresented: $confirm, title: trf("Chuyển %@ vào Quarantine?", "\(selection?.name ?? "")"),
+        .confirmDialog(isPresented: $confirm, title: trf("Chuyển %@ vào Quarantine?", targetsLabel),
                        message: trf("Khôi phục được trong %@ ngày.", "\(state.retentionDays)"),
                        confirmTitle: tr("Chuyển vào Quarantine"), symbol: "v.quarantine") {
-            Task { await moveSelection() }
+            Task { await moveSelection(.quarantine) }
+        }
+        .confirmDialog(isPresented: $confirmDelete, title: trf("Xóa %@ vĩnh viễn?", targetsLabel),
+                       message: tr("Hành động này không thể hoàn tác."),
+                       confirmTitle: tr("Xóa vĩnh viễn"), destructive: true, symbol: "v.trash") {
+            Task { await moveSelection(.permanent) }
         }
     }
 
@@ -134,12 +162,8 @@ struct SpaceLensView: View {
     // MARK: Đang quét
 
     var scanningView: some View {
-        VStack(spacing: 16) {
-            LoadingCard(title: trf("Đang quét %@", scanTitle),
-                        subtitle: trf("Đã quét %@ file · %@", live.files.formatted(), ByteFormat.string(live.bytes))
-                            + (live.current.isEmpty ? "" : "\n" + SpacePaths.shown(live.current)))
-            Button { cancelScan() } label: { IconLabel(title: tr("Hủy"), symbol: "v.warn") }.buttonStyle(SecondaryButtonStyle())
-        }.padding(.top, 20)
+        SpaceScanProgress(title: scanTitle, symbol: scanRoot?.path == SpacePaths.dataRoot ? "v.drive" : "v.folder",
+                          snapshot: live) { cancelScan() }
     }
 
     // MARK: Kết quả
@@ -186,19 +210,70 @@ struct SpaceLensView: View {
     }
 
     func listView(_ root: DirNode) -> some View {
-        VStack(spacing: 0) {
-            ForEach(root.children.prefix(60)) { n in
-                HStack {
-                    Image(systemName: n.isDir ? "folder" : "doc").foregroundStyle(Theme.Info.base)
-                    Text(n.name).foregroundStyle(Theme.Text.primary).lineLimit(1)
-                    Spacer()
-                    Text(ByteFormat.string(n.size)).monospacedDigit().foregroundStyle(Theme.Text.secondary)
+        let rows = Array(root.children.prefix(60))
+        let selectable = rows.filter { !$0.isAggregate }
+        let allOn = !selectable.isEmpty && selectable.allSatisfy { checked.contains($0.id) }
+        return VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                Button { if allOn { checked = [] } else { checked = Set(selectable.map(\.id)) } } label: {
+                    Image(systemName: allOn ? "checkmark.square.fill" : (checked.isEmpty ? "square" : "minus.square.fill"))
+                        .font(.system(size: 15)).foregroundStyle(checked.isEmpty ? Theme.Text.tertiary : Theme.Signal.base)
+                }.buttonStyle(PlainPointerStyle()).help(allOn ? tr("Bỏ chọn") : tr("Chọn tất cả")).padding(.leading, 2)
+                Text(checked.isEmpty ? tr("Chọn tất cả") : trf("%@ mục", "\(checked.count)")).font(Theme.Font.label).foregroundStyle(Theme.Text.secondary)
+                Spacer()
+                Text(tr("Ngày tạo")).font(Theme.Font.label).foregroundStyle(Theme.Text.tertiary).frame(width: 150, alignment: .trailing)
+                Text(tr("Dung lượng")).font(Theme.Font.label).foregroundStyle(Theme.Text.tertiary).frame(width: 80, alignment: .trailing)
+            }.padding(.horizontal, 14).padding(.vertical, 8)
+            Divider().overlay(Theme.Border.subtle)
+            ForEach(rows) { n in
+                let on = checked.contains(n.id)
+                // Ô tick là một vùng riêng (anh em, không lồng trong vùng bấm của dòng) để cú bấm không bị cử chỉ chọn/mở của dòng nuốt mất.
+                HStack(spacing: 0) {
+                    Group {
+                        if n.isAggregate { Color.clear }
+                        else {
+                            Image(systemName: on ? "checkmark.square.fill" : "square").font(.system(size: 16))
+                                .foregroundStyle(on ? Theme.Signal.base : Theme.Text.tertiary)
+                        }
+                    }
+                    .frame(width: 44).frame(maxHeight: .infinity).contentShape(Rectangle())
+                    .onTapGesture { if !n.isAggregate { if on { checked.remove(n.id) } else { checked.insert(n.id) } } }
+                    .pointerCursor()
+
+                    HStack(spacing: 10) {
+                        Image(systemName: n.isDir ? "folder" : "doc").foregroundStyle(Theme.Info.base)
+                        Text(n.name).foregroundStyle(Theme.Text.primary).lineLimit(1)
+                        Spacer()
+                        if let d = n.created {
+                            Text(d.formatted(date: .abbreviated, time: .shortened)).font(Theme.Font.caption).foregroundStyle(Theme.Text.tertiary).lineLimit(1)
+                                .frame(width: 150, alignment: .trailing)
+                        }
+                        Text(ByteFormat.string(n.size)).monospacedDigit().foregroundStyle(Theme.Text.secondary).frame(width: 80, alignment: .trailing)
+                    }
+                    .padding(.trailing, 14).frame(maxHeight: .infinity)
+                    .contentShape(Rectangle()).onTapGesture(count: 2) { open(n) }.onTapGesture { rowClick(n, in: rows) }.pointerCursor()
                 }
-                .padding(.horizontal, 14).padding(.vertical, 9).font(Theme.Font.body)
-                .background(selection?.id == n.id ? Color.white.opacity(0.12) : .clear)
-                .contentShape(Rectangle()).onTapGesture(count: 2) { open(n) }.onTapGesture { selection = n }.pointerCursor()
+                .frame(height: 40).font(Theme.Font.body)
+                .background(on ? Theme.Signal.base.opacity(0.10) : (selection?.id == n.id ? Color.white.opacity(0.12) : .clear))
                 Divider().overlay(Theme.Border.subtle)
             }
+        }
+    }
+
+    /// Bấm dòng: thường = chọn riêng dòng đó; ⌘/⌃ + bấm = thêm/bớt vào nhóm đang chọn; ⇧ + bấm = chọn cả dải từ dòng neo.
+    func rowClick(_ n: DirNode, in rows: [DirNode]) {
+        let f = NSEvent.modifierFlags
+        guard !n.isAggregate else { selection = n; return }
+        if f.contains(.command) || f.contains(.control) {
+            if checked.isEmpty, let s = selection, !s.isAggregate { checked.insert(s.id) }   // mục đang chọn trở thành phần tử đầu của nhóm
+            if checked.contains(n.id) { checked.remove(n.id) } else { checked.insert(n.id) }
+            anchor = n.id; selection = n
+        } else if f.contains(.shift), let a = anchor ?? selection?.id,
+                  let i = rows.firstIndex(where: { $0.id == a }), let j = rows.firstIndex(where: { $0.id == n.id }) {
+            checked = Set(rows[min(i, j)...max(i, j)].filter { !$0.isAggregate }.map(\.id))
+            selection = n
+        } else {
+            checked = []; anchor = n.id; selection = n
         }
     }
 
@@ -207,20 +282,50 @@ struct SpaceLensView: View {
             if let s = selection {
                 let status = BubbleStatus.of(s)
                 Text(s.name).font(Theme.Font.heading).foregroundStyle(Theme.Text.primary)
-                Text(SpacePaths.shown(s.url.path)).font(Theme.Font.mono).foregroundStyle(Theme.Text.secondary)
+                Text(SpacePaths.shown(s.isAggregate ? s.url.deletingLastPathComponent().path : s.url.path)).font(Theme.Font.mono).foregroundStyle(Theme.Text.secondary)
                 Text(ByteFormat.string(s.size)).font(Theme.Font.display).foregroundStyle(Theme.Text.primary)
-                if status != .normal { Pill(text: status.label, color: status.color) }
+                if let d = s.created {
+                    Text(trf("Tạo lúc %@", d.formatted(date: .long, time: .shortened))).font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary)
+                }
+                if s.isAggregate {
+                    Text(tr("Gồm nhiều mục nhỏ hơn nên không hiện riêng lẻ. Mở thư mục chứa để xem và xử lý từng mục.")).font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary)
+                } else if status != .normal { Pill(text: status.label, color: status.color) }
                 if s.name == "Docker.raw" || s.url.path.contains("com.docker.docker") {
                     Text(tr("Docker.raw không nên xóa trực tiếp. Hãy dọn bằng Dev Junk (docker prune).")).font(Theme.Font.caption).foregroundStyle(Theme.Review.text)
                     Button(tr("Mở Dev Junk")) { state.section = .devJunk }.buttonStyle(SecondaryButtonStyle())
                 }
                 HStack {
                     if s.isDir && !s.isAggregate { Button(tr("Mở")) { open(s) }.buttonStyle(SecondaryButtonStyle()) }
-                    Button(tr("Hiện trong Finder")) { NSWorkspace.shared.activateFileViewerSelecting([SpacePaths.logicalURL(s.url)]) }.buttonStyle(SecondaryButtonStyle())
+                    if s.isAggregate {
+                        Button(tr("Mở thư mục chứa trong Finder")) { NSWorkspace.shared.open(SpacePaths.logicalURL(s.url.deletingLastPathComponent())) }.buttonStyle(SecondaryButtonStyle())
+                    } else {
+                        Button(tr("Hiện trong Finder")) { NSWorkspace.shared.activateFileViewerSelecting([SpacePaths.logicalURL(s.url)]) }.buttonStyle(SecondaryButtonStyle())
+                    }
                 }
-                if !s.isAggregate { Button { confirm = true } label: { IconLabel(title: tr("Chuyển vào Quarantine"), symbol: "v.quarantine") }.buttonStyle(PrimaryButtonStyle()) }
             } else { Text(tr("Chọn một ô để xem chi tiết. Bấm đúp để mở thư mục.")).font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary) }
         }.frame(maxWidth: .infinity, alignment: .leading).card(hero: true)
+    }
+
+    var actionBar: some View {
+        let total = targets.reduce(Int64(0)) { $0 + $1.size }
+        return HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(tr("Đã chọn")).font(Theme.Font.label).foregroundStyle(Theme.Text.secondary).textCase(.uppercase)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(ByteFormat.string(total)).font(.vt(size: 22, weight: .bold, design: .rounded)).monospacedDigit().foregroundStyle(Theme.Text.primary)
+                    Text(targetsLabel).font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary).lineLimit(1).truncationMode(.middle)
+                }
+            }
+            Spacer(minLength: 12)
+            // Bỏ chọn cả mục đang chọn lẫn các mục đã tick → thanh đáy ẩn đi. Phím Esc cũng làm được.
+            Button { selection = nil; checked = []; anchor = nil } label: { Label(tr("Bỏ chọn"), systemImage: "xmark") }
+                .buttonStyle(TextActionStyle(color: Theme.Text.secondary)).keyboardShortcut(.cancelAction)
+            Button { confirm = true } label: { IconLabel(title: tr("Chuyển vào Quarantine"), symbol: "v.quarantine") }.buttonStyle(PrimaryButtonStyle())
+            Button { confirmDelete = true } label: { IconLabel(title: tr("Xóa vĩnh viễn"), symbol: "v.trash") }.buttonStyle(DangerButtonStyle())
+        }
+        .padding(.horizontal, 32).padding(.vertical, 12)
+        .background(.regularMaterial)
+        .overlay(alignment: .top) { Rectangle().fill(Theme.Border.default).frame(height: 1) }
     }
 
     // MARK: Quét & điều hướng
@@ -234,7 +339,7 @@ struct SpaceLensView: View {
     func runScan(_ url: URL, push: Bool, title: String) {
         scanTask?.cancel()
         let p = ScanProgress()
-        scanTitle = title; live = ScanSnapshot(); scanning = true; selection = nil
+        scanTitle = title; live = ScanSnapshot(); scanning = true; selection = nil; checked = []; anchor = nil
         Task { while scanning { live = p.snapshot; try? await Task.sleep(nanoseconds: 250_000_000) } }
         scanTask = Task {
             let tree = await DirectoryTree.build(root: url, maxDepth: 3, progress: p)
@@ -258,7 +363,7 @@ struct SpaceLensView: View {
 
     func open(_ n: DirNode) {
         guard n.isDir, !n.isAggregate else { return }
-        selection = nil
+        selection = nil; checked = []; anchor = nil
         // Nút đã có con trong bộ nhớ đệm → mở ngay, không quét lại.
         if let cached = cache[n.url.path], !cached.children.isEmpty || cached.size == 0 {
             current = cached; path.append(n.url)
@@ -268,7 +373,7 @@ struct SpaceLensView: View {
     }
 
     func goTo(index i: Int) {
-        selection = nil
+        selection = nil; checked = []; anchor = nil
         if i < 0 { path = []; current = scanRoot.flatMap { cache[$0.path] } }
         else { path = Array(path.prefix(i + 1)); current = cache[path[i].path] }
     }
@@ -279,15 +384,19 @@ struct SpaceLensView: View {
         if p.runModal() == .OK, let u = p.url { start(u) }
     }
 
-    func moveSelection() async {
-        guard let s = selection else { return }
-        let item = ScanItem(url: SpacePaths.logicalURL(s.url), title: s.name, allocatedSize: s.size, category: "Space Lens", ruleID: "space-lens", safety: .review, selected: true)
-        let r = await state.executor.execute([item], mode: .quarantine)
+    func moveSelection(_ mode: CleanMode) async {
+        let nodes = targets
+        guard !nodes.isEmpty else { return }
+        let items = nodes.map { ScanItem(url: SpacePaths.logicalURL($0.url), title: $0.name, allocatedSize: $0.size, category: "Space Lens", ruleID: "space-lens", safety: .review, selected: true) }
+        let r = await state.executor.execute(items, mode: mode)
         state.lastReport = r
-        if r.doneCount > 0 { state.notify(trf("Đã chuyển %@ vào Quarantine", ByteFormat.string(s.size)), undo: true) }
-        else { state.notify(trf("Không thực hiện được: %@", r.outcomes.first.map { "\($0.status)" } ?? ""), .error) }
+        if r.doneCount > 0 {
+            var msg = mode == .permanent ? trf("Đã xóa %@", ByteFormat.string(r.reclaimedBytes)) : trf("Đã chuyển %@ vào Quarantine", ByteFormat.string(r.reclaimedBytes))
+            if !r.failures.isEmpty { msg += trf(" · %@ lỗi", "\(r.failures.count)") }
+            state.notify(msg, r.failures.isEmpty ? .success : .warning, undo: mode != .permanent)
+        } else { state.notify(trf("Không thực hiện được: %@", r.outcomes.first.map { "\($0.status)" } ?? ""), .error) }
         await state.refreshQuarantine()
-        selection = nil
+        selection = nil; checked = []; anchor = nil
         if let c = current { runScan(c.url, push: false, title: c.name) }
     }
 }

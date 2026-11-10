@@ -5,7 +5,7 @@ struct RootView: View {
     @EnvironmentObject var state: AppState
 
     /// Các trang tự quản lý cuộn để ghim thanh hành động ở đáy cửa sổ.
-    var ownsScroll: Bool { [.systemJunk, .devJunk, .trash, .privacy].contains(state.section) }
+    var ownsScroll: Bool { [.systemJunk, .devJunk, .trash, .privacy, .spaceLens].contains(state.section) }
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -234,6 +234,7 @@ struct ToastStack: View {
 
     /// Trang dọn dẹp có thanh hành động ghim ở đáy (nút Dọn nằm bên phải) → đẩy chồng thông báo lên trên thanh đó.
     private var bottomInset: CGFloat {
+        if state.pinnedBarVisible { return 88 }
         guard let id = state.section.cleanupID else { return 16 }
         let hasBar = !(state.results[id] ?? []).isEmpty && !state.scanning.contains(id)
         return hasBar ? 88 : 16
