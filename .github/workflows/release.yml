@@ -136,8 +136,9 @@ jobs:
           # the notes of this version: the section that starts with "# Vutidy <version>" in RELEASE_NOTES.md
           awk -v h="# Vutidy $VERSION" '$0==h{f=1;next} /^# Vutidy /{f=0} f' RELEASE_NOTES.md > notes.md
           if [ ! -s notes.md ]; then echo "See RELEASE_NOTES.md." > notes.md; fi
-          # versions below 1.0 are marked as pre-releases
-          PRE=""; case "$VERSION" in 0.*) PRE="--prerelease" ;; esac
+          # Not marked as a pre-release even below 1.0: GitHub's "latest" (the stable download links in the README
+          # and `releases/latest`) ignores pre-releases and would answer 404. The notes say "pre-release" in words.
+          PRE=""
           if gh release view "$TAG" >/dev/null 2>&1; then
             # a release made by hand for this tag: add (or replace) the files
             gh release upload "$TAG" dist/* --clobber

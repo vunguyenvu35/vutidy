@@ -28,7 +28,7 @@ Other ways to start it:
 | Push a tag `v<version>` | Builds and publishes. The tag **must** equal `v` + the content of `VERSION`, otherwise the run stops with an error (the files would carry the wrong version). |
 | *Actions → release → Run workflow* | Builds only and attaches the files to the run as an artifact. Nothing is published. Use it to try the packaging. |
 
-Versions below `1.0.0` are marked as **pre-releases** on GitHub.
+Versions below `1.0.0` are **not** marked as pre-releases on GitHub (the release notes say *pre-release* in words): GitHub's *latest release*, which the stable download links such as `releases/latest/download/vutidy-macos.dmg` follow, skips anything marked as a pre-release and would answer 404.
 
 ## What the workflow does
 
@@ -104,7 +104,7 @@ The in-app updater ([user guide](../user-guide/16-updating-vutidy.md)) reads `ht
 - a `SHA256SUMS` asset that lists that zip. **A release without it cannot be installed by the app.**
 - the app inside must have the same bundle ID and version as the tag, and a valid signature (the same Team ID when the installed app has one).
 
-GitHub marks every version below `1.0.0` as a pre-release, so the updater lists all releases instead of using `/releases/latest`. A draft is never offered.
+The updater lists the releases instead of using `/releases/latest`, so it also finds a release that someone marked as a pre-release. A draft is never offered.
 
 To try the whole flow without publishing, point it at a local JSON file shaped like the GitHub response: `VUTIDY_UPDATE_FEED=file:///path/releases.json` (add `VUTIDY_UPDATE_AUTOINSTALL=1` to install straight away). The asset URLs may be `file://` too.
 
