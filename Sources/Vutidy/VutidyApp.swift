@@ -35,6 +35,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return .terminateCancel
     }
 
+    /// Ẩn cửa sổ popover của MenuBarExtra (lớp riêng của SwiftUI, không thể trở thành cửa sổ chính).
+    static func closeMenuBarPopover() {
+        for w in NSApp.windows where w.isVisible && !w.canBecomeMain && String(describing: type(of: w)).contains("MenuBarExtra") {
+            w.orderOut(nil)
+        }
+    }
+
     static func hideToMenuBar() {
         NSApp.windows.filter { $0.canBecomeMain && $0.isVisible }.forEach { $0.close() }
         NSApp.setActivationPolicy(.accessory)

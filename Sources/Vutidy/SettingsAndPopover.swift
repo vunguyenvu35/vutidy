@@ -278,7 +278,14 @@ struct PopoverView: View {
 
     func rate(_ b: Double?) -> String { ByteFormat.string(Int64(b ?? 0)) + "/s" }
 
-    func activate() { state.showMainWindow() }
+    /// Mở cửa sổ chính và đóng popover thanh menu (MenuBarExtra kiểu .window không tự đóng khi bấm nút bên trong).
+    func activate() {
+        // Lúc bấm nút, popover chính là cửa sổ đang nhận phím; lấy nó TRƯỚC khi cửa sổ chính được đưa lên.
+        let popover = NSApp.keyWindow.flatMap { $0.canBecomeMain ? nil : $0 }
+        state.showMainWindow()
+        popover?.orderOut(nil)
+        AppDelegate.closeMenuBarPopover()
+    }
 }
 
 extension PopoverView {
