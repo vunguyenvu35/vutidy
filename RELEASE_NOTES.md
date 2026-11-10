@@ -1,5 +1,22 @@
 <p align="center"><img src="docs/assets/brand/logo-mark-256.png" alt="Vutidy" width="88"></p>
 
+# Vutidy 0.2.0
+
+Release date: 2026-11-10 · Platform: macOS 13 or later (only tried on Apple Silicon) · Status: **pre-release**. The [known issues of 0.1.0](#vutidy-010) still apply.
+
+## What's new in 0.2.0
+
+- **Update Vutidy from inside the app.** Settings → General checks the GitHub releases (every 24 hours if you allow it, or on demand), shows what is new, and installs the update after it verifies the SHA-256 and the code signature. The menu bar popover has a *Check for Updates…* item and a toast when a new version exists.
+- **Space Lens, new scan screen.** A radar animation with live counters for files, size and speed, and the folder being read.
+- **Space Lens, pinned action bar.** When you select items, a bar stays at the bottom with *Move to Quarantine* and the new *Delete permanently*, so you no longer scroll back up in a long list. *Deselect* (or Esc) hides it.
+- **Space Lens, multi-select** in the list view: checkboxes, select all, ⌘-click to add or remove items and ⇧-click for a range. The actions apply to every selected item.
+- **Space Lens, creation date** in the list and in the detail card.
+- **Space Lens, "…more items"** now opens the containing folder in Finder instead of a path that does not exist.
+- **Confirm dialogs** (used everywhere) are redesigned: frosted-glass card, glowing icon, two equal-width buttons, Esc to cancel and Return to confirm.
+- **Menu bar popover, Devices tile** lists every connected Bluetooth device with a type icon, its name and its battery when the device reports one. Devices without a battery level (for example Logitech mice) were dropped before.
+- **Smart Scan** can show the groups it will clean (*Review items*).
+- Fixed the empty bar that short selection lists (for example the language picker) showed.
+
 # Vutidy 0.1.0
 
 Release date: 2026-11-10 · Platform: macOS 13 or later (only tried on Apple Silicon) · Status: **pre-release**. Read [Known issues](#known-issues) first.
