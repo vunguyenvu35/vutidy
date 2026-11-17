@@ -685,6 +685,7 @@ enum Chinese {
         "Dùng pmset lowpowermode: macOS tự giảm xung nhịp và turbo. Không cần hạ SIP.": "使用 pmset lowpowermode：macOS 自动降低频率和睿频。无需降低 SIP。",
         "Máy này không hỗ trợ Chế độ Tiết kiệm điện.": "此 Mac 不支持低电量模式。",
         "Không thể đổi cài đặt Turbo Boost.": "无法更改 Turbo Boost 设置。",
+        "Vừa": "中",
         "Gợi ý": "建议",
         "Dọn rác mới và tối ưu Mac của bạn.": "清理新产生的垃圾并优化你的 Mac。",
         "Chạy Smart Scan": "运行智能扫描",

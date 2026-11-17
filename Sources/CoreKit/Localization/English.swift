@@ -685,6 +685,7 @@ enum English {
         "Dùng pmset lowpowermode: macOS tự giảm xung nhịp và turbo. Không cần hạ SIP.": "Uses pmset lowpowermode: macOS lowers clock speed and turbo by itself. No need to relax SIP.",
         "Máy này không hỗ trợ Chế độ Tiết kiệm điện.": "This Mac does not support Low Power Mode.",
         "Không thể đổi cài đặt Turbo Boost.": "Could not change the Turbo Boost setting.",
+        "Vừa": "Medium",
         "Gợi ý": "Recommendations",
         "Dọn rác mới và tối ưu Mac của bạn.": "Remove fresh junk and optimize your Mac.",
         "Chạy Smart Scan": "Run Smart Scan",

@@ -1,8 +1,8 @@
 import SwiftUI
 import AppKit
 
-/// Tùy chọn phông chữ và cỡ chữ của người dùng. Mặc định: phông hệ thống, cỡ 100%.
-/// macOS không có cỡ chữ toàn hệ thống như iOS nên "mặc định" ở đây là 100% của cỡ gốc trong thiết kế.
+/// Tùy chọn phông chữ và cỡ chữ của người dùng. Mặc định: phông hệ thống, cỡ Nhỏ (90% cỡ gốc trong thiết kế).
+/// macOS không có cỡ chữ toàn hệ thống như iOS nên các mức là tỉ lệ của cỡ gốc; lựa chọn đã lưu luôn được giữ.
 enum FontPrefs {
     /// Các mức cỡ chữ. Dùng mức rời rạc (không thanh kéo) vì đổi cỡ dựng lại toàn bộ giao diện.
     static let scales: [Double] = [0.9, 1.0, 1.12, 1.25]
@@ -19,9 +19,12 @@ enum FontPrefs {
         return !s.isEmpty && NSFontManager.shared.availableFontFamilies.contains(s) ? s : nil
     }()
 
+    /// Mức mặc định khi chưa chọn gì: Nhỏ.
+    static let defaultScale: CGFloat = 0.9
+
     static var scale: CGFloat = {
         let v = UserDefaults.standard.double(forKey: "fontScale")
-        return v > 0 ? CGFloat(v) : 1
+        return v > 0 ? CGFloat(v) : defaultScale
     }()
 }
 

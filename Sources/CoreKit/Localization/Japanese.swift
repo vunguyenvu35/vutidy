@@ -684,6 +684,7 @@ enum Japanese {
         "Dùng pmset lowpowermode: macOS tự giảm xung nhịp và turbo. Không cần hạ SIP.": "pmset lowpowermode を使用：macOS がクロックとターボを自動で下げます。SIP の緩和は不要です。",
         "Máy này không hỗ trợ Chế độ Tiết kiệm điện.": "この Mac は低電力モードに対応していません。",
         "Không thể đổi cài đặt Turbo Boost.": "Turbo Boost の設定を変更できませんでした。",
+        "Vừa": "標準",
         "Gợi ý": "おすすめ",
         "Dọn rác mới và tối ưu Mac của bạn.": "新しいジャンクを削除して Mac を最適化します。",
         "Chạy Smart Scan": "スマートスキャンを実行",

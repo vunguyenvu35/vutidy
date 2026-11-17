@@ -202,7 +202,7 @@ struct SettingsOverlay: View {
     func scaleTitle(_ s: Double) -> String {
         switch s {
         case ..<0.95: return tr("Nhỏ")
-        case ..<1.05: return tr("Mặc định")
+        case ..<1.05: return tr("Vừa")
         case ..<1.2: return tr("Lớn")
         default: return tr("Rất lớn")
         }

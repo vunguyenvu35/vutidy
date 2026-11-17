@@ -2,6 +2,7 @@
 
 # Unreleased
 
+- **Text size is Small by default.** Until you pick another size in *Settings → Appearance → Text size*; a size you already chose is kept. The old *Default* step is now called *Medium*.
 - **Recommendations carousel in the menu bar popover.** Swipe sideways through cards, each with one thing worth doing next and a button: free purgeable space, memory pressure, low disk, Dev Junk, app updates, apps you have not opened for 90 days, a Smart Scan when the last one is over a day old, and a review of which apps can reach sensitive data. Urgent cards get a highlighted button; **✕** hides a card for 7 days (it comes back if things get much worse). On a short screen the popover stops at the screen height and scrolls.
 
 # Vutidy 0.6.0
