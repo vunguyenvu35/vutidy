@@ -47,17 +47,31 @@ public enum ConnectedDevices {
     public static func bluetooth() async -> [BluetoothDevice] {
         let r = await ProcessRunner.run(["system_profiler", "SPBluetoothDataType", "-json"], timeout: 30)
         guard r.ok, let j = try? JSONSerialization.jsonObject(with: Data(r.stdout.utf8)) as? [String: Any],
-              let root = (j["SPBluetoothDataType"] as? [[String: Any]])?.first,
-              let connected = root["device_connected"] as? [[String: Any]] else { return [] }
+              let root = (j["SPBluetoothDataType"] as? [[String: Any]])?.first else { return [] }
+        let connected = (root["device_connected"] as? [[String: Any]]) ?? []
+        let nearby = nearbyAppleDevices(root["device_not_connected"] as? [[String: Any]] ?? [])
         // Liệt kê mọi thiết bị đang kết nối; pin chỉ có ở một số thiết bị (AirPods, bàn phím/chuột Apple…), thiếu thì để nil.
         func pct(_ v: Any?) -> Int? { (v as? String).flatMap { Int($0.replacingOccurrences(of: "%", with: "")) } }
-        return connected.flatMap { dict in
+        return (connected.flatMap { dict in
             dict.compactMap { (name, v) -> BluetoothDevice? in
                 guard let p = v as? [String: Any] else { return nil }
                 let sides = [pct(p["device_batteryLevelLeft"]), pct(p["device_batteryLevelRight"])].compactMap { $0 }
                 let battery = pct(p["device_batteryLevelMain"]) ?? pct(p["device_batteryLevel"]) ?? sides.min()
                 return BluetoothDevice(name: name, batteryPercent: battery, kind: (p["device_minorType"] as? String) ?? "")
             }
-        }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        } + nearby).sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
+    /// iPhone/iPad/Apple Watch đã ghép đôi và đang ở gần (có `device_rssi`) được tính là đang kết nối qua Continuity,
+    /// dù Bluetooth báo "chưa kết nối". macOS không cho đọc pin của chúng bằng API công khai nên không có phần trăm pin.
+    static func nearbyAppleDevices(_ notConnected: [[String: Any]]) -> [BluetoothDevice] {
+        notConnected.flatMap { dict in
+            dict.compactMap { (name, v) -> BluetoothDevice? in
+                guard let p = v as? [String: Any], p["device_rssi"] != nil else { return nil }
+                let n = name.lowercased()
+                let kind = n.contains("iphone") ? "iPhone" : (n.contains("ipad") ? "iPad" : (n.contains("watch") ? "Watch" : ""))
+                return kind.isEmpty ? nil : BluetoothDevice(name: name, batteryPercent: nil, kind: kind)
+            }
+        }
     }
 }

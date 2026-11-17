@@ -245,3 +245,17 @@ import Foundation
         #expect(Set(DiskBreakdown.Kind.allCases.map { DiskBreakdown.folders($0, home: "/h") }).count == DiskBreakdown.Kind.allCases.count)
     }
 }
+
+@Suite struct NearbyDevicesTests {
+    @Test func listsOnlyNearbyAppleMobileDevices() {
+        let list: [[String: Any]] = [
+            ["Vu’s iPhone": ["device_address": "AA", "device_rssi": "-49"]],
+            ["iPad (3)": ["device_address": "BB"]],                                   // không ở gần
+            ["WH-1000XM4": ["device_minorType": "Headset", "device_rssi": "-60"]],     // không phải thiết bị Apple di động
+            ["Apple Watch": ["device_rssi": "-70"]],
+        ]
+        let found = ConnectedDevices.nearbyAppleDevices(list)
+        #expect(Set(found.map(\.kind)) == ["iPhone", "Watch"])
+        #expect(found.allSatisfy { $0.batteryPercent == nil })
+    }
+}

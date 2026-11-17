@@ -69,8 +69,7 @@ struct PopoverView: View {
         VStack(alignment: .leading, spacing: 12) {
             header
             recommendations
-            realtimeRow
-            turboRow
+            togglesRow
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
                 diskTile(s); memoryTile(s); cpuTile(s); batteryTile(s); networkTile(s); devicesTile
             }
@@ -141,38 +140,41 @@ struct PopoverView: View {
         }
     }
 
-    var realtimeRow: some View {
-        HStack(spacing: 12) {
-            IconTile(symbol: "v.wifi", tint: state.realtimeOn ? Theme.Signal.base : Theme.Text.secondary, size: 30)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(state.realtimeOn ? tr("Real-time bật") : tr("Real-time tắt")).font(.vt(size: 13.5, weight: .semibold)).foregroundStyle(.white)
-                Text(state.lastScanned.map { URL(fileURLWithPath: $0).lastPathComponent } ?? tr("Theo dõi file mới")).font(Theme.Font.caption)
-                    .foregroundStyle(Theme.Text.secondary).lineLimit(1)
+    /// Hai công tắc nhanh cạnh nhau: Real-time và (chỉ Mac Intel) Turbo Boost. Mỗi ô: biểu tượng + công tắc ở trên, tên + trạng thái ở dưới.
+    @ViewBuilder var togglesRow: some View {
+        HStack(spacing: 10) {
+            toggleTile(symbol: "v.wifi", tint: Theme.Signal.base, title: "Real-time",
+                       status: state.realtimeOn ? (state.lastScanned.map { URL(fileURLWithPath: $0).lastPathComponent } ?? tr("Đang theo dõi")) : tr("Đang tắt"),
+                       isOn: Binding(get: { state.realtimeOn }, set: { state.setRealtime($0) }), busy: false,
+                       help: tr("Theo dõi file mới"))
+            if let t = turbo, t.isIntel, t.kextPath != nil || t.lowPowerMode != nil {
+                let limited = t.turboLimited
+                toggleTile(symbol: "bolt.fill", tint: Theme.orange, title: "Turbo Boost",
+                           status: limited ? tr("Đã hạ xung") : tr("Hiệu năng tối đa"),
+                           isOn: Binding(get: { !limited }, set: { setTurbo(enabled: $0, status: t) }), busy: turboBusy,
+                           help: t.kextPath != nil ? tr("Tắt Turbo Boost (kext)") : tr("Chế độ Tiết kiệm điện"))
             }
-            Spacer()
-            SwitchRow(isOn: Binding(get: { state.realtimeOn }, set: { state.setRealtime($0) }), label: "Real-time")
         }
-        .padding(.horizontal, 14).padding(.vertical, 10).glassSurface(radius: 14, strong: false)
     }
 
-    /// Turbo Boost (chỉ Mac Intel): bật = turbo chạy bình thường. Tắt dùng kext nếu đã cài, không thì Chế độ Tiết kiệm điện.
-    @ViewBuilder var turboRow: some View {
-        if let t = turbo, t.isIntel, t.kextPath != nil || t.lowPowerMode != nil {
-            let limited = t.turboLimited
-            HStack(spacing: 12) {
-                IconTile(symbol: "bolt.fill", tint: limited ? Theme.Text.secondary : Theme.orange, size: 30)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(limited ? tr("Turbo Boost tắt") : tr("Turbo Boost bật")).font(.vt(size: 13.5, weight: .semibold)).foregroundStyle(.white)
-                    Text(t.kextPath != nil ? tr("Tắt Turbo Boost (kext)") : tr("Chế độ Tiết kiệm điện")).font(Theme.Font.caption)
-                        .foregroundStyle(Theme.Text.secondary).lineLimit(1)
-                }
-                Spacer()
-                if turboBusy { VSpinner(size: 16, lineWidth: 2) }
-                SwitchRow(isOn: Binding(get: { !limited }, set: { setTurbo(enabled: $0, status: t) }), label: "Turbo Boost")
-                    .disabled(turboBusy)
+    func toggleTile(symbol: String, tint: Color, title: String, status: String, isOn: Binding<Bool>, busy: Bool, help: String) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                IconTile(symbol: symbol, tint: isOn.wrappedValue ? tint : Theme.Text.secondary, size: 28)
+                Spacer(minLength: 0)
+                if busy { VSpinner(size: 14, lineWidth: 2) }
+                SwitchRow(isOn: isOn, label: title).disabled(busy)
             }
-            .padding(.horizontal, 14).padding(.vertical, 10).glassSurface(radius: 14, strong: false)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title).font(.vt(size: 14, weight: .semibold)).foregroundStyle(.white)
+                HStack(spacing: 5) {
+                    Circle().fill(isOn.wrappedValue ? Theme.Signal.base : Theme.Text.tertiary).frame(width: 5, height: 5)
+                    Text(status).font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary).lineLimit(1)
+                }
+            }
         }
+        .padding(12).frame(maxWidth: .infinity, alignment: .leading).glassSurface(radius: 14, strong: false)
+        .help(help)
     }
 
     func setTurbo(enabled: Bool, status t: TurboBoost.Status) {
@@ -192,7 +194,7 @@ struct PopoverView: View {
     /// `go`: bấm vào ô để mở trang tương ứng (nút bên trong ô, như "Đo tốc độ", vẫn nhận click riêng).
     /// `action`: nút hành động riêng của ô ("Giải phóng"), nằm ở hàng cuối góc phải; ô cao thêm để nút không chen vào thanh đo.
     func tile<M: View>(_ title: String, symbol: String, tint: Color, value v: String, sub: String? = nil,
-                       action: (title: String, run: () -> Void)? = nil,
+                       action: (title: String, symbol: String, busy: Bool, run: () -> Void)? = nil,
                        go: (() -> Void)? = nil, @ViewBuilder middle: () -> M) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 7) {
@@ -209,10 +211,10 @@ struct PopoverView: View {
                     Spacer(minLength: 0)
                     Button(action: action.run) {
                         HStack(spacing: 5) {
-                            Image(systemName: "sparkles").font(.system(size: 10, weight: .bold))
+                            if action.busy { VSpinner(size: 11, lineWidth: 1.6) } else { Image(systemName: action.symbol).font(.system(size: 10, weight: .bold)) }
                             Text(action.title)
                         }
-                    }.buttonStyle(MiniButtonStyle())
+                    }.buttonStyle(MiniButtonStyle()).disabled(action.busy)
                 }.padding(.top, 6)
             }
         }
@@ -237,7 +239,7 @@ struct PopoverView: View {
         return tile(tr("Ổ đĩa"), symbol: "v.drive", tint: Page.systemJunk.palette.glow,
                     value: d.map { ByteFormat.string($0.availableImportant) + tr(" trống") } ?? "—",
                     sub: d.flatMap { $0.purgeable > 0 ? "Purgeable " + ByteFormat.string($0.purgeable) : nil},
-                    action: (tr("Giải phóng"), { PopoverDetailPanel.shared.show(.disk, state: state) }),
+                    action: (tr("Giải phóng"), "sparkles", false, { PopoverDetailPanel.shared.show(.disk, state: state) }),
                     go: { open(.spaceLens) }) {
             MeterBar(value: used, color: used > 0.9 ? Theme.danger : Color.white.opacity(0.9), height: 6)
         }
@@ -250,7 +252,7 @@ struct PopoverView: View {
         return tile(tr("Bộ nhớ"), symbol: "v.ram", tint: Page.optimization.palette.glow,
                     value: m.map { ByteFormat.string($0.available) + tr(" khả dụng") } ?? "—",
                     sub: m.map { trf("Áp lực: %@ · swap %@", $0.pressure.rawValue, ByteFormat.string($0.swapUsed)) },
-                    action: (tr("Giải phóng"), { PopoverDetailPanel.shared.show(.memory, state: state) }),
+                    action: (tr("Giải phóng"), "sparkles", false, { PopoverDetailPanel.shared.show(.memory, state: state) }),
                     go: { open(.optimization) }) {
             MeterBar(value: used, color: c, height: 6)
         }
@@ -276,17 +278,12 @@ struct PopoverView: View {
 
     func networkTile(_ s: SystemSnapshot?) -> some View {
         tile(tr("Mạng"), symbol: "v.wifi", tint: Page.cloud.palette.glow, value: "↓ " + rate(s?.network.downBytesPerSec),
-             sub: speed.map { String(format: "%.0f ↓ / %.0f ↑ Mbps", $0.downMbps, $0.upMbps) } ?? ("↑ " + rate(s?.network.upBytesPerSec)),
+             sub: speed.map { String(format: "%.0f ↓ / %.0f ↑ Mbps", $0.downMbps, $0.upMbps) },
+             action: (testing ? tr("Đang đo…") : tr("Đo tốc độ"), "speedometer", testing, {
+                 Task { testing = true; if let r = await SpeedTest.run() { speed = r; SpeedTest.append(r) }; testing = false }
+             }),
              go: { openSystemSettings("x-apple.systempreferences:com.apple.Network-Settings.extension") }) {
-            Button {
-                Task { testing = true; if let r = await SpeedTest.run() { speed = r; SpeedTest.append(r) }; testing = false }
-            } label: {
-                HStack(spacing: 5) {
-                    if testing { VSpinner(size: 11, lineWidth: 1.6) } else { Glyph(symbol: "v.optimization", size: 12, stroke: Theme.Text.primary, fill: Theme.Text.primary) }
-                    Text(testing ? tr("Đang đo…") : tr("Đo tốc độ"))
-                }
-            }
-            .buttonStyle(MiniButtonStyle()).disabled(testing)
+            Text("↑ " + rate(s?.network.upBytesPerSec)).font(.vt(size: 13, weight: .medium)).monospacedDigit().foregroundStyle(Theme.Text.primary)
         }
     }
 
@@ -317,7 +314,7 @@ struct PopoverView: View {
             Spacer(minLength: 0)
         }
         .padding(12)
-        .frame(maxWidth: .infinity, minHeight: 128, maxHeight: 128, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: 128, maxHeight: .infinity, alignment: .topLeading)   // giãn theo ô Mạng cùng hàng
         .glassSurface(radius: 14, strong: false)
         .clickable { openSystemSettings("x-apple.systempreferences:com.apple.BluetoothSettings") }
     }
@@ -346,7 +343,9 @@ struct PopoverView: View {
         case "headphones", "headset": return "headphones"
         case "speaker": return "hifispeaker.fill"
         case "gamepad": return "gamecontroller.fill"
-        case "phone": return "iphone"
+        case "phone", "iphone": return "iphone"
+        case "ipad": return "ipad"
+        case "watch": return "applewatch"
         default: return "dot.radiowaves.left.and.right"
         }
     }
