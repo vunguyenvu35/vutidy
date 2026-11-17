@@ -9,7 +9,10 @@ struct SmartScanView: View {
 
     var body: some View {
         let cleanable = state.smart?.cleanableBytes ?? 0
-        SmartScanDashboard(onClean: { confirm = true }, details: cleanable > 0 && state.cleaning.isEmpty && !state.smartScanning ? AnyView(detailsPanel) : nil)
+        VStack(alignment: .leading, spacing: 24) {
+            SmartScanDashboard(onClean: { confirm = true }, details: cleanable > 0 && state.cleaning.isEmpty && !state.smartScanning ? AnyView(detailsPanel) : nil)
+            AgentsPanel()
+        }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .smooth(showDetails).smooth(state.smartScanning).smooth(state.smart == nil).smooth(state.cleaning.isEmpty)
             .confirmDialog(isPresented: $confirm, title: trf("Dọn %@?", ByteFormat.string(cleanable)),

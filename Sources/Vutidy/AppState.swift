@@ -200,6 +200,17 @@ final class AppState: ObservableObject {
     @Published var autoCleanAfterScan: Bool = UserDefaults.standard.bool(forKey: "autoCleanAfterScan") {
         didSet { UserDefaults.standard.set(autoCleanAfterScan, forKey: "autoCleanAfterScan") }
     }
+    /// Tư vấn AI sau Smart Scan. Mặc định tắt: khi bật, số liệu tổng hợp (không đường dẫn) được gửi tới Claude API khi bạn bấm hỏi.
+    @Published var aiAdvisorEnabled: Bool = UserDefaults.standard.bool(forKey: "aiAdvisorEnabled") {
+        didSet { UserDefaults.standard.set(aiAdvisorEnabled, forKey: "aiAdvisorEnabled"); if !aiAdvisorEnabled { advice = nil; adviceError = nil } }
+    }
+    @Published var aiModel: String = UserDefaults.standard.string(forKey: "aiModel") ?? ScanAdvisor.defaultModel {
+        didSet { UserDefaults.standard.set(aiModel, forKey: "aiModel") }
+    }
+    @Published var aiHasKey: Bool = AdvisorKeychain.hasKey
+    @Published var advice: String?
+    @Published var adviceError: String?
+    @Published var adviceLoading = false
     /// Khi dọn tự động: gồm cả mục An toàn KHÔNG hoàn tác được (lệnh docker/go/brew prune) và Thùng rác (xóa vĩnh viễn). Mặc định tắt.
     @Published var autoCleanIrreversible: Bool = UserDefaults.standard.bool(forKey: "autoCleanIrreversible") {
         didSet { UserDefaults.standard.set(autoCleanIrreversible, forKey: "autoCleanIrreversible") }
@@ -490,6 +501,7 @@ final class AppState: ObservableObject {
         async let careTask = SmartCare.gather()
         async let malwareTask: Void = runMalwareCheck()
         let r = await SmartScan.run(modules: mods, progress: { [weak self] s in Task { @MainActor in self?.status["smart"] = s } })
+        advice = nil; adviceError = nil
         smart = r
         care = await careTask
         await malwareTask

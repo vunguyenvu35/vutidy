@@ -213,6 +213,7 @@ struct CleanupView: View {
         .background(Color.black.opacity(0.10))
         .contentShape(Rectangle())
         .onTapGesture { state.toggle(id, itemID: i.id) }
+        .pointerCursor()
         .contextMenu { if !i.isCLI { Button(tr("Hiện trong Finder")) { NSWorkspace.shared.activateFileViewerSelecting([i.url]) } } }
     }
 

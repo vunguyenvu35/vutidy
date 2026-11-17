@@ -37,7 +37,9 @@ struct RootView: View {
         .background(WindowConfigurator(onTitleBarCenter: { state.titleBarCenter = $0 }, onFullScreen: { state.isFullScreen = $0 }))
         .overlay(alignment: .topLeading) {
             // Dải tiêu đề phía trên vùng nội dung: kéo cửa sổ, double-click để phóng to/thu nhỏ.
+            // NSView thật luôn thắng hit-test so với nút SwiftUI, nên tắt khi có lớp phủ (Settings phóng to đặt nút ✕ ngay dưới dải này).
             TitleBarArea().frame(height: 28).padding(.leading, Theme.Layout.sidebarWidth + 16)
+                .allowsHitTesting(!state.settingsOpen && !state.paletteOpen && state.confirmRequest == nil)
         }
         .overlay(alignment: .bottomTrailing) { ToastStack() }
         .overlay { if state.settingsOpen { SettingsOverlay() } }

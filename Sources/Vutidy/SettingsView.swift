@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import CoreKit
+import Modules
 
 enum SettingsPage: String, CaseIterable, Identifiable {
     case general, cleaning, protection, shortcuts, storage, support
@@ -81,15 +82,16 @@ struct SettingsOverlay: View {
 
     var body: some View {
         GeometryReader { geo in
-            let w = maximized ? geo.size.width - 24 : min(960, geo.size.width - 80)
+            let flush = maximized && !state.isFullScreen   // phủ kín cửa sổ, không chừa lề
+            let w = flush ? geo.size.width : (maximized ? geo.size.width - 24 : min(960, geo.size.width - 80))
             // Phóng to: thẻ chạm mép trên cửa sổ, nên hàng tiêu đề nằm ngang hàng với 3 nút đèn giao thông (cửa sổ chính ẩn thanh tiêu đề).
             let atLights = maximized && !state.isFullScreen
-            let h = maximized ? geo.size.height - (atLights ? 12 : 24) : min(680, geo.size.height - 110)
+            let h = flush ? geo.size.height : (maximized ? geo.size.height - 24 : min(680, geo.size.height - 110))
             ZStack(alignment: atLights ? .top : .center) {
                 Color.black.opacity(0.5).ignoresSafeArea().onTapGesture { state.settingsOpen = false }
                 VStack(spacing: 0) {
                     titleBar(leadingInset: atLights ? 84 - (geo.size.width - w) / 2 - 16 : 0,
-                             height: atLights ? state.titleBarCenter * 2 : 44)
+                             height: atLights ? state.titleBarCenter * 2 : 44, controls: !atLights)
                     Divider().overlay(Theme.Border.default)
                     HStack(spacing: 0) {
                         menu.frame(width: 236)
@@ -99,12 +101,14 @@ struct SettingsOverlay: View {
                 }
                 .frame(width: w, height: h)
                 .background(ZStack { PageBackground(page: state.section); Color.black.opacity(0.46) }.overlay(.ultraThinMaterial.opacity(0.4)))
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Theme.Border.default))
+                .clipShape(RoundedRectangle(cornerRadius: flush ? 0 : 14, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: flush ? 0 : 14, style: .continuous).strokeBorder(flush ? Color.clear : Theme.Border.default))
                 .shadow(color: state.section.palette.glow.opacity(0.30), radius: 50, y: 18).shadow(color: .black.opacity(0.55), radius: 36, y: 14)
             }.frame(width: geo.size.width, height: geo.size.height)
         }
         .transition(.opacity)
+        .background(TitlebarControls(active: maximized && !state.isFullScreen, maximized: maximized,
+                                     toggle: { maximized.toggle() }, close: { state.settingsOpen = false }))
         .confirmDialog(isPresented: $confirmEmpty, title: tr("Dọn sạch Quarantine?"),
                        message: tr("Mọi mục trong Quarantine sẽ bị xóa vĩnh viễn và không thể khôi phục."),
                        confirmTitle: tr("Xóa vĩnh viễn"), destructive: true, symbol: "v.trash") {
@@ -118,15 +122,16 @@ struct SettingsOverlay: View {
     }
 
     /// `leadingInset`: chừa chỗ cho 3 nút đèn giao thông của cửa sổ chính khi lớp phủ nằm sát mép trái.
-    func titleBar(leadingInset: CGFloat, height: CGFloat) -> some View {
+    func titleBar(leadingInset: CGFloat, height: CGFloat, controls: Bool) -> some View {
         HStack(spacing: 10) {
             Image(systemName: "gearshape").foregroundStyle(Theme.Text.secondary)
             Text(tr("Cài đặt")).font(.vt(size: 13.5, weight: .semibold)).foregroundStyle(Theme.Text.primary)
             Spacer()
-            Button { maximized.toggle() } label: { Image(systemName: maximized ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right") }
+            if controls { Button { maximized.toggle() } label: { Image(systemName: maximized ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right") }
                 .buttonStyle(PlainPointerStyle()).foregroundStyle(Theme.Text.secondary).help(maximized ? tr("Thu nhỏ") : tr("Phóng to"))
             Button { state.settingsOpen = false } label: { Image(systemName: "xmark") }
                 .buttonStyle(PlainPointerStyle()).foregroundStyle(Theme.Text.secondary).help(tr("Đóng") + " (Esc)")
+            }
         }.padding(.horizontal, 16).padding(.leading, leadingInset).frame(height: height)
     }
 
@@ -256,6 +261,19 @@ struct SettingsOverlay: View {
                            desc: tr("Dọn luôn Docker, Go, Homebrew (lệnh của công cụ) và Thùng rác khi dọn tự động. Những mục này xóa vĩnh viễn, không khôi phục được. Mục cần xem lại vẫn không bao giờ tự dọn."),
                            showDivider: false) {
                     SwitchRow(isOn: $state.autoCleanIrreversible, label: tr("Gồm cả mục không hoàn tác được")).disabled(!state.autoCleanAfterScan)
+                }
+            }
+            SettingsGroup(title: tr("Tư vấn AI")) {
+                SettingRow(title: tr("Bật tư vấn AI"),
+                           desc: tr("Tắt mặc định. Khi bật và bạn bấm Hỏi AI, số liệu tổng hợp của lần quét (nhóm rác, dung lượng, số tiến trình AI agent) được gửi tới Claude API. Không gửi đường dẫn, tên file, tên người dùng hay dòng lệnh. AI chỉ đưa lời khuyên, không tự xóa gì."),
+                           showDivider: state.aiAdvisorEnabled) {
+                    SwitchRow(isOn: $state.aiAdvisorEnabled, label: tr("Bật tư vấn AI"))
+                }
+                if state.aiAdvisorEnabled {
+                    SettingRow(title: tr("Anthropic API key"), desc: tr("Lưu trong Keychain của bạn."), showDivider: true) { AdvisorKeyField() }
+                    SettingRow(title: tr("Model"), desc: tr("Mã model Claude dùng cho tư vấn."), showDivider: false) {
+                        TextField(ScanAdvisor.defaultModel, text: $state.aiModel).textFieldStyle(.roundedBorder).frame(width: 200)
+                    }
                 }
             }
             SettingsGroup(title: "Quarantine") {
