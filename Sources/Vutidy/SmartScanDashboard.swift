@@ -155,7 +155,7 @@ struct SmartScanDashboard: View {
         Button(action: action) {
             HStack(spacing: 10) {
                 if let icon { Image(systemName: icon).font(.system(size: 14, weight: .semibold)) }
-                Text(title).font(.vt(size: 14, weight: .semibold))
+                Text(title).font(.vt(size: 14, weight: .semibold)).lineLimit(1).fixedSize()
                 if let shortcut {
                     Text(shortcut).font(.vt(size: 11, weight: .medium)).padding(.horizontal, 6).padding(.vertical, 2)
                         .background(RoundedRectangle(cornerRadius: 5).fill(Color.white.opacity(0.18)))
@@ -170,7 +170,7 @@ struct SmartScanDashboard: View {
 
     func secondaryButton(_ title: String, help: String? = nil, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title).font(.vt(size: 13, weight: .medium)).foregroundStyle(P.text)
+            Text(title).font(.vt(size: 13, weight: .medium)).lineLimit(1).fixedSize().foregroundStyle(P.text)
                 .padding(.horizontal, 14).frame(height: 40)
                 .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).strokeBorder(Color.white.opacity(0.10)))
                 .contentShape(RoundedRectangle(cornerRadius: 9))
@@ -181,7 +181,7 @@ struct SmartScanDashboard: View {
         Button(action: action) {
             HStack(spacing: 6) {
                 if let icon { Image(systemName: icon).font(.system(size: 12, weight: .semibold)) }
-                Text(title).font(.vt(size: 13, weight: .medium))
+                Text(title).font(.vt(size: 13, weight: .medium)).lineLimit(1).fixedSize()
             }
             .foregroundStyle(P.accentText).padding(.horizontal, 6).frame(height: 40)
         }
