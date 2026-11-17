@@ -3,6 +3,35 @@ import AppKit
 import CoreKit
 import Modules
 
+/// Giữ cạnh TRÊN của cửa sổ MenuBarExtra cố định. Khi nội dung đổi chiều cao (ẩn/hiện thẻ gợi ý), AppKit giữ cạnh dưới
+/// và dời cạnh trên, nên popover tụt xuống để hở một khoảng trống dưới thanh menu. Ghi nhớ cạnh trên lúc cửa sổ hiện ra
+/// rồi đặt lại vị trí mỗi khi kích thước đổi.
+struct PopoverTopPin: NSViewRepresentable {
+    func makeNSView(context: Context) -> PinView { PinView() }
+    func updateNSView(_ nsView: PinView, context: Context) {}
+
+    final class PinView: NSView {
+        private var top: CGFloat?
+        private var observers: [NSObjectProtocol] = []
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            observers.forEach(NotificationCenter.default.removeObserver); observers = []
+            guard let w = window else { return }
+            top = w.frame.maxY
+            let nc = NotificationCenter.default
+            observers.append(nc.addObserver(forName: NSWindow.didBecomeKeyNotification, object: w, queue: .main) { [weak self, weak w] _ in
+                self?.top = w?.frame.maxY
+            })
+            observers.append(nc.addObserver(forName: NSWindow.didResizeNotification, object: w, queue: .main) { [weak self, weak w] _ in
+                guard let self, let w, let top = self.top, abs(w.frame.maxY - top) > 0.5 else { return }
+                w.setFrameOrigin(NSPoint(x: w.frame.minX, y: top - w.frame.height))
+            })
+        }
+        deinit { observers.forEach(NotificationCenter.default.removeObserver) }
+    }
+}
+
 /// Popover trên menu bar — cùng ngôn ngữ thiết kế với app: nền gradient, thẻ kính, icon riêng.
 struct PopoverView: View {
     @EnvironmentObject var state: AppState
@@ -15,8 +44,7 @@ struct PopoverView: View {
 
     var body: some View {
         let s = state.snapshot
-        // Nền gắn vào chính nội dung (không dùng ZStack căn giữa): khi một thẻ gợi ý bị ẩn, cửa sổ co theo nội dung
-        // và nội dung luôn bám mép trên, không còn khoảng trống phía trên header.
+        // Nền gắn vào chính nội dung; PopoverTopPin giữ cạnh trên của cửa sổ khi nó co/giãn theo nội dung.
         VStack(alignment: .leading, spacing: 12) {
             header
             recommendations
@@ -32,6 +60,7 @@ struct PopoverView: View {
         // thì dải đó lộ lớp vật liệu mờ (màu của cửa sổ phía sau) thành một băng sai màu trên đầu popover.
         .background(ZStack { PageBackground(page: .smartScan); Color.black.opacity(0.18) }.ignoresSafeArea())
         .fixedSize(horizontal: false, vertical: true)
+        .background(PopoverTopPin())
         .task { devices = await ConnectedDevices.bluetooth(); devicesLoaded = true }
         .onAppear { state.openMainWindow = { openWindow(id: "main") } }
     }
