@@ -70,6 +70,7 @@ struct PopoverView: View {
             header
             recommendations
             togglesRow
+            protectionCard
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
                 diskTile(s); memoryTile(s); cpuTile(s); batteryTile(s); networkTile(s); devicesTile
             }
@@ -138,6 +139,62 @@ struct PopoverView: View {
         case .openOptimization, .openBattery: return Page.optimization.palette.glow
         case .runDeepScan: return Page.protection.palette.glow
         }
+    }
+
+    /// "vừa xong", "15 giây trước", "3 phút trước"… tính chính xác theo giây.
+    static func agoText(from date: Date, to now: Date) -> String {
+        let s = max(0, Int(now.timeIntervalSince(date)))
+        switch s {
+        case 0..<3: return tr("vừa xong")
+        case 3..<60: return trf("%@ giây trước", "\(s)")
+        case 60..<3600: return trf("%@ phút trước", "\(s / 60)")
+        case 3600..<86_400: return trf("%@ giờ trước", "\(s / 3600)")
+        default: return trf("%@ ngày trước", "\(s / 86_400)")
+        }
+    }
+
+    /// Trạng thái bảo vệ: giám sát file mới theo thời gian thực (FSEvents), file vừa quét, lần kiểm tra malware gần nhất và nút kiểm tra ngay.
+    var protectionCard: some View {
+        let on = state.realtimeOn
+        let review = state.alerts.count + (state.malwareReport?.highCount ?? 0)
+        let (symbol, color, badge): (String, Color, String) = !on ? ("shield.slash.fill", Theme.Text.secondary, tr("Đang tắt"))
+            : (review > 0 ? ("exclamationmark.shield.fill", Theme.Review.base, trf("%@ mục cần xem", "\(review)"))
+                          : ("checkmark.shield.fill", Theme.Signal.base, tr("Đã bảo vệ")))
+        let checking = state.malwareScanning
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                Image(systemName: symbol).font(.system(size: 24, weight: .semibold)).foregroundStyle(color)
+                Text(tr("Bảo vệ")).font(.vt(size: 15, weight: .bold, design: .rounded)).foregroundStyle(.white)
+                Spacer()
+                Text(badge).font(.vt(size: 12, weight: .semibold)).foregroundStyle(color)
+            }
+            VStack(alignment: .leading, spacing: 3) {
+                Text(on ? tr("Giám sát malware thời gian thực đang bật") : tr("Giám sát malware thời gian thực đang tắt"))
+                    .font(.vt(size: 13.5, weight: .semibold)).foregroundStyle(.white)
+                Text(on ? (state.lastScanned.map { trf("File vừa quét: %@", URL(fileURLWithPath: $0).lastPathComponent) } ?? tr("Đang chờ file mới"))
+                        : tr("Bật Real-time để theo dõi file mới"))
+                    .font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary).lineLimit(1)
+            }
+            HStack {
+                // Đếm từng giây: TimelineView vẽ lại mỗi giây nên 15s → 16s → 17s, không nhảy cóc theo lần vẽ lại của popover.
+                Group {
+                    if let date = state.malwareReport?.date {
+                        TimelineView(.periodic(from: .now, by: 1)) { ctx in
+                            Text(trf("Kiểm tra lần cuối %@", Self.agoText(from: date, to: ctx.date))).monospacedDigit()
+                        }
+                    } else { Text(tr("Chưa kiểm tra")) }
+                }.font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary).lineLimit(1)
+                Spacer(minLength: 8)
+                Button { Task { await state.runMalwareCheck() } } label: {
+                    HStack(spacing: 5) {
+                        if checking { VSpinner(size: 11, lineWidth: 1.6) }
+                        Text(checking ? tr("Đang kiểm tra…") : tr("Kiểm tra ngay"))
+                    }
+                }.buttonStyle(MiniButtonStyle()).disabled(checking)
+            }
+        }
+        .padding(14).frame(maxWidth: .infinity, alignment: .leading).glassSurface(radius: 14, strong: false)
+        .clickable { state.section = review > 0 ? .malware : .protection; activate() }
     }
 
     /// Hai công tắc nhanh cạnh nhau: Real-time và (chỉ Mac Intel) Turbo Boost. Mỗi ô: biểu tượng + công tắc ở trên, tên + trạng thái ở dưới.

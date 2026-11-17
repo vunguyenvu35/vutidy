@@ -140,7 +140,8 @@ final class AppState: ObservableObject {
         didSet { UserDefaults.standard.set(autoCheckUpdates, forKey: "autoCheckUpdates") }
     }
     @Published var lastUpdateCheck: Date? = UserDefaults.standard.object(forKey: "lastUpdateCheck") as? Date
-    @Published var realtimeAtLaunch: Bool = UserDefaults.standard.bool(forKey: "realtimeAtLaunch") {
+    /// Mặc định BẬT: giám sát file mới chạy ngay khi mở app, trừ khi bạn đã tắt trong Cài đặt (lựa chọn đó được giữ).
+    @Published var realtimeAtLaunch: Bool = (UserDefaults.standard.object(forKey: "realtimeAtLaunch") as? Bool) ?? true {
         didSet { UserDefaults.standard.set(realtimeAtLaunch, forKey: "realtimeAtLaunch") }
     }
     /// Khởi động cùng macOS (đăng nhập). Trạng thái lấy trực tiếp từ hệ thống, không lưu riêng.
@@ -231,6 +232,12 @@ final class AppState: ObservableObject {
     }
     /// Nhóm AI đang/đã xin xem sâu và JSON chi tiết đã gửi ở vòng 2.
     @Published var adviceStatus: String?
+    /// Phân tích phát hiện malware bằng AI (cùng nguồn/model với AI Advisor): kết luận theo `SecurityFinding.key`, và JSON đã gửi.
+    @Published var malwareVerdicts: [String: MalwareVerdict] = [:]
+    @Published var malwareAIBusy = false
+    @Published var malwareAIError: String?
+    @Published var malwareAISource: String?
+    @Published var malwareAIPayload: String?
     @Published var adviceInspected: [String] = []
     @Published var adviceDetails: String?
     /// Khi dọn tự động: gồm cả mục An toàn KHÔNG hoàn tác được (lệnh docker/go/brew prune) và Thùng rác (xóa vĩnh viễn). Mặc định tắt.
@@ -356,6 +363,7 @@ final class AppState: ObservableObject {
     func runMalwareCheck() async {
         guard !malwareScanning else { return }
         malwareScanning = true; malwareStatus = tr("Đang kiểm tra…")
+        malwareVerdicts = [:]; malwareAIError = nil; malwareAISource = nil; malwareAIPayload = nil
         malwareReport = await MalwareCheck.run(progress: { [weak self] s in Task { @MainActor in self?.malwareStatus = s } })
         malwareScanning = false; malwareStatus = ""
     }

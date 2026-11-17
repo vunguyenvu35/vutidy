@@ -259,3 +259,47 @@ import Foundation
         #expect(found.allSatisfy { $0.batteryPercent == nil })
     }
 }
+
+@Suite struct MalwareAdvisorTests {
+    func finding(_ title: String, path: String?, source: SecurityFinding.Source, label: String? = nil, sev: SecurityFinding.Severity = .high) -> SecurityFinding {
+        var f = SecurityFinding(severity: sev, title: title, detail: "detail of \(path ?? "x")", path: path)
+        f.source = source; f.label = label; f.code = "t.\(title)"
+        return f
+    }
+
+    @Test func inputHidesHomeAndUserAndLimitsActions() {
+        let fs = [finding("Odd launcher", path: "/Users/bob/Library/LaunchAgents/x.plist", source: .launchItem, label: "x"),
+                  finding("Odd perm", path: nil, source: .permission, sev: .medium)]
+        let (input, keys) = MalwareAdvisor.makeInput(fs, home: "/Users/bob", user: "bob")
+        let all = MalwareAdvisor.json(input)
+        #expect(!all.contains("bob"))
+        #expect(all.contains("~/Library/LaunchAgents/x.plist"))
+        #expect(input.items[0].allowed == ["quarantine", "disable", "ignore", "none"])
+        #expect(input.items[1].allowed == ["ignore", "none"])
+        #expect(keys.count == 2)
+    }
+
+    @Test func parseDropsUnknownIdsAndClampsActions() throws {
+        let fs = [finding("A", path: "/Applications/A.app", source: .app), finding("B", path: nil, source: .permission)]
+        let (input, keys) = MalwareAdvisor.makeInput(fs, home: "/h", user: "u1x")
+        let reply = """
+        Here you go:
+        {"verdicts":[
+         {"id":"f1","verdict":"malicious","reason":"tampered","action":"quarantine"},
+         {"id":"f2","verdict":"malicious","reason":"x","action":"quarantine"},
+         {"id":"f9","verdict":"malicious","reason":"ghost","action":"quarantine"},
+         {"id":"f1","verdict":"likely_benign","reason":"dup","action":"ignore"}]}
+        """
+        let v = try #require(MalwareAdvisor.parse(reply, input: input, keys: keys))
+        #expect(v.count == 2)                                      // id lạ và id trùng bị bỏ
+        #expect(v[0].action == .quarantine && v[0].kind == .malicious)
+        #expect(v[1].action == .none)                              // quarantine không nằm trong "allowed" của mục f2
+    }
+
+    @Test func notMaliciousNeverGetsQuarantine() throws {
+        let (input, keys) = MalwareAdvisor.makeInput([finding("A", path: "/Applications/A.app", source: .app)], home: "/h", user: "u1x")
+        let v = try #require(MalwareAdvisor.parse(#"{"verdicts":[{"id":"f1","verdict":"suspicious","reason":"r","action":"quarantine"}]}"#, input: input, keys: keys))
+        #expect(v[0].action == .none)
+        #expect(MalwareAdvisor.parse("not json", input: input, keys: keys) == nil)
+    }
+}
