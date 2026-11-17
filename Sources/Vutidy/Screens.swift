@@ -20,7 +20,10 @@ struct OptimizationView: View {
     /// Các mục người dùng đã đảo trạng thái so với mặc định (mặc định: bật nếu app đang rảnh).
     @ViewState private var toggled: Set<Int32> = []
     @ViewState private var purging = false
+    @ViewState private var tab: Tab = .performance
+    @ViewState private var collapsedGroups: Set<String> = ["apple"]
 
+    enum Tab: Hashable { case performance, startup }
     enum SortMode: Hashable { case cpu, ram }
 
     struct Reclaim: Identifiable {
@@ -82,21 +85,39 @@ struct OptimizationView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
-            PageHeader(caption: tr("Launch agents/daemons và tiến trình ngốn tài nguyên"), title: tr("Tối ưu"),
-                       trailing: AnyView(Button { Task { await load() } } label: {
-                           HStack(spacing: 6) {
-                               if loading { VSpinner(size: 14, lineWidth: 2) } else { Image(systemName: "arrow.clockwise") }
-                               Text(tr("Làm mới"))
-                           }
-                       }.buttonStyle(SecondaryButtonStyle()).disabled(loading)))
-            gauges
-            LoginItemsCard()
-            memoryCleaner
-            processes
-            startup
+            PageHeader(caption: tab == .performance ? tr("Tài nguyên đang dùng, nhiệt độ và tiến trình ngốn máy") : tr("Những gì tự chạy khi mở máy hoặc đăng nhập"),
+                       title: tr("Tối ưu"),
+                       trailing: AnyView(HStack(spacing: 12) {
+                           ChipPicker(options: [(Tab.performance, tr("Hiệu năng")), (Tab.startup, tr("Khởi động"))], selection: $tab)
+                           Button { Task { await load() } } label: {
+                               HStack(spacing: 6) {
+                                   if loading { VSpinner(size: 14, lineWidth: 2) } else { Image(systemName: "arrow.clockwise") }
+                                   Text(tr("Làm mới"))
+                               }
+                           }.buttonStyle(SecondaryButtonStyle()).disabled(loading)
+                       }))
+            if tab == .performance {
+                gauges
+                TurboBoostCard()
+                memoryCleaner
+                processes
+            } else {
+                startupSummary
+                LoginItemsCard()
+                startup
+            }
         }
-        .smooth(items.count).smooth(consumers.count).smooth(filter).smooth(showAll)
+        .smooth(items.count).smooth(consumers.count).smooth(filter).smooth(showAll).smooth(tab).smooth(collapsedGroups)
         .task { await load() }
+    }
+
+    /// Dải tóm tắt cho tab Khởi động: số mục đang bật / đang chạy / cần admin.
+    var startupSummary: some View {
+        HStack(spacing: 16) {
+            StatTile(title: tr("Đang bật"), value: "\(enabledCount)", color: Theme.orange, symbol: "power")
+            StatTile(title: tr("Đang chạy"), value: "\(items.filter { $0.loaded && !$0.disabled }.count)", color: Theme.Signal.base, symbol: "play.circle")
+            StatTile(title: tr("Cần admin"), value: "\(items.filter(\.requiresAdmin).count)", color: Theme.Info.base, symbol: "lock")
+        }
     }
 
     var gauges: some View {
@@ -112,10 +133,25 @@ struct OptimizationView: View {
                       fraction: s?.cpuLoad ?? 0, color: Theme.Info.base, symbol: "cpu")
             GaugeTile(title: tr("Bộ nhớ"), value: mem.map { ByteFormat.string($0.available) + tr(" khả dụng") } ?? "—",
                       caption: trf("Áp lực bộ nhớ: %@", pTitle), fraction: used, color: pColor, symbol: "memorychip")
-            GaugeTile(title: tr("Mục khởi động"), value: "\(enabledCount)",
-                      caption: trf("%@ đang bật · %@ đã tắt", "\(enabledCount)", "\(items.count - enabledCount)"),
-                      fraction: Double(enabledCount) / Double(max(items.count, 1)), color: Theme.orange, symbol: "power")
+            thermalGauge
         }
+    }
+
+    var thermalGauge: some View {
+        let snap = state.snapshot
+        let th = snap?.thermal ?? .nominal
+        let label: String, level: Double, color: Color
+        switch th {
+        case .nominal: (label, level, color) = (tr("Bình thường"), 0.2, Theme.Signal.base)
+        case .fair: (label, level, color) = (tr("Hơi nóng"), 0.5, Theme.Review.base)
+        case .serious: (label, level, color) = (tr("Nóng"), 0.8, Theme.danger)
+        case .critical: (label, level, color) = (tr("Quá nóng"), 1, Theme.danger)
+        @unknown default: (label, level, color) = ("", 0.2, Theme.Signal.base)
+        }
+        let temp = snap?.cpuTemp
+        return GaugeTile(title: tr("Nhiệt độ"), value: temp.map { String(format: "%.0f°C", $0) } ?? label,
+                         caption: temp != nil ? label : tr("Trạng thái nhiệt của macOS"),
+                         fraction: temp.map { min(1, $0 / 100) } ?? level, color: color, symbol: "thermometer.medium")
     }
 
     var memoryCleaner: some View {
@@ -215,7 +251,7 @@ struct OptimizationView: View {
                         .buttonStyle(IconButtonStyle(diameter: 26)).help(tr("Thoát ứng dụng"))
                 } else { Color.clear.frame(width: 26, height: 26) }
                 MeterBar(value: ram ? Double(c.rssBytes) / ramPeak : c.cpu / peak,
-                         color: ram ? Theme.orange : (c.cpu > 50 ? Theme.Review.base : Theme.Info.base), height: 8).frame(width: 190)
+                         color: ram ? Theme.orange : (c.cpu > 50 ? Theme.Review.base : Theme.Info.base), height: 8).frame(width: 140)
                 Text(ram ? ByteFormat.string(c.rssBytes) : String(format: "%.1f%%", c.cpu)).font(.vt(size: 13, weight: .semibold, design: .rounded)).monospacedDigit()
                     .foregroundStyle(Theme.Text.primary).frame(width: 70, alignment: .trailing)
             }
@@ -229,8 +265,49 @@ struct OptimizationView: View {
                 Text(tr("Không có mục khởi động nào")).font(Theme.Font.body).foregroundStyle(Theme.Text.secondary)
                     .frame(maxWidth: .infinity).padding(32)
             }
-            ForEach(Array(filtered.enumerated()), id: \.element.id) { idx, i in launchRow(i, last: idx == filtered.count - 1) }
+            ForEach(startupGroups) { g in
+                let open = !collapsedGroups.contains(g.id)
+                let on = g.items.filter { !$0.disabled }.count
+                GroupHeader(name: g.name, subtitle: trf("%@ mục", "\(g.items.count)"),
+                            trailing: on > 0 ? trf("%@ đang bật", "\(on)") : nil,
+                            tint: groupTint(g.id), muted: g.isOther || g.id == "apple", open: open) {
+                    if open { collapsedGroups.insert(g.id) } else { collapsedGroups.remove(g.id) }
+                }
+                if open {
+                    ForEach(Array(g.items.enumerated()), id: \.element.id) { idx, i in launchRow(i, last: idx == g.items.count - 1) }
+                }
+            }
         }
+    }
+
+    struct StartupGroup: Identifiable {
+        let id: String
+        let name: String
+        let items: [LaunchItem]
+        var isOther: Bool { id == "__other__" }
+    }
+
+    /// Nhà sản xuất có từ 2 mục trở lên thành nhóm riêng (nhiều mục đang bật trước, Apple xuống cuối); phần lẻ gom vào "Khác".
+    var startupGroups: [StartupGroup] {
+        let byKey = Dictionary(grouping: filtered, by: \.vendorKey)
+        var groups: [StartupGroup] = []
+        var singles: [LaunchItem] = []
+        for (key, list) in byKey {
+            if key.isEmpty || (list.count < 2 && key != "apple") { singles += list }
+            else { groups.append(StartupGroup(id: key, name: list.first!.vendor, items: list)) }
+        }
+        func enabled(_ g: StartupGroup) -> Int { g.items.filter { !$0.disabled }.count }
+        groups.sort { a, b in
+            if (a.id == "apple") != (b.id == "apple") { return b.id == "apple" }
+            return (enabled(a), b.name) > (enabled(b), a.name)
+        }
+        if !singles.isEmpty { groups.insert(StartupGroup(id: "__other__", name: tr("Khác"), items: singles.sorted { $0.label < $1.label }), at: groups.firstIndex { $0.id == "apple" } ?? groups.endIndex) }
+        return groups
+    }
+
+    func groupTint(_ key: String) -> Color {
+        let palette: [Color] = [Theme.Info.base, Theme.apps, Theme.teal, Theme.pink, Theme.orange, Theme.Review.base, Theme.Signal.base]
+        return palette[Int(key.unicodeScalars.reduce(0) { ($0 + Int($1.value)) % 1000 }) % palette.count]
     }
 
     func launchRow(_ i: LaunchItem, last: Bool) -> some View {

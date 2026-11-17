@@ -10,6 +10,7 @@ struct LoginItemsCard: View {
     @ViewState private var items: [LoginItemEntry] = []
     @ViewState private var loaded = false
     @ViewState private var filter: Filter = .on
+    @ViewState private var collapsed: Set<String> = ["apple"]
 
     enum Filter: Hashable, CaseIterable {
         case on, off, orphaned, all
@@ -21,7 +22,37 @@ struct LoginItemsCard: View {
     func matches(_ e: LoginItemEntry, _ f: Filter) -> Bool {
         switch f { case .all: return true; case .on: return e.enabled; case .off: return !e.enabled; case .orphaned: return e.orphaned }
     }
-    var shown: [LoginItemEntry] { items.filter { matches($0, filter) } }
+    var filtered: [LoginItemEntry] { items.filter { matches($0, filter) } }
+
+    struct Group: Identifiable {
+        let id: String
+        let name: String
+        let items: [LoginItemEntry]
+        var isOther: Bool { id == "__other__" }
+    }
+
+    /// Nhà phát triển có từ 2 mục trở lên thành nhóm riêng (nhiều mục đang bật trước, Apple cuối); phần lẻ gom vào "Khác".
+    var groups: [Group] {
+        let byKey = Dictionary(grouping: filtered, by: { $0.vendor.key })
+        var out: [Group] = []
+        var singles: [LoginItemEntry] = []
+        for (key, list) in byKey {
+            if key.isEmpty || (list.count < 2 && key != "apple") { singles += list }
+            else { out.append(Group(id: key, name: list.first!.vendor.name, items: list)) }
+        }
+        func on(_ g: Group) -> Int { g.items.filter(\.enabled).count }
+        out.sort { a, b in
+            if (a.id == "apple") != (b.id == "apple") { return b.id == "apple" }
+            return (on(a), b.name) > (on(b), a.name)
+        }
+        if !singles.isEmpty { out.insert(Group(id: "__other__", name: tr("Khác"), items: singles.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }), at: out.firstIndex { $0.id == "apple" } ?? out.endIndex) }
+        return out
+    }
+
+    func tint(_ key: String) -> Color {
+        let palette: [Color] = [Theme.Info.base, Theme.apps, Theme.teal, Theme.pink, Theme.orange, Theme.Review.base, Theme.Signal.base]
+        return palette[Int(key.unicodeScalars.reduce(0) { ($0 + Int($1.value)) % 1000 }) % palette.count]
+    }
     var onCount: Int { items.filter(\.enabled).count }
 
     var body: some View {
@@ -35,11 +66,22 @@ struct LoginItemsCard: View {
                     .buttonStyle(SecondaryButtonStyle())
             }
         }) {
-            if shown.isEmpty {
+            if filtered.isEmpty {
                 Text(loaded ? tr("Không có mục nào trong bộ lọc này") : tr("Đang đọc danh sách…"))
                     .font(Theme.Font.body).foregroundStyle(Theme.Text.secondary).frame(maxWidth: .infinity).padding(32)
             }
-            ForEach(Array(shown.enumerated()), id: \.element.id) { idx, e in row(e, last: idx == shown.count - 1) }
+            ForEach(groups) { g in
+                let open = !collapsed.contains(g.id)
+                let on = g.items.filter(\.enabled).count
+                GroupHeader(name: g.name, subtitle: trf("%@ mục", "\(g.items.count)"),
+                            trailing: on > 0 ? trf("%@ đang bật", "\(on)") : nil,
+                            tint: tint(g.id), muted: g.isOther || g.id == "apple", open: open) {
+                    if open { collapsed.insert(g.id) } else { collapsed.remove(g.id) }
+                }
+                if open {
+                    ForEach(Array(g.items.enumerated()), id: \.element.id) { idx, e in row(e, last: idx == g.items.count - 1) }
+                }
+            }
         }
         .task { items = await LoginItems.list(); loaded = true }
     }

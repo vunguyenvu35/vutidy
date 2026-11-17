@@ -207,3 +207,16 @@ import Foundation
         #expect(s.cpuLoad >= 0 && s.cpuLoad <= 1)
     }
 }
+
+@Suite struct TurboBoostTests {
+    @Test func parsesLowPowerMode() {
+        #expect(TurboBoost.parseLowPowerMode(" sleep 1\n lowpowermode         1\n") == true)
+        #expect(TurboBoost.parseLowPowerMode(" lowpowermode 0") == false)
+        #expect(TurboBoost.parseLowPowerMode(" sleep 1\n displaysleep 10") == nil)
+    }
+
+    @Test func detectsLoadedKext() {
+        #expect(TurboBoost.isKextLoaded("  1 0 0xffff 0x1000 com.rugarciap.DisableTurboBoost (1.0)"))
+        #expect(!TurboBoost.isKextLoaded("  1 0 0xffff 0x1000 com.apple.iokit.IOUSBFamily"))
+    }
+}

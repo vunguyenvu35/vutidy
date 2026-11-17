@@ -70,6 +70,62 @@ struct GaugeTile: View {
     }
 }
 
+/// Ô số liệu gọn (icon · số · nhãn) — dùng cho dải tóm tắt, nhẹ hơn GaugeTile.
+struct StatTile: View {
+    let title: String
+    let value: String
+    var caption: String? = nil
+    var color: Color = Theme.Signal.base
+    var symbol: String
+    var body: some View {
+        HStack(spacing: 12) {
+            IconTile(symbol: symbol, tint: color, size: 38)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(value).font(.vt(size: 20, weight: .bold, design: .rounded)).monospacedDigit().foregroundStyle(Theme.Text.primary).lineLimit(1)
+                Text(title).font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary).lineLimit(1)
+            }
+            Spacer(minLength: 0)
+            if let caption { Text(caption).font(Theme.Font.label).foregroundStyle(color) }
+        }
+        .padding(.horizontal, 14).padding(.vertical, 12).frame(maxWidth: .infinity, alignment: .leading).cardFlat()
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// Đầu nhóm có thể thu gọn: ô chữ cái · tên · phụ đề · số liệu bên phải · mũi tên.
+struct GroupHeader: View {
+    let name: String
+    let subtitle: String
+    var trailing: String? = nil
+    var tint: Color = Theme.Info.base
+    var muted = false
+    let open: Bool
+    let action: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                Text(String(name.prefix(1)).uppercased()).font(.system(size: 13, weight: .bold, design: .rounded)).foregroundStyle(.white)
+                    .frame(width: 28, height: 28)
+                    .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(tint.opacity(muted ? 0.4 : 0.85)))
+                Text(name).font(.system(size: 13.5, weight: .semibold)).foregroundStyle(Theme.Text.primary)
+                Text(subtitle).font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary)
+                Spacer()
+                if let trailing { Text(trailing).font(Theme.Font.label).foregroundStyle(Theme.Signal.text) }
+                Image(systemName: "chevron.right").font(.system(size: 10, weight: .bold)).foregroundStyle(Theme.Text.tertiary)
+                    .rotationEffect(.degrees(open ? 90 : 0))
+            }
+            .padding(.horizontal, 14).padding(.vertical, 10)
+            .background(Color.white.opacity(0.07))
+            .contentShape(Rectangle())
+            .onTapGesture(perform: action)
+            .pointerCursor()
+            Divider().overlay(Theme.Border.subtle)
+        }
+        .accessibilityElement(children: .combine).accessibilityAddTraits(.isButton)
+    }
+}
+
 // MARK: - Thẻ phần có header
 
 struct SectionCard<Content: View, Trailing: View>: View {

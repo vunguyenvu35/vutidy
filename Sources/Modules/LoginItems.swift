@@ -17,6 +17,19 @@ public struct LoginItemEntry: Identifiable, Sendable, Hashable {
     public let orphaned: Bool
 }
 
+extension LoginItemEntry {
+    /// Nhà sản xuất để gom nhóm: tên nhà phát triển trong BTM (rút gọn "Google LLC" → "Google"), không có thì suy từ identifier.
+    public var vendor: (name: String, key: String) {
+        if identifier.hasPrefix("com.apple.") || developer == "Apple Inc." { return ("Apple", "apple") }
+        if let d = developer, !d.isEmpty {
+            let n = Vendor.pretty(d)
+            if !Vendor.norm(n).isEmpty { return (n, Vendor.norm(n)) }
+        }
+        let n = Vendor.fromBundleID(identifier)
+        return n.isEmpty ? (tr("Khác"), "") : (n, Vendor.norm(n))
+    }
+}
+
 /// Đọc danh sách "mở khi đăng nhập" từ kho Background Task Management của macOS.
 ///
 /// Không dùng `sfltool dumpbtm`: lệnh đó đòi quyền quản trị và làm macOS hiện hộp thoại mật khẩu mỗi lần chạy.

@@ -678,6 +678,22 @@ enum English {
         "Phóng to hoặc thu nhỏ toàn bộ chữ trong app.": "Enlarge or shrink all text in the app.",
         "Theo nhà sản xuất": "By vendor",
         "%@ ứng dụng": "%@ apps",
+        "Giảm nhiệt (Turbo Boost)": "Cooling (Turbo Boost)",
+        "Turbo đang bị hạ: máy mát hơn nhưng chậm hơn khi tải nặng.": "Turbo is limited: cooler Mac, slower under heavy load.",
+        "Turbo Boost đang bật. Hạ turbo giúp Mac Intel bớt nóng và quạt êm hơn.": "Turbo Boost is on. Limiting turbo helps an Intel Mac run cooler and quieter.",
+        "Tắt Turbo Boost (kext)": "Disable Turbo Boost (kext)",
+        "Tắt turbo thật bằng DisableTurboBoost.kext đã cài trên máy. Cần Reduced Security.": "Truly disables turbo using the DisableTurboBoost.kext installed on this Mac. Requires Reduced Security.",
+        "Muốn tắt turbo thật: cài Turbo Boost Switcher (kext bên thứ ba, cần Reduced Security) rồi mở lại màn hình này.": "To truly disable turbo, install Turbo Boost Switcher (third-party kext, needs Reduced Security), then reopen this screen.",
+        "Chế độ Tiết kiệm điện": "Low Power Mode",
+        "Dùng pmset lowpowermode: macOS tự giảm xung nhịp và turbo. Không cần hạ SIP.": "Uses pmset lowpowermode: macOS lowers clock speed and turbo by itself. No need to relax SIP.",
+        "Máy này không hỗ trợ Chế độ Tiết kiệm điện.": "This Mac does not support Low Power Mode.",
+        "Không thể đổi cài đặt Turbo Boost.": "Could not change the Turbo Boost setting.",
+        "Tài nguyên đang dùng, nhiệt độ và tiến trình ngốn máy": "Resources in use, temperature and resource-hungry processes",
+        "Những gì tự chạy khi mở máy hoặc đăng nhập": "What runs automatically at startup or login",
+        "Khởi động": "Startup",
+        "Nhiệt độ": "Temperature",
+        "Trạng thái nhiệt của macOS": "macOS thermal state",
+        "%@ đang bật": "%@ on",
 
     ]
 }

@@ -10,6 +10,8 @@ public struct LaunchItem: Identifiable, Sendable, Hashable {
     public let program: String?
     public var loaded: Bool
     public var disabled: Bool
+    public var vendor: String = ""
+    public var vendorKey: String = ""
     public enum Scope: String, Sendable { case userAgent = "User Agent", systemAgent = "System Agent", daemon = "Daemon" }
     public var requiresAdmin: Bool { scope != .userAgent }
 }
@@ -33,11 +35,33 @@ public enum Optimization {
                 let label = (plist["Label"] as? String) ?? f.deletingPathExtension().lastPathComponent
                 let program = (plist["Program"] as? String) ?? (plist["ProgramArguments"] as? [String])?.first
                 let isDisabled = disabledOut.contains("\"\(label)\" => disabled")
-                out.append(LaunchItem(label: label, plist: f, scope: scope, program: program,
-                                      loaded: loadedLabels.contains(label), disabled: isDisabled))
+                var item = LaunchItem(label: label, plist: f, scope: scope, program: program,
+                                      loaded: loadedLabels.contains(label), disabled: isDisabled)
+                let v = vendor(label: label, program: program)
+                item.vendor = v.name; item.vendorKey = v.key
+                out.append(item)
             }
         }
         return out.sorted { $0.label < $1.label }
+    }
+
+    /// Nhà sản xuất của một mục khởi động: ưu tiên chữ ký của app chứa chương trình, không có thì suy ra từ label (reverse-DNS).
+    static func vendor(label: String, program: String?) -> (name: String, key: String) {
+        if label.hasPrefix("com.apple.") { return ("Apple", "apple") }
+        if let program, let app = appBundle(containing: program), let bid = Bundle(url: app)?.bundleIdentifier {
+            return Vendor.resolve(appURL: app, bundleID: bid)
+        }
+        let n = Vendor.fromBundleID(label)
+        return n.isEmpty ? (tr("Khác"), "") : (n, Vendor.norm(n))
+    }
+
+    static func appBundle(containing path: String) -> URL? {
+        var acc = ""
+        for comp in path.split(separator: "/") {
+            acc += "/" + comp
+            if comp.hasSuffix(".app") { return URL(fileURLWithPath: acc) }
+        }
+        return nil
     }
 
     /// Tắt (không xóa): bootout + disable. Chỉ hỗ trợ agent của user ở chế độ không cần admin.

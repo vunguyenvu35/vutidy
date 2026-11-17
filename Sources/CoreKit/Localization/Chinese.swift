@@ -678,6 +678,22 @@ enum Chinese {
         "Phóng to hoặc thu nhỏ toàn bộ chữ trong app.": "放大或缩小应用内的所有文字。",
         "Theo nhà sản xuất": "按开发者",
         "%@ ứng dụng": "%@ 个应用",
+        "Giảm nhiệt (Turbo Boost)": "降温（Turbo Boost）",
+        "Turbo đang bị hạ: máy mát hơn nhưng chậm hơn khi tải nặng.": "睿频已被限制：更凉爽，但高负载时更慢。",
+        "Turbo Boost đang bật. Hạ turbo giúp Mac Intel bớt nóng và quạt êm hơn.": "睿频已开启。限制睿频可让 Intel Mac 更凉爽、风扇更安静。",
+        "Tắt Turbo Boost (kext)": "关闭 Turbo Boost（kext）",
+        "Tắt turbo thật bằng DisableTurboBoost.kext đã cài trên máy. Cần Reduced Security.": "使用本机已安装的 DisableTurboBoost.kext 真正关闭睿频。需要降低安全性。",
+        "Muốn tắt turbo thật: cài Turbo Boost Switcher (kext bên thứ ba, cần Reduced Security) rồi mở lại màn hình này.": "要真正关闭睿频，请安装 Turbo Boost Switcher（第三方 kext，需降低安全性），然后重新打开此页面。",
+        "Chế độ Tiết kiệm điện": "低电量模式",
+        "Dùng pmset lowpowermode: macOS tự giảm xung nhịp và turbo. Không cần hạ SIP.": "使用 pmset lowpowermode：macOS 自动降低频率和睿频。无需降低 SIP。",
+        "Máy này không hỗ trợ Chế độ Tiết kiệm điện.": "此 Mac 不支持低电量模式。",
+        "Không thể đổi cài đặt Turbo Boost.": "无法更改 Turbo Boost 设置。",
+        "Tài nguyên đang dùng, nhiệt độ và tiến trình ngốn máy": "正在使用的资源、温度和占用资源的进程",
+        "Những gì tự chạy khi mở máy hoặc đăng nhập": "开机或登录时自动运行的项目",
+        "Khởi động": "启动",
+        "Nhiệt độ": "温度",
+        "Trạng thái nhiệt của macOS": "macOS 热状态",
+        "%@ đang bật": "%@ 个已开启",
 
     ]
 }
