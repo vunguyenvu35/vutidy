@@ -28,7 +28,9 @@ struct PopoverView: View {
         }
         .padding(14)
         .frame(width: 400, alignment: .top)
-        .background(ZStack { PageBackground(page: .smartScan); Color.black.opacity(0.18) })
+        // Nền phải tràn qua vùng an toàn: cửa sổ MenuBarExtra có thể chừa một dải phía trên, nếu nền chỉ phủ phần nội dung
+        // thì dải đó lộ lớp vật liệu mờ (màu của cửa sổ phía sau) thành một băng sai màu trên đầu popover.
+        .background(ZStack { PageBackground(page: .smartScan); Color.black.opacity(0.18) }.ignoresSafeArea())
         .fixedSize(horizontal: false, vertical: true)
         .task { devices = await ConnectedDevices.bluetooth(); devicesLoaded = true }
         .onAppear { state.openMainWindow = { openWindow(id: "main") } }

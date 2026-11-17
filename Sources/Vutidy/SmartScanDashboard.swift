@@ -168,13 +168,13 @@ struct SmartScanDashboard: View {
         .buttonStyle(PlainPointerStyle()).keyboardShortcut(.return, modifiers: .command)
     }
 
-    func secondaryButton(_ title: String, action: @escaping () -> Void) -> some View {
+    func secondaryButton(_ title: String, help: String? = nil, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title).font(.vt(size: 13, weight: .medium)).foregroundStyle(P.text)
                 .padding(.horizontal, 14).frame(height: 40)
                 .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).strokeBorder(Color.white.opacity(0.10)))
                 .contentShape(RoundedRectangle(cornerRadius: 9))
-        }.buttonStyle(PlainPointerStyle())
+        }.buttonStyle(PlainPointerStyle()).help(help ?? "")
     }
 
     func linkButton(_ title: String, icon: String? = nil, help: String? = nil, action: @escaping () -> Void) -> some View {
@@ -197,20 +197,25 @@ struct SmartScanDashboard: View {
                 linkButton(tr("Quét lại"), icon: "arrow.clockwise") { Task { await state.runSmartScan() } }
             } else if phase == .done {
                 primaryButton(tr("Quét lại"), icon: "arrow.clockwise", shortcut: "⌘↵") { Task { await state.runSmartScan() } }
-                secondaryButton(tr("Cài đặt quét…")) { state.settingsOpen = true }
+                if !state.autoCleanAfterScan {
+                    secondaryButton(tr("Quét và dọn luôn"), help: scanAndCleanHelp) { Task { await state.runSmartScan(autoClean: true) } }
+                }
+                linkButton(tr("Cài đặt quét…")) { state.settingsOpen = true }
             } else {
                 primaryButton(state.autoCleanAfterScan ? tr("Quét và dọn") : tr("Bắt đầu Smart Scan"), icon: "sparkles", shortcut: "⌘↵") {
                     Task { await state.runSmartScan() }
                 }
-                secondaryButton(tr("Cài đặt quét…")) { state.settingsOpen = true }
+                // "Quét và dọn luôn" là nút viền ngay cạnh nút chính (không phải link nhỏ) để dễ thấy.
                 if !state.autoCleanAfterScan {
-                    linkButton(tr("Quét và dọn luôn"),
-                               help: tr("Quét xong tự chuyển các mục An toàn, hoàn tác được vào Quarantine. Mục không hoàn tác được vẫn chờ bạn.")) {
-                        Task { await state.runSmartScan(autoClean: true) }
-                    }
+                    secondaryButton(tr("Quét và dọn luôn"), help: scanAndCleanHelp) { Task { await state.runSmartScan(autoClean: true) } }
                 }
+                linkButton(tr("Cài đặt quét…")) { state.settingsOpen = true }
             }
         }
+    }
+
+    var scanAndCleanHelp: String {
+        tr("Quét xong tự chuyển các mục An toàn, hoàn tác được vào Quarantine. Mục không hoàn tác được vẫn chờ bạn.")
     }
 
     // MARK: Ổ đĩa
