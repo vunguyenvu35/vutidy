@@ -79,3 +79,10 @@ public struct CleanReport: Sendable {
         outcomes.filter { if case .skipped = $0.status { return true }; return false }
     }
 }
+
+public extension ScanItem {
+    /// Mục mà dọn **tự động** (Smart Scan) được phép đụng tới: An toàn và hoàn tác được, tức là file đi vào Quarantine.
+    /// Không tính: mục dùng lệnh của công cụ (`docker prune`, `go clean`, `brew cleanup`: không khôi phục được) và mục cần xem lại.
+    /// (Nội dung Thùng rác do trang Trash quản lý và không bao giờ tự dọn.)
+    var isAutoCleanable: Bool { safety == .safe && command == nil }
+}

@@ -53,6 +53,7 @@ Changes apply **immediately**; there is no Save button.
 | Setting | What it does |
 | --- | --- |
 | **Quarantine retention** | 1 to 60 days (7 by default) before Quarantine items are deleted for good. |
+| **Clean automatically after scanning** | Off by default. When on, Smart Scan moves Safe items that can be undone to the Quarantine as soon as it has scanned. Items cleaned with a tool command, the Trash and items to review are never cleaned automatically. See [Automatic cleaning](02-smart-scan.md#automatic-cleaning). |
 | **Stale project days** | How long a project must be untouched before its `node_modules`, `vendor`, `target`, `.venv` or `Pods` are offered (60 by default). |
 | **Project folders** | The folders Dev Junk searches for old project dependencies. **Add folder…** / **Remove**. Vutidy only walks these, never your whole home folder. |
 

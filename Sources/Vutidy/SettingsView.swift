@@ -241,6 +241,13 @@ struct SettingsOverlay: View {
 
     var cleaning: some View {
         VStack(alignment: .leading, spacing: 18) {
+            SettingsGroup(title: "Smart Scan") {
+                SettingRow(title: tr("Dọn tự động sau khi quét"),
+                           desc: tr("Quét xong, tự chuyển các mục An toàn vào Quarantine (hoàn tác được). Lệnh docker/go/brew, Thùng rác và mục cần xem lại không bao giờ tự dọn: chúng vẫn chờ bạn bấm Dọn."),
+                           showDivider: false) {
+                    SwitchRow(isOn: $state.autoCleanAfterScan, label: tr("Dọn tự động sau khi quét"))
+                }
+            }
             SettingsGroup(title: "Quarantine") {
                 SettingRow(title: tr("Thời gian giữ"), desc: tr("Số ngày giữ mục đã dọn trước khi xóa hẳn."), showDivider: false) {
                     VStepper(value: $state.retentionDays, range: 1...60) { trf("%@ ngày", "\($0)") }

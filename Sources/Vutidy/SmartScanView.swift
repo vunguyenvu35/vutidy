@@ -120,6 +120,10 @@ struct SmartScanView: View {
                 } else if state.smart == nil {
                     Text(tr("Smart Scan gộp Rác hệ thống, Dev Junk, Thùng rác, persistence và gợi ý tối ưu trong một lần quét."))
                         .font(Theme.Font.body).foregroundStyle(Theme.Text.secondary).fixedSize(horizontal: false, vertical: true)
+                    if state.autoCleanAfterScan {
+                        Label(tr("Dọn tự động đang bật: quét xong, mục An toàn hoàn tác được sẽ vào Quarantine."), systemImage: "bolt.fill")
+                            .font(Theme.Font.caption).foregroundStyle(Theme.Review.text).fixedSize(horizontal: false, vertical: true)
+                    }
                 } else if cleanable > 0 {
                     Label(trf("Hoàn tác được trong %@ ngày", "\(state.retentionDays)"), systemImage: "arrow.uturn.backward")
                         .font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary)
@@ -130,7 +134,16 @@ struct SmartScanView: View {
                             Button(trf("Dọn %@", ByteFormat.string(cleanable))) { confirm = true }.buttonStyle(PrimaryButtonStyle())
                             Button(tr("Xem trước (dry-run)")) { Task { await state.cleanSmart(mode: .dryRun) } }.buttonStyle(SecondaryButtonStyle())
                         }
-                        if state.smart == nil { Button(tr("Bắt đầu quét")) { Task { await state.runSmartScan() } }.buttonStyle(PrimaryButtonStyle()) }
+                        if state.smart == nil {
+                            // Bật "Dọn tự động": một nút quét + dọn. Tắt: quét như cũ, và thêm lối tắt "Quét và dọn luôn" cho lần này.
+                            if state.autoCleanAfterScan {
+                                Button(tr("Quét và dọn")) { Task { await state.runSmartScan() } }.buttonStyle(PrimaryButtonStyle())
+                            } else {
+                                Button(tr("Bắt đầu quét")) { Task { await state.runSmartScan() } }.buttonStyle(PrimaryButtonStyle())
+                                Button(tr("Quét và dọn luôn")) { Task { await state.runSmartScan(autoClean: true) } }.buttonStyle(SecondaryButtonStyle())
+                                    .help(tr("Quét xong tự chuyển các mục An toàn, hoàn tác được vào Quarantine. Mục không hoàn tác được vẫn chờ bạn."))
+                            }
+                        }
                         else { Button { Task { await state.runSmartScan() } } label: { Label(tr("Quét lại"), systemImage: "arrow.clockwise") }.buttonStyle(SecondaryButtonStyle()) }
                     }
                 }.padding(.top, 2)

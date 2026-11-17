@@ -8,6 +8,7 @@ One scan that looks at everything at once. Open it from the sidebar or with **�
 - [The result screen](#the-result-screen)
 - [What each group means](#what-each-group-means)
 - [Cleaning](#cleaning)
+- [Automatic cleaning](#automatic-cleaning)
 - [Limits](#limits)
 
 ## What it scans
@@ -70,6 +71,23 @@ The malware check and the extra groups add some time to the scan (usually under 
 **Preview (dry-run)** performs exactly the same steps without changing anything and shows the size it would free.
 
 Afterwards a toast shows how much was moved, with an **Undo** link that opens the Quarantine.
+
+## Automatic cleaning
+
+If you do not want to press **Clean** yourself, Smart Scan can clean as soon as it has scanned.
+
+- **Once:** before the first scan, press **Scan and clean now** (next to *Start scanning*).
+- **Always:** turn on **Settings → Cleanup → Smart Scan → Clean automatically after scanning**. The button then reads **Scan and clean**, and **⌘R** and *Rescan* clean too.
+
+It is deliberately careful. Automatic cleaning takes only items that are **Safe** *and* can be **undone**: files that go to the [Quarantine](08-quarantine-and-safety.md) and can be restored for 7 days. It **never** cleans by itself:
+
+| Left for you | Why |
+| --- | --- |
+| Items cleaned with a tool's own command (`docker image prune`, `go clean`, `brew cleanup`) | They cannot be restored |
+| The contents of the Trash | Deleting them is permanent |
+| Anything marked *Review* | It needs your eye |
+
+When it finishes, one notification says how much went to the Quarantine, with **Undo**, and how much is still waiting (for example *435 MB waiting for you to press Clean*). That remainder stays in **What will be cleaned**, and **Clean** still asks you before it runs the irreversible items. Automatic cleaning is **off by default**.
 
 ## Limits
 

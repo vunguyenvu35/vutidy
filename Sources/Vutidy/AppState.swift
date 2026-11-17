@@ -196,6 +196,10 @@ final class AppState: ObservableObject {
     @Published var projectRoots: [String] = UserDefaults.standard.stringArray(forKey: "projectRoots") ?? [] {
         didSet { UserDefaults.standard.set(projectRoots, forKey: "projectRoots") }
     }
+    /// Dọn tự động ngay sau Smart Scan: chỉ mục An toàn mà hoàn tác được (vào Quarantine). Mặc định tắt.
+    @Published var autoCleanAfterScan: Bool = UserDefaults.standard.bool(forKey: "autoCleanAfterScan") {
+        didSet { UserDefaults.standard.set(autoCleanAfterScan, forKey: "autoCleanAfterScan") }
+    }
     @Published var retentionDays: Int = UserDefaults.standard.object(forKey: "retentionDays") as? Int ?? 7 {
         didSet {
             UserDefaults.standard.set(retentionDays, forKey: "retentionDays")
@@ -251,7 +255,7 @@ final class AppState: ObservableObject {
         // Chụp tài liệu: VUTIDY_SCAN=smart|<id,id…> tự chạy quét; VUTIDY_OPEN=popover mở popover thanh menu thành cửa sổ rời.
         if let ids = ProcessInfo.processInfo.environment["VUTIDY_SCAN"] {
             for id in ids.split(separator: ",").map(String.init) {
-                Task { @MainActor in if id == "smart" { await self.runSmartScan() } else { await self.scan(id) } }
+                Task { @MainActor in if id == "smart" { await self.runSmartScan(autoClean: false) } else { await self.scan(id) } }
             }
         }
         if let sp = ProcessInfo.processInfo.environment["VUTIDY_SETTINGS"], let p = SettingsPage(rawValue: sp) { settingsPage = p; settingsOpen = true }
@@ -372,7 +376,7 @@ final class AppState: ObservableObject {
         (results[id] ?? []).filter(\.selected).reduce(0) { $0 + $1.allocatedSize }
     }
 
-    func clean(_ id: String, mode: CleanMode) async {
+    func clean(_ id: String, mode: CleanMode, quiet: Bool = false) async {
         guard !cleaning.contains(id) else { return }
         let items = results[id] ?? []
         let selected = items.filter { $0.selected }
@@ -407,7 +411,7 @@ final class AppState: ObservableObject {
         case .permanent: message = trf("Đã xóa %@", "\(ByteFormat.string(report.reclaimedBytes))")
         }
         if !report.failures.isEmpty { message += trf(" · %@ lỗi", "\(report.failures.count)") }
-        notify(message, report.failures.isEmpty ? .success : .warning, undo: undo)
+        if !quiet { notify(message, report.failures.isEmpty ? .success : .warning, undo: undo) }
         pollSystem()
     }
 
@@ -427,7 +431,8 @@ final class AppState: ObservableObject {
 
     // MARK: - Smart Scan
 
-    func runSmartScan() async {
+    /// `autoClean`: nil = theo cài đặt "Dọn tự động sau Smart Scan"; true/false = ép bật/tắt cho lần quét này.
+    func runSmartScan(autoClean: Bool? = nil) async {
         guard !smartScanning else { return }
         smartScanning = true
         let rules = RuleLoader.loadAll()
@@ -449,6 +454,7 @@ final class AppState: ObservableObject {
         for id in results.keys { results[id]?.sort { $0.allocatedSize > $1.allocatedSize } }
         smartScanning = false; status["smart"] = nil
         pollSystem()
+        if autoClean ?? autoCleanAfterScan { await autoCleanSafe() }
     }
 
     /// Dọn tất cả mục `safe` đã quét bởi Smart Scan.
