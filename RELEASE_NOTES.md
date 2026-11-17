@@ -1,5 +1,20 @@
 <p align="center"><img src="docs/assets/brand/logo-mark-256.png" alt="Vutidy" width="88"></p>
 
+# Vutidy 0.4.0
+
+Release date: 2026-11-17 · Platform: macOS 13 or later (only tried on Apple Silicon) · Status: **pre-release**. The [known issues of 0.1.0](#vutidy-010) still apply.
+
+## What's new in 0.4.0
+
+- **A new Smart Scan screen.** One layout for every state (not scanned, scanning, cleaning, done): a hero card, a disk card and five fanned cards, one per group. After a scan each card shows its own result (for example *8.19 GB safe to clean*) and opens the right page. The disk card shows what you would have free after cleaning. **Scan and clean now** is a button next to **Start Smart Scan**.
+- **Clean automatically after a scan** (off by default, *Settings → Cleanup*). Only Safe items that can be undone are taken, and files go to the Quarantine. Items cleaned with a command (Docker, Go, Homebrew), the Trash and anything marked *Review* are never cleaned for you.
+- **A new icon set.** The main pages use the stroke icons of the new design, and the sidebar tiles take the colour of their group.
+- **Optimization has two tabs**, *Performance* and *Startup*. Performance gains a temperature gauge. In *Startup*, login items and launch items are **grouped by vendor** (Apple collapsed), so a long list is easy to scan.
+- **Cooling for Intel Macs.** A card on *Optimization → Performance* (shown on Intel only) turns on **Low Power Mode** (`pmset`, asks for your password) and, if you already installed Turbo Boost Switcher's `DisableTurboBoost.kext`, loads or unloads it. Vutidy does not ship that kernel extension, and it needs Reduced Security. **Not tried on an Intel Mac yet.**
+- **Malware page: act on what it finds.** Each finding can be **quarantined** (restorable for 7 days; a launch item is switched off first), **switched off** or **ignored**. Later scans mark what is **new** and keep ignored items hidden.
+- **More checks in the malware scan:** apps holding sensitive permissions (Full Disk Access, Accessibility, Screen Recording, Input Monitoring; needs Full Disk Access to read), third-party configuration profiles, browser extensions that run on every site with sensitive permissions, system extensions, `DYLD_*` variables in launchd plists, a proxy that points off this Mac, `/etc/hosts` redirects, SSH keys allowed to log in, hidden programs in your home folder and unsigned programs in *Application Support*. A tiny list of published indicators is built in; you can add your own in `malware-ioc.json`. Vutidy is still **not an antivirus**.
+- **Fixes.** The menu bar popover background reaches under the top edge, so no mismatched band shows above the header. The fanned cards no longer flicker when the pointer crosses from one card to its neighbour.
+
 # Vutidy 0.3.0
 
 Release date: 2026-11-10 · Platform: macOS 13 or later (only tried on Apple Silicon) · Status: **pre-release**. The [known issues of 0.1.0](#vutidy-010) still apply.
