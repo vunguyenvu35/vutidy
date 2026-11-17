@@ -179,6 +179,7 @@ struct SettingsOverlay: View {
             .frame(maxWidth: 660, alignment: .leading).padding(.vertical, 28).padding(.horizontal, 32)
             .smooth(state.settingsPage, 0.2)
             .frame(maxWidth: .infinity)
+            .vtScroller()
         }
     }
 

@@ -43,6 +43,7 @@ struct CleanupView: View {
                         .animation(.easeInOut(duration: 0.2), value: busy)
                 }
                 .padding(.horizontal, 32).padding(.top, 32).padding(.bottom, 24).frame(maxWidth: .infinity, alignment: .leading)
+                .vtScroller()
             }
             if state.results[id] != nil, !items.isEmpty, !scanning { actionBar.transition(.move(edge: .bottom).combined(with: .opacity)) }
         }

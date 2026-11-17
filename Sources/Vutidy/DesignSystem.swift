@@ -1223,3 +1223,53 @@ struct MiniButtonStyle: ButtonStyle {
             .pointerCursor()
     }
 }
+
+// MARK: - Thanh cuộn tuỳ biến
+
+/// Thanh cuộn mảnh dạng overlay: không có rãnh, chỉ một viên thuốc trắng mờ sáng lên khi rê chuột hoặc kéo.
+final class VTScroller: NSScroller {
+    private var hovering = false
+    private var area: NSTrackingArea?
+
+    override class var isCompatibleWithOverlayScrollers: Bool { true }
+    override class func scrollerWidth(for controlSize: NSControl.ControlSize, scrollerStyle: NSScroller.Style) -> CGFloat { 12 }
+
+    override func drawKnobSlot(in slotRect: NSRect, highlight flag: Bool) {}
+
+    override func drawKnob() {
+        let r = rect(for: .knob)
+        guard r.height > 0 else { return }
+        let w: CGFloat = hovering ? 8 : 5
+        let pill = NSRect(x: r.maxX - w - 3, y: r.minY + 2, width: w, height: max(24, r.height - 4))
+        let alpha: CGFloat = hovering ? 0.55 : 0.30
+        NSColor.white.withAlphaComponent(alpha).setFill()
+        NSBezierPath(roundedRect: pill, xRadius: w / 2, yRadius: w / 2).fill()
+    }
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let area { removeTrackingArea(area) }
+        let a = NSTrackingArea(rect: bounds, options: [.mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect], owner: self)
+        addTrackingArea(a); area = a
+    }
+    override func mouseEntered(with event: NSEvent) { hovering = true; needsDisplay = true }
+    override func mouseExited(with event: NSEvent) { hovering = false; needsDisplay = true }
+}
+
+private struct VTScrollerInstaller: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView { NSView(frame: .zero) }
+    func updateNSView(_ v: NSView, context: Context) {
+        DispatchQueue.main.async {
+            guard let sv = v.enclosingScrollView, !(sv.verticalScroller is VTScroller) else { return }
+            sv.scrollerStyle = .overlay
+            sv.verticalScroller = VTScroller()
+            sv.autohidesScrollers = true
+            sv.drawsBackground = false
+        }
+    }
+}
+
+extension View {
+    /// Đặt bên trong nội dung của `ScrollView` để thay thanh cuộn hệ thống bằng `VTScroller`.
+    func vtScroller() -> some View { background(VTScrollerInstaller()) }
+}

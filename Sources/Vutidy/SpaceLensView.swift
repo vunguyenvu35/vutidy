@@ -101,6 +101,7 @@ struct SpaceLensView: View {
                     else { results }
                 }
                 .padding(.horizontal, 28).padding(.top, 32).padding(.bottom, 20).frame(maxWidth: .infinity, alignment: .topLeading)
+                .vtScroller()
             }
             // Thanh hành động ghim đáy: danh sách dài kéo xuống vẫn thấy nút Quarantine / Xóa.
             if canAct { actionBar.transition(.move(edge: .bottom).combined(with: .opacity)) }

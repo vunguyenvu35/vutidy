@@ -25,6 +25,7 @@ struct RootView: View {
                             // Nội dung luôn cao ít nhất bằng cửa sổ để hero có thể giãn, không để trống phía dưới.
                             .frame(maxWidth: .infinity, minHeight: max(0, geo.size.height - 52), alignment: .topLeading)
                             .padding(.horizontal, 28).padding(.bottom, 20).padding(.top, 32)
+                            .vtScroller()
                         }
                     }
                 }
