@@ -6,12 +6,14 @@ public struct SmartScanResult: Sendable {
     public var persistence: [PersistenceItem] = []
     public var launchItems: [LaunchItem] = []
     public var consumers: [Optimization.Consumer] = []
+    public var agents: [AgentProcess] = []
     public var date = Date()
     public init() {}
 
     public var cleanableBytes: Int64 { cleanup.filter { $0.safety == .safe }.reduce(0) { $0 + $1.allocatedSize } }
     public var reviewBytes: Int64 { cleanup.filter { $0.safety != .safe }.reduce(0) { $0 + $1.allocatedSize } }
     public var suspiciousCount: Int { persistence.filter(\.suspicious).count }
+    public var flaggedAgents: [AgentProcess] { agents.filter(\.canTerminate) }
 }
 
 public enum SmartScan {
@@ -28,11 +30,13 @@ public enum SmartScan {
         async let persistence = Task.detached { progress("Persistence"); return PersistenceScanner.scan() }.value
         async let launch = Optimization.launchItems()
         async let consumers = Optimization.heavyConsumers()
+        async let agents = AgentProcesses.scan()
         var r = SmartScanResult()
         r.cleanup = await cleanup
         r.persistence = await persistence
         r.launchItems = await launch
         r.consumers = await consumers
+        r.agents = await agents
         return r
     }
 }
