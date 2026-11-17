@@ -542,15 +542,16 @@ private struct GemSkin<Label: View>: View {
     let enabled: Bool
     let bright: Color, deep: Color, glow: Color
     let metrics: ButtonMetrics
+    var fullWidth = false
     @ViewState private var hover = false
 
     var body: some View {
         label
             .font(.vt(size: metrics.font, weight: .semibold))
-            .lineLimit(1).fixedSize(horizontal: true, vertical: false)
+            .lineLimit(1).fixedSize(horizontal: !fullWidth, vertical: false)
             .foregroundStyle(.white)
             .shadow(color: .black.opacity(0.28), radius: 1, y: 1)
-            .padding(.horizontal, metrics.hPad).frame(height: metrics.height)
+            .padding(.horizontal, metrics.hPad).frame(maxWidth: fullWidth ? .infinity : nil).frame(height: metrics.height)
             .background(
                 ZStack {
                     Capsule().fill(LinearGradient(colors: [bright, deep], startPoint: .top, endPoint: .bottom))
@@ -567,13 +568,15 @@ private struct GemSkin<Label: View>: View {
 }
 
 struct PrimaryButtonStyle: ButtonStyle {
+    /// Giãn hết chiều ngang có sẵn (nút chính ở cuối một thẻ/panel).
+    var fullWidth = false
     @Environment(\.isEnabled) private var enabled
     @Environment(\.controlSize) private var size
     @Environment(\.currentPage) private var page
     func makeBody(configuration: Configuration) -> some View {
         let p = page.palette
         GemSkin(label: configuration.label, pressed: configuration.isPressed, enabled: enabled,
-                bright: p.glow.mixed(with: .white, 0.18), deep: p.mid.mixed(with: p.glow, 0.25), glow: p.glow, metrics: ButtonMetrics(size))
+                bright: p.glow.mixed(with: .white, 0.18), deep: p.mid.mixed(with: p.glow, 0.25), glow: p.glow, metrics: ButtonMetrics(size), fullWidth: fullWidth)
     }
 }
 
@@ -593,14 +596,15 @@ private struct GlassSkin<Label: View>: View {
     let enabled: Bool
     let metrics: ButtonMetrics
     var minWidth: CGFloat? = nil
+    var fullWidth = false
     @ViewState private var hover = false
     var body: some View {
         // Cùng chiều cao với nút chính để hai nút đặt cạnh nhau (vd. "Free up memory" · "Quit") cân đối.
         label
             .font(.vt(size: metrics.font, weight: .semibold))
-            .lineLimit(1).fixedSize(horizontal: true, vertical: false)
+            .lineLimit(1).fixedSize(horizontal: !fullWidth, vertical: false)
             .foregroundStyle(Color.white.opacity(hover ? 1 : 0.94))
-            .padding(.horizontal, metrics.hPad).frame(minWidth: minWidth).frame(height: metrics.height)
+            .padding(.horizontal, metrics.hPad).frame(minWidth: minWidth).frame(maxWidth: fullWidth ? .infinity : nil).frame(height: metrics.height)
             .background(
                 ZStack {
                     Capsule().fill(Color.black.opacity(0.16))                                   // đáy tối nhẹ cho nút nổi khỏi nền
@@ -622,10 +626,11 @@ private struct GlassSkin<Label: View>: View {
 struct SecondaryButtonStyle: ButtonStyle {
     /// Độ rộng tối thiểu để các nút đặt cạnh nhau (ví dụ cột nút trong Cài đặt) đều nhau; nút dài hơn vẫn tự giãn.
     var minWidth: CGFloat? = nil
+    var fullWidth = false
     @Environment(\.isEnabled) private var enabled
     @Environment(\.controlSize) private var size
     func makeBody(configuration: Configuration) -> some View {
-        GlassSkin(label: configuration.label, pressed: configuration.isPressed, enabled: enabled, metrics: ButtonMetrics(size), minWidth: minWidth)
+        GlassSkin(label: configuration.label, pressed: configuration.isPressed, enabled: enabled, metrics: ButtonMetrics(size), minWidth: minWidth, fullWidth: fullWidth)
     }
 }
 

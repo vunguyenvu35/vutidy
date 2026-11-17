@@ -12,6 +12,11 @@ public struct MemoryInfo: Sendable {
     public var total: Int64, available: Int64, swapUsed: Int64, pressure: Pressure
     public enum Pressure: String, Sendable { case normal, warning, critical }
 }
+/// Chi tiết RAM đang dùng (byte): Active, Wired, Compressed.
+public struct MemoryBreakdown: Sendable {
+    public var active: Int64, wired: Int64, compressed: Int64
+    public var used: Int64 { active + wired + compressed }
+}
 public struct BatteryInfo: Sendable {
     public var percent: Int, charging: Bool, cycleCount: Int?, health: Double?
 }
@@ -48,6 +53,18 @@ public final class SystemMonitor: @unchecked Sendable {
                                                 .volumeAvailableCapacityForImportantUsageKey])
         return DiskInfo(total: Int64(v?.volumeTotalCapacity ?? 0), available: Int64(v?.volumeAvailableCapacity ?? 0),
                         availableImportant: v?.volumeAvailableCapacityForImportantUsage ?? Int64(v?.volumeAvailableCapacity ?? 0))
+    }
+
+    public static func memoryBreakdown() -> MemoryBreakdown {
+        var stats = vm_statistics64()
+        var count = mach_msg_type_number_t(MemoryLayout<vm_statistics64>.size / MemoryLayout<integer_t>.size)
+        let kr = withUnsafeMutablePointer(to: &stats) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) { host_statistics64(mach_host_self(), HOST_VM_INFO64, $0, &count) }
+        }
+        guard kr == KERN_SUCCESS else { return MemoryBreakdown(active: 0, wired: 0, compressed: 0) }
+        let page = Int64(vm_kernel_page_size)
+        return MemoryBreakdown(active: Int64(stats.active_count) * page, wired: Int64(stats.wire_count) * page,
+                               compressed: Int64(stats.compressor_page_count) * page)
     }
 
     public static func memory() -> MemoryInfo {

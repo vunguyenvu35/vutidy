@@ -45,7 +45,7 @@ public enum TurboBoost {
 
     /// Kext có sẵn trên máy (từ Turbo Boost Switcher hoặc cài thủ công), ưu tiên bản 64-bit.
     public static func findKext(fileManager fm: FileManager = .default,
-                                roots: [String] = ["/Applications/Turbo Boost Switcher.app/Contents/Resources", "/Library/Extensions"]) -> String? {
+                                roots: [String] = ["/Applications/tbswitcher_resources", "/Applications/Turbo Boost Switcher.app/Contents/Resources", "/Library/Extensions"]) -> String? {
         var found: [String] = []
         for root in roots {
             let names = (try? fm.contentsOfDirectory(atPath: root)) ?? []

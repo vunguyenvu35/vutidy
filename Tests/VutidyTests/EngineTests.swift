@@ -219,4 +219,29 @@ import Foundation
         #expect(TurboBoost.isKextLoaded("  1 0 0xffff 0x1000 com.rugarciap.DisableTurboBoost (1.0)"))
         #expect(!TurboBoost.isKextLoaded("  1 0 0xffff 0x1000 com.apple.iokit.IOUSBFamily"))
     }
+
+    @Test func findsKextInSwitcherResourcesFolder() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("tb-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        for n in ["DisableTurboBoost.32bits.kext", "DisableTurboBoost.64bits.kext"] {
+            try FileManager.default.createDirectory(at: root.appendingPathComponent(n), withIntermediateDirectories: true)
+        }
+        #expect(TurboBoost.findKext(roots: ["/nonexistent", root.path]) == root.path + "/DisableTurboBoost.64bits.kext")
+        #expect(TurboBoost.findKext(roots: ["/nonexistent"]) == nil)
+    }
+}
+
+@Suite struct DiskBreakdownTests {
+    @Test func parsesSMARTStatus() {
+        #expect(DiskBreakdown.parseSMART("   Solid State:  Yes\n   SMART Status:              Verified\n") == true)
+        #expect(DiskBreakdown.parseSMART("   SMART Status:   Failing") == false)
+        #expect(DiskBreakdown.parseSMART("   SMART Status:   Not Supported") == nil)
+        #expect(DiskBreakdown.parseSMART("   Solid State:  Yes") == nil)
+    }
+
+    @Test func foldersAreUnderHome() {
+        #expect(DiskBreakdown.folders(.audio, home: "/Users/x") == ["/Users/x/Music"])
+        #expect(DiskBreakdown.folders(.applications, home: "/Users/x").contains("/Applications"))
+        #expect(Set(DiskBreakdown.Kind.allCases.map { DiskBreakdown.folders($0, home: "/h") }).count == DiskBreakdown.Kind.allCases.count)
+    }
 }

@@ -58,6 +58,8 @@ struct PopoverView: View {
     @ViewState private var speed: SpeedResult?
     @ViewState private var testing = false
     @ViewState private var showAllCards = false
+    @ViewState private var turbo: TurboBoost.Status?
+    @ViewState private var turboBusy = false
     @ViewState private var contentHeight: CGFloat = 0
     @Environment(\.openWindow) private var openWindow
 
@@ -68,6 +70,7 @@ struct PopoverView: View {
             header
             recommendations
             realtimeRow
+            turboRow
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
                 diskTile(s); memoryTile(s); cpuTile(s); batteryTile(s); networkTile(s); devicesTile
             }
@@ -83,6 +86,8 @@ struct PopoverView: View {
         .onPreferenceChange(PopoverHeightKey.self) { contentHeight = $0 }
         .background(PopoverTopPin(height: contentHeight))
         .task { devices = await ConnectedDevices.bluetooth(); devicesLoaded = true }
+        .task { turbo = await TurboBoost.status() }
+        .onDisappear { PopoverDetailPanel.shared.close() }
         .onAppear { state.openMainWindow = { openWindow(id: "main") } }
     }
 
@@ -150,10 +155,44 @@ struct PopoverView: View {
         .padding(.horizontal, 14).padding(.vertical, 10).glassSurface(radius: 14, strong: false)
     }
 
+    /// Turbo Boost (chỉ Mac Intel): bật = turbo chạy bình thường. Tắt dùng kext nếu đã cài, không thì Chế độ Tiết kiệm điện.
+    @ViewBuilder var turboRow: some View {
+        if let t = turbo, t.isIntel, t.kextPath != nil || t.lowPowerMode != nil {
+            let limited = t.turboLimited
+            HStack(spacing: 12) {
+                IconTile(symbol: "bolt.fill", tint: limited ? Theme.Text.secondary : Theme.orange, size: 30)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(limited ? tr("Turbo Boost tắt") : tr("Turbo Boost bật")).font(.vt(size: 13.5, weight: .semibold)).foregroundStyle(.white)
+                    Text(t.kextPath != nil ? tr("Tắt Turbo Boost (kext)") : tr("Chế độ Tiết kiệm điện")).font(Theme.Font.caption)
+                        .foregroundStyle(Theme.Text.secondary).lineLimit(1)
+                }
+                Spacer()
+                if turboBusy { VSpinner(size: 16, lineWidth: 2) }
+                SwitchRow(isOn: Binding(get: { !limited }, set: { setTurbo(enabled: $0, status: t) }), label: "Turbo Boost")
+                    .disabled(turboBusy)
+            }
+            .padding(.horizontal, 14).padding(.vertical, 10).glassSurface(radius: 14, strong: false)
+        }
+    }
+
+    func setTurbo(enabled: Bool, status t: TurboBoost.Status) {
+        turboBusy = true
+        Task {
+            let r: ProcessResult
+            if let path = t.kextPath { r = await TurboBoost.setKextLoaded(!enabled, path: path) }
+            else { r = await TurboBoost.setLowPowerMode(!enabled) }
+            if !r.ok { state.notify(tr("Không thể đổi cài đặt Turbo Boost."), .error) }
+            turbo = await TurboBoost.status()
+            turboBusy = false
+        }
+    }
+
     // MARK: Ô số liệu — mọi ô cùng một khung (tiêu đề · giá trị · vùng đồ thị · dòng phụ)
 
     /// `go`: bấm vào ô để mở trang tương ứng (nút bên trong ô, như "Đo tốc độ", vẫn nhận click riêng).
+    /// `action`: nút hành động riêng của ô ("Giải phóng"), nằm ở hàng cuối góc phải; ô cao thêm để nút không chen vào thanh đo.
     func tile<M: View>(_ title: String, symbol: String, tint: Color, value v: String, sub: String? = nil,
+                       action: (title: String, run: () -> Void)? = nil,
                        go: (() -> Void)? = nil, @ViewBuilder middle: () -> M) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 7) {
@@ -165,9 +204,20 @@ struct PopoverView: View {
             middle().frame(maxWidth: .infinity, minHeight: 24, maxHeight: 24, alignment: .leading)
             Text(sub ?? " ").font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary)
                 .lineLimit(1).minimumScaleFactor(0.75).frame(height: 16, alignment: .leading)
+            if let action {
+                HStack {
+                    Spacer(minLength: 0)
+                    Button(action: action.run) {
+                        HStack(spacing: 5) {
+                            Image(systemName: "sparkles").font(.system(size: 10, weight: .bold))
+                            Text(action.title)
+                        }
+                    }.buttonStyle(MiniButtonStyle())
+                }.padding(.top, 6)
+            }
         }
         .padding(12)
-        .frame(maxWidth: .infinity, minHeight: 128, maxHeight: 128, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: action == nil ? 128 : nil, maxHeight: action == nil ? 128 : nil, alignment: .topLeading)
         .glassSurface(radius: 14, strong: false)
         .clickable(go)
     }
@@ -187,6 +237,7 @@ struct PopoverView: View {
         return tile(tr("Ổ đĩa"), symbol: "v.drive", tint: Page.systemJunk.palette.glow,
                     value: d.map { ByteFormat.string($0.availableImportant) + tr(" trống") } ?? "—",
                     sub: d.flatMap { $0.purgeable > 0 ? "Purgeable " + ByteFormat.string($0.purgeable) : nil},
+                    action: (tr("Giải phóng"), { PopoverDetailPanel.shared.show(.disk, state: state) }),
                     go: { open(.spaceLens) }) {
             MeterBar(value: used, color: used > 0.9 ? Theme.danger : Color.white.opacity(0.9), height: 6)
         }
@@ -199,6 +250,7 @@ struct PopoverView: View {
         return tile(tr("Bộ nhớ"), symbol: "v.ram", tint: Page.optimization.palette.glow,
                     value: m.map { ByteFormat.string($0.available) + tr(" khả dụng") } ?? "—",
                     sub: m.map { trf("Áp lực: %@ · swap %@", $0.pressure.rawValue, ByteFormat.string($0.swapUsed)) },
+                    action: (tr("Giải phóng"), { PopoverDetailPanel.shared.show(.memory, state: state) }),
                     go: { open(.optimization) }) {
             MeterBar(value: used, color: c, height: 6)
         }
@@ -240,7 +292,7 @@ struct PopoverView: View {
 
     /// Ô thiết bị: mỗi thiết bị Bluetooth đang kết nối một hàng (biểu tượng theo loại · tên · loại/trạng thái · pin). Tối đa 2 hàng, huy hiệu ở tiêu đề cho biết tổng.
     var devicesTile: some View {
-        let shown = Array(devices.prefix(2))
+        let shown = Array(devices.prefix(3))
         let tint = Page.privacy.palette.glow
         return VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 7) {
@@ -248,7 +300,7 @@ struct PopoverView: View {
                 Text(tr("Thiết bị")).font(.vt(size: 11, weight: .semibold)).foregroundStyle(Theme.Text.secondary).textCase(.uppercase).lineLimit(1)
                 Spacer(minLength: 0)
                 if devices.count > 0 {
-                    Text(devices.count > 2 ? "+\(devices.count - 2)" : "\(devices.count)")
+                    Text(devices.count > 3 ? "+\(devices.count - 3)" : "\(devices.count)")
                         .font(.vt(size: 11, weight: .bold, design: .rounded)).monospacedDigit().foregroundStyle(Theme.Text.primary)
                         .padding(.horizontal, 7).frame(minWidth: 20, minHeight: 18)
                         .background(Capsule().fill(Color.white.opacity(0.16)))
@@ -260,7 +312,7 @@ struct PopoverView: View {
                     if devicesLoaded { Text("Bluetooth").font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary) }
                 }.padding(.top, 14)
             } else {
-                VStack(alignment: .leading, spacing: 8) { ForEach(shown) { deviceRow($0, tint: tint) } }.padding(.top, 10)
+                VStack(alignment: .leading, spacing: 4) { ForEach(shown) { deviceRow($0, tint: tint) } }.padding(.top, 10)
             }
             Spacer(minLength: 0)
         }
@@ -270,27 +322,20 @@ struct PopoverView: View {
         .clickable { openSystemSettings("x-apple.systempreferences:com.apple.BluetoothSettings") }
     }
 
+    /// Một dòng gọn: biểu tượng · tên · pin (nếu thiết bị báo được). Loại thiết bị hiện ở tooltip.
     func deviceRow(_ d: BluetoothDevice, tint: Color) -> some View {
         HStack(spacing: 9) {
-            Image(systemName: deviceSymbol(d.kind)).font(.system(size: 13, weight: .semibold)).foregroundStyle(.white)
-                .frame(width: 30, height: 30)
-                .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(LinearGradient(colors: [tint, tint.opacity(0.6)], startPoint: .top, endPoint: .bottom)))
-            VStack(alignment: .leading, spacing: 2) {
-                Text(d.name).font(.vt(size: 13, weight: .semibold)).foregroundStyle(.white).lineLimit(1).truncationMode(.tail)
-                HStack(spacing: 5) {
-                    Circle().fill(Theme.Signal.base).frame(width: 5, height: 5)
-                    Text(d.kind.isEmpty ? tr("Đã kết nối") : d.kind).font(.vt(size: 11)).foregroundStyle(Theme.Text.secondary).lineLimit(1)
-                }
-            }
+            Image(systemName: deviceSymbol(d.kind)).font(.system(size: 14, weight: .medium)).foregroundStyle(.white)
+                .frame(width: 22, height: 22)
+            Text(d.name).font(.vt(size: 13, weight: .medium)).foregroundStyle(.white).lineLimit(1).truncationMode(.tail)
             Spacer(minLength: 4)
             if let b = d.batteryPercent {
-                HStack(spacing: 3) {
-                    Image(systemName: b <= 20 ? "battery.25" : (b <= 60 ? "battery.50" : "battery.100")).font(.system(size: 11))
-                    Text("\(b)%").font(.vt(size: 11, weight: .semibold)).monospacedDigit()
-                }.foregroundStyle(b <= 20 ? Theme.danger : Theme.Text.primary)
-                .padding(.horizontal, 7).frame(height: 20).background(Capsule().fill(Color.white.opacity(0.12)))
+                Text("\(b)%").font(.vt(size: 12.5, weight: .semibold)).monospacedDigit()
+                    .foregroundStyle(b <= 20 ? Theme.danger : Theme.Text.primary)
             }
         }
+        .frame(height: 24)
+        .help(d.kind.isEmpty ? tr("Đã kết nối") : d.kind)
     }
 
     func deviceSymbol(_ kind: String) -> String {

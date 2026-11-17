@@ -24,8 +24,10 @@ struct UninstallerView: View {
                            VTextField(placeholder: tr("Tìm ứng dụng"), text: $query, width: 220)
                        }))
             if loading { LoadingCard(title: tr("Đang liệt kê ứng dụng…")) }
+            // Trang tự quản lý cuộn: danh sách cuộn riêng, còn tiêu đề và panel chi tiết (nút Gỡ) luôn nằm yên trong tầm nhìn.
             HStack(alignment: .top, spacing: 18) {
-                VStack(spacing: 0) { listBody }.cardFlat().frame(maxWidth: .infinity)
+                ScrollView { VStack(spacing: 0) { listBody }.vtScroller() }
+                    .cardFlat().frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 if let s = selected {
                     VStack(alignment: .leading, spacing: 12) {
@@ -34,6 +36,8 @@ struct UninstallerView: View {
                         if s.source == .homebrew {
                             Text(tr("Cài qua Homebrew — nên gỡ bằng: brew uninstall --cask")).font(Theme.Font.caption).foregroundStyle(Theme.Review.text)
                         }
+                        ScrollView {
+                        VStack(alignment: .leading, spacing: 12) {
                         ForEach($plan) { $p in
                             HStack {
                                 VCheckbox(isOn: $p.selected)
@@ -45,6 +49,8 @@ struct UninstallerView: View {
                                 Text(ByteFormat.string(p.allocatedSize)).monospacedDigit().foregroundStyle(Theme.Text.secondary)
                             }.font(Theme.Font.body)
                         }
+                        }.vtScroller()
+                        }.frame(maxHeight: 320).fixedSize(horizontal: false, vertical: plan.count < 7)
                         Button { confirm = true } label: {
                                 if busy { HStack(spacing: 8) { VSpinner(size: 16, lineWidth: 2); Text(tr("Đang gỡ…")) } }
                 else { IconLabel(title: trf("Gỡ %@", "\(ByteFormat.string(plan.filter(\.selected).reduce(0) { $0 + $1.allocatedSize }))"), symbol: "v.trash") }
@@ -53,7 +59,9 @@ struct UninstallerView: View {
                     }.frame(width: 420, alignment: .leading).card(hero: true)
                 }
             }
+            .frame(maxHeight: .infinity, alignment: .top)
         }
+        .padding(.horizontal, 28).padding(.top, 32).padding(.bottom, 20)
         .smooth(selected?.id, 0.2).smooth(loading).smooth(apps.count).smooth(grouped).smooth(collapsed)
         .task { if apps.isEmpty { loading = true; apps = await Uninstaller.installedApps(); loading = false } }
         .confirmDialog(isPresented: $confirm, title: trf("Gỡ %@?", "\(selected?.name ?? "")"),

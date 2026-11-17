@@ -31,14 +31,15 @@ public enum L10n {
     private static let lock = NSLock()
     private static var _override: Language?
 
-    /// Lựa chọn của người dùng (có thể là `.system`).
+    /// Lựa chọn của người dùng (có thể là `.system`); mặc định `.en` khi chưa chọn.
     public static var preference: Language {
         get {
             lock.lock(); defer { lock.unlock() }
             if let o = _override { return o }
             // Dùng cho test/chụp màn hình: VUTIDY_LANG=ja|zh|en|vi
             if let e = ProcessInfo.processInfo.environment["VUTIDY_LANG"], let l = Language(rawValue: e) { return l }
-            return Language(rawValue: UserDefaults.standard.string(forKey: defaultsKey) ?? "") ?? .system
+            // Chưa chọn gì thì dùng English (không theo ngôn ngữ hệ thống); ai đã chọn "System" trong Cài đặt vẫn được giữ.
+            return Language(rawValue: UserDefaults.standard.string(forKey: defaultsKey) ?? "") ?? .en
         }
         set {
             lock.lock(); _override = newValue; lock.unlock()
