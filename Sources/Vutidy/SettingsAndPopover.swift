@@ -6,11 +6,21 @@ import Modules
 /// Giữ cạnh TRÊN của cửa sổ MenuBarExtra cố định. Khi nội dung đổi chiều cao (ẩn/hiện thẻ gợi ý), AppKit giữ cạnh dưới
 /// và dời cạnh trên, nên popover tụt xuống để hở một khoảng trống dưới thanh menu. Ghi nhớ cạnh trên lúc cửa sổ hiện ra
 /// rồi đặt lại vị trí mỗi khi kích thước đổi.
+struct PopoverHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
+
+/// Giữ cạnh TRÊN của cửa sổ MenuBarExtra cố định và ép chiều cao cửa sổ bằng đúng chiều cao nội dung.
+/// Khi nội dung đổi chiều cao (ẩn/hiện thẻ gợi ý), AppKit giữ cạnh dưới nên popover tụt xuống, để hở một khoảng
+/// trống dưới thanh menu. Ở đây ta ghi nhớ cạnh trên lúc cửa sổ hiện ra rồi đặt lại toàn bộ khung theo chiều cao đo được.
 struct PopoverTopPin: NSViewRepresentable {
+    var height: CGFloat
     func makeNSView(context: Context) -> PinView { PinView() }
-    func updateNSView(_ nsView: PinView, context: Context) {}
+    func updateNSView(_ nsView: PinView, context: Context) { nsView.height = height; nsView.apply() }
 
     final class PinView: NSView {
+        var height: CGFloat = 0
         private var top: CGFloat?
         private var observers: [NSObjectProtocol] = []
 
@@ -22,11 +32,19 @@ struct PopoverTopPin: NSViewRepresentable {
             let nc = NotificationCenter.default
             observers.append(nc.addObserver(forName: NSWindow.didBecomeKeyNotification, object: w, queue: .main) { [weak self, weak w] _ in
                 self?.top = w?.frame.maxY
+                DispatchQueue.main.async { self?.apply() }
             })
-            observers.append(nc.addObserver(forName: NSWindow.didResizeNotification, object: w, queue: .main) { [weak self, weak w] _ in
-                guard let self, let w, let top = self.top, abs(w.frame.maxY - top) > 0.5 else { return }
-                w.setFrameOrigin(NSPoint(x: w.frame.minX, y: top - w.frame.height))
+            // Đặt lại khung ở vòng lặp kế tiếp, không sửa khung ngay trong lúc cửa sổ đang đổi kích thước.
+            observers.append(nc.addObserver(forName: NSWindow.didResizeNotification, object: w, queue: .main) { [weak self] _ in
+                DispatchQueue.main.async { self?.apply() }
             })
+        }
+
+        func apply() {
+            guard let w = window, let top, height > 1 else { return }
+            let target = w.frameRect(forContentRect: NSRect(x: 0, y: 0, width: w.contentRect(forFrameRect: w.frame).width, height: height)).height
+            guard abs(w.frame.height - target) > 0.5 || abs(w.frame.maxY - top) > 0.5 else { return }
+            w.setFrame(NSRect(x: w.frame.minX, y: top - target, width: w.frame.width, height: target), display: true)
         }
         deinit { observers.forEach(NotificationCenter.default.removeObserver) }
     }
@@ -40,6 +58,7 @@ struct PopoverView: View {
     @ViewState private var speed: SpeedResult?
     @ViewState private var testing = false
     @ViewState private var showAllCards = false
+    @ViewState private var contentHeight: CGFloat = 0
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
@@ -60,7 +79,9 @@ struct PopoverView: View {
         // thì dải đó lộ lớp vật liệu mờ (màu của cửa sổ phía sau) thành một băng sai màu trên đầu popover.
         .background(ZStack { PageBackground(page: .smartScan); Color.black.opacity(0.18) }.ignoresSafeArea())
         .fixedSize(horizontal: false, vertical: true)
-        .background(PopoverTopPin())
+        .background(GeometryReader { g in Color.clear.preference(key: PopoverHeightKey.self, value: g.size.height) })
+        .onPreferenceChange(PopoverHeightKey.self) { contentHeight = $0 }
+        .background(PopoverTopPin(height: contentHeight))
         .task { devices = await ConnectedDevices.bluetooth(); devicesLoaded = true }
         .onAppear { state.openMainWindow = { openWindow(id: "main") } }
     }

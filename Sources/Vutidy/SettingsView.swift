@@ -82,11 +82,14 @@ struct SettingsOverlay: View {
     var body: some View {
         GeometryReader { geo in
             let w = maximized ? geo.size.width - 24 : min(960, geo.size.width - 80)
-            let h = maximized ? geo.size.height - 24 : min(680, geo.size.height - 110)
-            ZStack {
+            // Phóng to: thẻ chạm mép trên cửa sổ, nên hàng tiêu đề nằm ngang hàng với 3 nút đèn giao thông (cửa sổ chính ẩn thanh tiêu đề).
+            let atLights = maximized && !state.isFullScreen
+            let h = maximized ? geo.size.height - (atLights ? 12 : 24) : min(680, geo.size.height - 110)
+            ZStack(alignment: atLights ? .top : .center) {
                 Color.black.opacity(0.5).ignoresSafeArea().onTapGesture { state.settingsOpen = false }
                 VStack(spacing: 0) {
-                    titleBar
+                    titleBar(leadingInset: atLights ? 84 - (geo.size.width - w) / 2 - 16 : 0,
+                             height: atLights ? state.titleBarCenter * 2 : 44)
                     Divider().overlay(Theme.Border.default)
                     HStack(spacing: 0) {
                         menu.frame(width: 236)
@@ -114,7 +117,8 @@ struct SettingsOverlay: View {
         }
     }
 
-    var titleBar: some View {
+    /// `leadingInset`: chừa chỗ cho 3 nút đèn giao thông của cửa sổ chính khi lớp phủ nằm sát mép trái.
+    func titleBar(leadingInset: CGFloat, height: CGFloat) -> some View {
         HStack(spacing: 10) {
             Image(systemName: "gearshape").foregroundStyle(Theme.Text.secondary)
             Text(tr("Cài đặt")).font(.vt(size: 13.5, weight: .semibold)).foregroundStyle(Theme.Text.primary)
@@ -123,7 +127,7 @@ struct SettingsOverlay: View {
                 .buttonStyle(PlainPointerStyle()).foregroundStyle(Theme.Text.secondary).help(maximized ? tr("Thu nhỏ") : tr("Phóng to"))
             Button { state.settingsOpen = false } label: { Image(systemName: "xmark") }
                 .buttonStyle(PlainPointerStyle()).foregroundStyle(Theme.Text.secondary).help(tr("Đóng") + " (Esc)")
-        }.padding(.horizontal, 16).frame(height: 44)
+        }.padding(.horizontal, 16).padding(.leading, leadingInset).frame(height: height)
     }
 
     var menu: some View {
