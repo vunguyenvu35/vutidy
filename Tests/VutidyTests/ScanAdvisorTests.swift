@@ -169,7 +169,9 @@ import CoreKit
         let acts = AdvisorPlanner.availableActions(result())
         let ids = Set(acts.map(\.id))
         #expect(ids.contains("clean:Node") && ids.contains("terminate-agents") && ids.contains("review:Cache"))
-        #expect(!ids.contains("clean:Docker"), "mục dùng lệnh docker không hoàn tác được: không cho AI tự dọn")
+        #expect(!ids.contains("clean:Docker"), "mục dùng lệnh docker không hoàn tác được: không được là bước dọn vào Quarantine")
+        #expect(ids.contains("tool:Docker"), "Docker thường là phần lớn dung lượng: phải được đề xuất, gắn nhãn không hoàn tác")
+        #expect(AdvisorPlanner.availableActions(result()).first { $0.id == "tool:Docker" }?.kind == .cleanTool)
         #expect(!ids.contains("clean:Cache"), "mục cần xem lại không được dọn")
         let node = acts.first { $0.id == "clean:Node" }
         #expect(node?.items == 2 && node?.megabytes == 3000 && node?.kind == .clean)
@@ -234,5 +236,98 @@ import CoreKit
         r.cleanup = [ScanItem(url: URL(fileURLWithPath: "/a"), title: "a", allocatedSize: 3_000, category: "Logs", ruleID: "user-logs", safety: .safe),
                      ScanItem(url: URL(fileURLWithPath: "/b"), title: "b", allocatedSize: 840_000_000, category: "Cache", ruleID: "user-caches", safety: .safe)]
         #expect(AdvisorPlanner.availableActions(r).map(\.id) == ["clean:Cache"])
+    }
+}
+
+@Suite struct AdvisorToolCleanTests {
+    func item(_ cat: String, _ size: Int64, _ safety: SafetyLevel, cmd: [String]?) -> ScanItem {
+        ScanItem(url: URL(fileURLWithPath: "/x"), title: "t", allocatedSize: size, category: cat, ruleID: "r", safety: safety, command: cmd)
+    }
+
+    @Test func dockerSafeItemsBecomeAToolStepButVolumesNever() {
+        var r = SmartScanResult()
+        r.cleanup = [item("Docker", 5_000_000_000, .safe, cmd: ["docker", "image", "prune", "-f"]),
+                     item("Docker", 3_000_000_000, .safe, cmd: ["docker", "builder", "prune", "-f"]),
+                     item("Docker", 9_000_000_000, .review, cmd: ["docker", "volume", "prune", "-f"])]
+        let tool = AdvisorPlanner.availableActions(r).first { $0.id == "tool:Docker" }
+        #expect(tool?.megabytes == 8000 && tool?.items == 2, "volume (review) không được tính vào bước dọn bằng lệnh")
+        #expect(AdvisorPlanner.availableActions(r).contains { $0.id == "review:Docker" })
+    }
+
+    @Test func promptExplainsToolActionsAreIrreversible() {
+        let p = ScanAdvisor.systemPrompt(language: "English")
+        #expect(p.contains("tool:<group>") && p.contains("CANNOT be undone") && p.contains("Rank by space freed"))
+    }
+}
+
+@Suite struct AdvisorInspectTests {
+    func item(_ cat: String, _ path: String, _ size: Int64, rule: String = "r", cmd: [String]? = nil, safety: SafetyLevel = .safe) -> ScanItem {
+        ScanItem(url: URL(fileURLWithPath: path), title: (path as NSString).lastPathComponent, allocatedSize: size, category: cat, ruleID: rule, safety: safety, command: cmd)
+    }
+
+    @Test func pathsAreAnonymized() {
+        let home = "/Users/secretuser"
+        #expect(AdvisorInspector.sanitize(path: home + "/Library/Caches/com.foo.app", ruleID: "user-caches", home: home) == "~/Library/Caches/com.foo.app")
+        #expect(AdvisorInspector.sanitize(path: home + "/work/acme-secret/node_modules", ruleID: "stale-project-node", home: home) == "<project>/node_modules")
+        #expect(AdvisorInspector.sanitize(path: "/Library/Logs/x", ruleID: "r", home: home) == "/Library/Logs/x")
+        #expect(AdvisorInspector.sanitize(path: home, ruleID: "r", home: home) == "~")
+    }
+
+    @Test func groupDetailIsCappedSortedAndFreeOfPersonalData() {
+        var r = SmartScanResult()
+        r.cleanup = (0..<20).map { item("Node", "/Users/secretuser/work/proj\($0)/node_modules", Int64(($0 + 1) * 10_000_000), rule: "stale-project-node") }
+        r.cleanup.append(item("Go", "/Users/secretuser/Library/Caches/go-build", 1_050_000_000, cmd: ["go", "clean", "-cache"]))
+        let d = AdvisorInspector.detail(for: "Node", in: r, home: "/Users/secretuser")
+        #expect(d.totalItems == 20 && d.items.count == AdvisorInspector.maxItems)
+        #expect(d.items.first?.sizeMB == 200 && d.items.first?.location == "<project>/node_modules")
+        let go = AdvisorInspector.detail(for: "Go", in: r, home: "/Users/secretuser")
+        #expect(go.items.first?.tool == "go clean -cache" && go.items.first?.ageDays == nil)
+        let json = AdvisorInspector.json([d, go])
+        #expect(!json.contains("secretuser") && !json.contains("proj1") && !json.contains("/Users"))
+    }
+
+    @Test func parsesDockerSizesAndMasksRegistry() {
+        #expect(AdvisorInspector.parseMB("1.23GB") == 1230 && AdvisorInspector.parseMB("456MB") == 456 && AdvisorInspector.parseMB("12kB") == 0 && AdvisorInspector.parseMB("x") == 0)
+        #expect(AdvisorInspector.shortName("registry.corp.com/team/app") == "app" && AdvisorInspector.shortName("nginx") == "nginx")
+    }
+
+    @Test func dockerImagesReportUsageAndStayPrivate() {
+        let lines = """
+        {"Repository":"registry.corp.com/team/api","Tag":"1.2","ID":"aaa111","Size":"2.1GB","CreatedAt":"2026-01-02 10:00:00 +0700 +07"}
+        {"Repository":"<none>","Tag":"<none>","ID":"bbb222","Size":"900MB","CreatedAt":"2026-11-10 10:00:00 +0700 +07"}
+        {"Repository":"redis","Tag":"7","ID":"ccc333","Size":"150MB","CreatedAt":"2026-11-01 10:00:00 +0700 +07"}
+        garbage
+        """
+        let now = ISO8601DateFormatter().date(from: "2026-11-17T00:00:00Z")!
+        let imgs = AdvisorInspector.parseDockerImages(lines, usedRefs: ["redis:7"], now: now)
+        #expect(imgs.map(\.sizeMB) == [2100, 900, 150], "sắp theo dung lượng giảm dần, bỏ dòng rác")
+        #expect(imgs[0].name == "api" && imgs[0].tag == "1.2" && imgs[0].inUse == false)
+        #expect(imgs[1].name == "<untagged>" && imgs[1].tag == "")
+        #expect(imgs[2].inUse == true)
+        #expect(imgs[0].ageDays ?? 0 > 300 && (imgs[1].ageDays ?? 99) < 10)
+        #expect(!AdvisorInspector.json([GroupDetail(group: "Docker", totalItems: 3, items: [], dockerImages: imgs)]).contains("corp.com"))
+    }
+
+    @Test func parsesInspectRequestOnlyForAllowedGroups() {
+        let allowed = ["Docker", "Go", "Cache"]
+        #expect(AdvisorPlanner.parseInspectRequest(#"{"inspect": ["Docker", "Go"]}"#, allowed: allowed) == ["Docker", "Go"])
+        #expect(AdvisorPlanner.parseInspectRequest("```json\n{\"inspect\": [\"Docker\", \"Docker\", \"Nope\"]}\n```", allowed: allowed) == ["Docker"])
+        #expect(AdvisorPlanner.parseInspectRequest(#"{"inspect": ["Nope"]}"#, allowed: allowed) == nil)
+        #expect(AdvisorPlanner.parseInspectRequest(#"{"summary":"s","actions":[{"id":"clean:Cache"}]}"#, allowed: allowed) == nil)
+        #expect(AdvisorPlanner.parseInspectRequest(#"{"inspect":["Docker"],"actions":[{"id":"clean:Cache"}]}"#, allowed: allowed) == nil, "đã có kế hoạch thì không cần xem sâu")
+        let many = ["a", "b", "c", "d", "e", "f"]
+        #expect(AdvisorPlanner.parseInspectRequest(#"{"inspect":["a","b","c","d","e","f"]}"#, allowed: many)?.count == AdvisorInspector.maxGroups)
+        #expect(AdvisorPlanner.parseInspectRequest("just prose", allowed: allowed) == nil)
+    }
+
+    @Test func roundTwoPromptCarriesDetailsAndForbidsAnotherInspect() {
+        var r = SmartScanResult()
+        r.cleanup = [item("Docker", "/x", 5_000_000_000, cmd: ["docker", "image", "prune", "-f"]), item("Cache", "/y", 800_000_000)]
+        let input = ScanAdvisor.makeInput(r, diskTotal: 1, diskFree: 1)
+        #expect(input.inspectableGroups == ["Docker", "Cache"])
+        #expect(ScanAdvisor.userContent(input, details: nil).contains("inspectableGroups") && !ScanAdvisor.userContent(input, details: nil).contains("FINAL"))
+        let round2 = ScanAdvisor.userContent(input, details: "[{\"group\":\"Docker\"}]")
+        #expect(round2.contains("\"group\":\"Docker\"") && round2.contains("FINAL") && round2.contains("Do not ask to inspect again"))
+        #expect(ScanAdvisor.systemPrompt(language: "English").contains("\"inspect\""))
     }
 }

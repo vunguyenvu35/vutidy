@@ -26,6 +26,8 @@ public struct AdvisorInput: Codable, Sendable, Equatable {
     public var cpuHeavyProcesses: Int
     /// Hành động AI được phép chọn (xem `AdvisorPlanner`). AI chỉ trả về `id` trong danh sách này.
     public var availableActions: [ActionInfo]
+    /// Nhóm AI có thể xin xem chi tiết (xem `AdvisorInspector`).
+    public var inspectableGroups: [String]
 
     public struct ActionInfo: Codable, Sendable, Equatable {
         public var id: String
@@ -75,7 +77,8 @@ public enum ScanAdvisor {
 
         return AdvisorInput(diskTotalGB: gb(diskTotal), diskFreeGB: gb(diskFree), cleanup: Array(groups), agentProcesses: agents,
                             suspiciousLaunchItems: r.suspiciousCount, cpuHeavyProcesses: r.consumers.filter { $0.cpu >= 50 }.count,
-                            availableActions: AdvisorPlanner.availableActions(r).map { .init(id: $0.id, items: $0.items, megabytes: $0.megabytes) })
+                            availableActions: AdvisorPlanner.availableActions(r).map { .init(id: $0.id, items: $0.items, megabytes: $0.megabytes) },
+                            inspectableGroups: AdvisorInspector.inspectableGroups(r))
     }
 
     public static func json(_ input: AdvisorInput) -> String {
@@ -92,16 +95,24 @@ public enum ScanAdvisor {
         and "availableActions": the only things the app can do for the user right now.
         Decide what is worth doing and in which order. Orphaned agent processes lost their parent; runaway ones burned \
         high CPU for a long time; sub-agents belong to a parent agent (do not touch healthy agents). Actions: \
-        "clean:<group>" moves that group's safe items to Quarantine (undoable); "terminate-agents" quits orphaned or \
-        runaway agent processes; "review:<group>" only opens the page so the user can check items themselves. \
-        Never pick an id that is not in availableActions, and never use clean for something that needs review.
-        Reply with ONLY a JSON object, no prose, no code fences:
+        "clean:<group>" moves that group's safe items to Quarantine (undoable); "tool:<group>" runs the tool's own cleanup \
+        command (e.g. docker image/build-cache prune, go clean, brew cleanup): it removes only re-creatable data but CANNOT \
+        be undone, and it is often where most of the space is, so do not ignore it when it is large; "terminate-agents" \
+        quits orphaned or runaway agent processes; "review:<group>" only opens the page so the user can check items \
+        themselves. Never pick an id that is not in availableActions, and never use clean or tool for something that needs review. \
+        Rank by space freed. In the summary say plainly which actions are undoable and which are not.
+        If the totals are not enough to judge a large group (for example what is inside Docker, a big Go or dependency cache, \
+        or whether items are old and unused), you may ask once to look inside up to \(AdvisorInspector.maxGroups) groups from \
+        "inspectableGroups" by replying with ONLY {"inspect": ["<group>", ...]}. You then get read-only, anonymized details \
+        (name, size, age, days idle, location, the tool command that would run, and for Docker the image list with inUse) and \
+        must answer with the final plan. Ask only when it changes your decision; otherwise answer directly.
+        Otherwise reply with ONLY a JSON object, no prose, no code fences:
         {"summary": "<2-4 short lines of plain text>", "actions": [{"id": "<id from availableActions>", "reason": "<one short sentence>"}]}
         Put the most valuable action first, at most 6 actions, skip actions that are not worth it. \
         Write summary and reasons in \(language).
         """
     }
-    public static func request(input: AdvisorInput, apiKey: String, model: String, language: String) throws -> URLRequest {
+    public static func request(input: AdvisorInput, apiKey: String, model: String, language: String, details: String? = nil) throws -> URLRequest {
         var req = URLRequest(url: endpoint, timeoutInterval: 60)
         req.httpMethod = "POST"
         req.setValue(apiKey, forHTTPHeaderField: "x-api-key")
@@ -109,7 +120,7 @@ public enum ScanAdvisor {
         req.setValue("application/json", forHTTPHeaderField: "content-type")
         let body: [String: Any] = [
             "model": model, "max_tokens": 700, "system": systemPrompt(language: language),
-            "messages": [["role": "user", "content": "Scan summary:\n" + json(input)]],
+            "messages": [["role": "user", "content": userContent(input, details: details)]],
         ]
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
         return req
@@ -130,26 +141,36 @@ public enum ScanAdvisor {
     }
 
     /// Prompt đầy đủ cho CLI (không có kênh system riêng): hướng dẫn + số liệu.
-    static func cliPrompt(input: AdvisorInput, language: String) -> String {
-        systemPrompt(language: language) + "\n\nScan summary:\n" + json(input)
+    static func cliPrompt(input: AdvisorInput, language: String, details: String? = nil) -> String {
+        systemPrompt(language: language) + "\n\n" + userContent(input, details: details)
+    }
+
+    /// Vòng 1: số liệu tổng hợp. Vòng 2 (sau khi AI xin xem sâu): thêm chi tiết các nhóm đó và yêu cầu kế hoạch cuối.
+    static func userContent(_ input: AdvisorInput, details: String?) -> String {
+        var s = "Scan summary:\n" + json(input)
+        if let details {
+            s += "\n\nYou asked to look inside these groups. Read-only, anonymized details:\n" + details
+            s += "\n\nNow reply with the FINAL plan JSON only ({\"summary\", \"actions\"}). Do not ask to inspect again."
+        }
+        return s
     }
 
     /// Chọn nguồn tư vấn: CLI đã đăng nhập trên máy trước, API key (nếu có) là phương án cuối. `.auto` thử lần lượt đến khi có câu trả lời.
     /// `models`: model đã chọn cho từng nguồn (khóa là `AdvisorProvider.rawValue`); rỗng = mặc định của công cụ.
-    public static func advise(_ input: AdvisorInput, provider: AdvisorProvider, models: [String: String], language: String) async throws -> AdvisorAnswer {
+    public static func advise(_ input: AdvisorInput, provider: AdvisorProvider, models: [String: String], language: String, details: String? = nil) async throws -> AdvisorAnswer {
         func model(_ p: AdvisorProvider) -> String { (models[p.rawValue] ?? "").trimmingCharacters(in: .whitespaces) }
         let apiModel = model(.api).isEmpty ? defaultModel : model(.api)
-        let prompt = cliPrompt(input: input, language: language)
+        let prompt = cliPrompt(input: input, language: language, details: details)
         switch provider {
         case .api:
-            return AdvisorAnswer(text: try await advise(input, model: apiModel, language: language), provider: .api)
+            return AdvisorAnswer(text: try await advise(input, model: apiModel, language: language, details: details), provider: .api)
         case .auto:
             var firstError: Error?
             for p in AdvisorProvider.installedCLIs {
                 do { return AdvisorAnswer(text: try await AdvisorCLI.ask(p, prompt: prompt, model: model(p)), provider: p) }
                 catch { firstError = firstError ?? error }
             }
-            if AdvisorKeychain.hasKey { return AdvisorAnswer(text: try await advise(input, model: apiModel, language: language), provider: .api) }
+            if AdvisorKeychain.hasKey { return AdvisorAnswer(text: try await advise(input, model: apiModel, language: language, details: details), provider: .api) }
             throw firstError ?? AdvisorError.noProvider
         default:
             guard provider.isInstalled else { throw AdvisorError.noProvider }
@@ -157,11 +178,33 @@ public enum ScanAdvisor {
         }
     }
 
+    public struct DeepAnswer: Sendable {
+        public let answer: AdvisorAnswer
+        /// Các nhóm AI đã xin xem sâu (rỗng nếu trả lời ngay từ số liệu tổng hợp).
+        public let inspected: [String]
+        /// JSON chi tiết đã gửi ở vòng 2, để người dùng xem lại đúng dữ liệu đã đi đâu.
+        public let details: String?
+    }
+
+    /// Đào sâu theo yêu cầu: vòng 1 chỉ có số liệu tổng hợp; nếu AI xin xem một số nhóm (`deep` bật), app đọc chi tiết trên máy
+    /// (chỉ-đọc, ẩn danh) rồi hỏi vòng 2 để lấy kế hoạch cuối. Tối đa hai lần gọi, cùng một nguồn AI.
+    public static func adviseDeep(_ input: AdvisorInput, result: SmartScanResult, provider: AdvisorProvider, models: [String: String],
+                                  language: String, deep: Bool, onStatus: @Sendable (String) -> Void = { _ in }) async throws -> DeepAnswer {
+        let first = try await advise(input, provider: provider, models: models, language: language)
+        guard deep, let groups = AdvisorPlanner.parseInspectRequest(first.text, allowed: input.inspectableGroups) else {
+            return DeepAnswer(answer: first, inspected: [], details: nil)
+        }
+        onStatus(groups.joined(separator: ", "))
+        let json = AdvisorInspector.json(await AdvisorInspector.inspect(groups, in: result))
+        let second = try await advise(input, provider: first.provider, models: models, language: language, details: json)
+        return DeepAnswer(answer: second, inspected: groups, details: json)
+    }
+
     /// `send` có thể thay thế khi kiểm thử.
-    public static func advise(_ input: AdvisorInput, model: String, language: String,
+    public static func advise(_ input: AdvisorInput, model: String, language: String, details: String? = nil,
                               send: @Sendable (URLRequest) async throws -> (Data, URLResponse) = { try await URLSession.shared.data(for: $0) }) async throws -> String {
         guard let key = AdvisorKeychain.load(), !key.isEmpty else { throw AdvisorError.noKey }
-        let req = try request(input: input, apiKey: key, model: model, language: language)
+        let req = try request(input: input, apiKey: key, model: model, language: language, details: details)
         do {
             let (data, resp) = try await send(req)
             return try parse(data: data, status: (resp as? HTTPURLResponse)?.statusCode ?? 0)

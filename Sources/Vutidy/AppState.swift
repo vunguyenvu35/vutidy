@@ -225,6 +225,14 @@ final class AppState: ObservableObject {
     @Published var advice: String?
     @Published var adviceError: String?
     @Published var adviceLoading = false
+    /// Cho AI xin xem sâu một số nhóm khi cần (chi tiết chỉ-đọc, ẩn danh). Mặc định bật vì nó quyết định độ chính xác.
+    @Published var aiDeepDive: Bool = (UserDefaults.standard.object(forKey: "aiDeepDive") as? Bool) ?? true {
+        didSet { UserDefaults.standard.set(aiDeepDive, forKey: "aiDeepDive") }
+    }
+    /// Nhóm AI đang/đã xin xem sâu và JSON chi tiết đã gửi ở vòng 2.
+    @Published var adviceStatus: String?
+    @Published var adviceInspected: [String] = []
+    @Published var adviceDetails: String?
     /// Khi dọn tự động: gồm cả mục An toàn KHÔNG hoàn tác được (lệnh docker/go/brew prune) và Thùng rác (xóa vĩnh viễn). Mặc định tắt.
     @Published var autoCleanIrreversible: Bool = UserDefaults.standard.bool(forKey: "autoCleanIrreversible") {
         didSet { UserDefaults.standard.set(autoCleanIrreversible, forKey: "autoCleanIrreversible") }

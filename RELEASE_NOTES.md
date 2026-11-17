@@ -1,5 +1,14 @@
 <p align="center"><img src="docs/assets/brand/logo-mark-256.png" alt="Vutidy" width="88"></p>
 
+# Unreleased
+
+- **AI Advisor (optional, off by default).** After a scan, an AI ranks what is worth doing and each step is a button. It uses the AI tools already signed in on your Mac (Claude Code, Codex, Antigravity, Gemini CLI, no API key) or the Claude API with your key, with a model picker per source. It can ask to look deeper into big groups such as Docker (read-only, anonymized details). The AI only picks from actions Vutidy offers; cleaning goes to the Quarantine, and steps that run a tool's own command are labelled *Can't be undone* and confirmed one by one. **Turning it on sends scan totals (and, if the AI asks, anonymized item details) to the AI service of the source you pick**; see the [security policy](SECURITY.md).
+- **Running AI agents.** Smart Scan lists Claude Code, Codex, MCP servers and similar processes, nests sub-agents under their parent and flags orphaned or runaway ones, which you can end after a confirmation.
+- **Close apps to clean their cache.** Running browsers and a few chat and music apps are quit politely (never forced), cleaned, then reopened. Automatic cleaning never closes apps.
+- **Fix: Docker sizes.** The "safe" Docker image size came from unused *tagged* images, but the command only removes *dangling* ones, so cleaning could free almost nothing. Dangling images are now the safe item; unused tagged images are a **Review** item with a warning.
+- **Popover cards open the matching page**, the maximized Settings window buttons work, and the Performance card no longer overflows.
+
+
 # Vutidy 0.4.0
 
 Release date: 2026-11-17 · Platform: macOS 13 or later (only tried on Apple Silicon) · Status: **pre-release**. The [known issues of 0.1.0](#vutidy-010) still apply.

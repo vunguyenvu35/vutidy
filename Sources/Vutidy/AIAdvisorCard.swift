@@ -54,8 +54,12 @@ struct AIAdvisorCard: View {
         switch mode {
         case .off: return tr("Để AI lên kế hoạch dọn dẹp")
         case .setup: return tr("Cần một nguồn AI để bắt đầu")
-        case .loading: return trf("%@ đang phân tích kết quả quét…", sourceName)
-        case .plan, .text: return state.adviceSource.map { trf("Trả lời bởi %@", $0) } ?? ""
+        case .loading:
+            if let g = state.adviceStatus { return trf("%@ đang xem sâu: %@…", sourceName, g) }
+            return trf("%@ đang phân tích kết quả quét…", sourceName)
+        case .plan, .text:
+            let by = state.adviceSource.map { trf("Trả lời bởi %@", $0) } ?? ""
+            return state.adviceInspected.isEmpty ? by : by + " · " + trf("đã xem sâu: %@", state.adviceInspected.joined(separator: ", "))
         case .ready, .error: return tr("Phân tích kết quả quét và đề xuất việc nên làm")
         }
     }
@@ -135,7 +139,7 @@ struct AIAdvisorCard: View {
 
     var offContent: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text(tr("AI chỉ xem số liệu tổng hợp, không bao giờ thấy file của bạn. Nó chọn việc đáng làm nhất, bạn bấm một lần để thực hiện."))
+            Text(tr("AI chỉ xem số liệu của lần quét, không bao giờ đọc nội dung file của bạn. Nó chọn việc đáng làm nhất, bạn bấm một lần để thực hiện."))
                 .font(.vt(size: 14)).lineSpacing(3).foregroundStyle(AIStyle.text).fixedSize(horizontal: false, vertical: true)
             let found = AdvisorProvider.installedCLIs.map(\.displayName)
             HStack(spacing: 8) {
@@ -159,6 +163,11 @@ struct AIAdvisorCard: View {
         Int64(state.planRows.filter { $0.action.kind == .clean && !state.planDone.contains($0.id) }.reduce(0) { $0 + $1.action.megabytes }) * 1_000_000
     }
 
+    /// Dung lượng thêm nếu làm cả các bước dọn bằng lệnh công cụ (không hoàn tác, làm từng cái).
+    var toolBytes: Int64 {
+        Int64(state.planRows.filter { $0.action.kind == .cleanTool && !state.planDone.contains($0.id) }.reduce(0) { $0 + $1.action.megabytes }) * 1_000_000
+    }
+
     @ViewBuilder var planContent: some View {
         if let s = state.advice, !s.isEmpty { summaryText(s) }
         VStack(spacing: 0) {
@@ -171,31 +180,42 @@ struct AIAdvisorCard: View {
         .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.black.opacity(0.24)))
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.white.opacity(0.07)))
 
-        if !state.pendingSafeSteps.isEmpty {
+        if !state.pendingSafeSteps.isEmpty || toolBytes > 0 {
             HStack(alignment: .center, spacing: 16) {
                 if reclaimBytes > 0 {
                     VStack(alignment: .leading, spacing: 1) {
                         Text(ByteFormat.string(reclaimBytes)).font(.vt(size: 26, weight: .bold, design: .rounded)).tracking(-0.5)
                             .monospacedDigit().foregroundStyle(AIStyle.reclaim)
                         Text(tr("có thể giải phóng · vào Quarantine, hoàn tác được")).font(.vt(size: 12)).foregroundStyle(AIStyle.body)
+                        if toolBytes > 0 {
+                            Text(trf("+%@ nữa bằng lệnh công cụ, không hoàn tác: làm riêng từng bước", ByteFormat.string(toolBytes)))
+                                .font(.vt(size: 12)).foregroundStyle(Theme.Review.text)
+                        }
+                    }
+                } else if toolBytes > 0 {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(ByteFormat.string(toolBytes)).font(.vt(size: 26, weight: .bold, design: .rounded)).tracking(-0.5).monospacedDigit().foregroundStyle(Theme.Review.text)
+                        Text(tr("có thể giải phóng bằng lệnh công cụ, không hoàn tác: làm riêng từng bước")).font(.vt(size: 12)).foregroundStyle(AIStyle.body)
                     }
                 } else {
                     Text(tr("Mục dọn vào Quarantine, hoàn tác được.")).font(.vt(size: 12)).foregroundStyle(AIStyle.body)
                 }
                 Spacer(minLength: 12)
-                Button(trf("Áp dụng tất cả (%@)", "\(state.pendingSafeSteps.count)")) { state.confirmApplyAll() }.buttonStyle(AIButtonStyle())
+                if !state.pendingSafeSteps.isEmpty {
+                    Button(trf("Áp dụng tất cả (%@)", "\(state.pendingSafeSteps.count)")) { state.confirmApplyAll() }.buttonStyle(AIButtonStyle())
+                }
             }
         }
         privacy
     }
 
     func stepIcon(_ a: AdvisorAction) -> String {
-        switch a.kind { case .clean: return "sparkles"; case .terminateAgents: return "bolt.slash.fill"; case .review: return "magnifyingglass" }
+        switch a.kind { case .clean, .cleanTool: return "sparkles"; case .terminateAgents: return "bolt.slash.fill"; case .review: return "magnifyingglass" }
     }
 
     func stepTitle(_ a: AdvisorAction) -> String {
         switch a.kind {
-        case .clean: return trf("Dọn %@", a.category)
+        case .clean, .cleanTool: return trf("Dọn %@", a.category)
         case .terminateAgents: return trf("Kết thúc %@ AI agent đáng ngờ", "\(a.items)")
         case .review: return trf("Xem lại %@", a.category)
         }
@@ -203,11 +223,11 @@ struct AIAdvisorCard: View {
 
     func stepChip(_ a: AdvisorAction) -> String {
         let size = ByteFormat.string(Int64(a.megabytes) * 1_000_000)
-        return a.kind == .clean ? "+" + size : size
+        return a.kind == .clean || a.kind == .cleanTool ? "+" + size : size
     }
 
     func stepButton(_ a: AdvisorAction) -> String {
-        switch a.kind { case .clean: return tr("Dọn"); case .terminateAgents: return tr("Kết thúc"); case .review: return tr("Xem") }
+        switch a.kind { case .clean, .cleanTool: return tr("Dọn"); case .terminateAgents: return tr("Kết thúc"); case .review: return tr("Xem") }
     }
 
     func stepRow(_ n: Int, _ step: AdvisorStep) -> some View {
@@ -222,9 +242,14 @@ struct AIAdvisorCard: View {
                 HStack(spacing: 8) {
                     Text(stepTitle(a)).font(.vt(size: 14, weight: .semibold)).foregroundStyle(done ? AIStyle.body : .white).lineLimit(1)
                     Text(stepChip(a)).font(.vt(size: 11.5, weight: .semibold, design: .rounded)).monospacedDigit()
-                        .foregroundStyle(a.kind == .clean ? AIStyle.reclaim : AIStyle.body)
+                        .foregroundStyle(a.kind == .clean || a.kind == .cleanTool ? AIStyle.reclaim : AIStyle.body)
                         .padding(.horizontal, 7).padding(.vertical, 2)
-                        .background(Capsule().fill((a.kind == .clean ? AIStyle.reclaim : Color.white).opacity(0.14)))
+                        .background(Capsule().fill((a.kind == .clean || a.kind == .cleanTool ? AIStyle.reclaim : Color.white).opacity(0.14)))
+                    if a.kind == .cleanTool {
+                        Text(tr("Không hoàn tác")).font(.vt(size: 11.5, weight: .semibold))
+                            .foregroundStyle(Theme.Review.text).padding(.horizontal, 7).padding(.vertical, 2)
+                            .background(Capsule().fill(Theme.Review.base.opacity(0.18)))
+                    }
                 }
                 if !step.reason.isEmpty {
                     Text(step.reason).font(.vt(size: 12.5)).foregroundStyle(AIStyle.body).lineLimit(2).fixedSize(horizontal: false, vertical: true)
@@ -246,14 +271,14 @@ struct AIAdvisorCard: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
                 Image(systemName: "lock.shield").font(.system(size: 11))
-                Text(tr("Chỉ gửi số liệu tổng hợp, không đường dẫn hay tên file. AI chỉ khuyên, mọi thay đổi do bạn bấm."))
+                Text(tr("Gửi số liệu tổng hợp; nếu AI xin xem sâu thì thêm tên mục, dung lượng, tuổi (đã ẩn tên người dùng và project). Không gửi nội dung file. AI chỉ khuyên, mọi thay đổi do bạn bấm."))
                 Button { showPayload.toggle() } label: {
                     Text(showPayload ? tr("Ẩn dữ liệu sẽ gửi") : tr("Xem dữ liệu sẽ gửi")).underline()
                 }.buttonStyle(PlainPointerStyle())
             }
             .font(.vt(size: 11.5)).foregroundStyle(AIStyle.body.opacity(0.85))
             if showPayload, let p = state.aiPayload {
-                Text(ScanAdvisor.json(p)).font(.system(size: 11, design: .monospaced)).foregroundStyle(AIStyle.body).textSelection(.enabled)
+                Text(ScanAdvisor.json(p) + (state.adviceDetails.map { "\n\n// " + tr("Chi tiết gửi thêm ở vòng 2 (AI xin xem sâu):") + "\n" + $0 } ?? "")).font(.system(size: 11, design: .monospaced)).foregroundStyle(AIStyle.body).textSelection(.enabled)
                     .padding(10).frame(maxWidth: .infinity, alignment: .leading)
                     .background(RoundedRectangle(cornerRadius: 8).fill(Color.black.opacity(0.3)))
             }

@@ -61,7 +61,8 @@ extension AppState {
     }
 
     /// Các bước thay đổi máy (dọn vào Quarantine, kết thúc agent) chưa làm.
-    var pendingSafeSteps: [AdvisorStep] { planRows.filter { $0.action.kind != .review && !planDone.contains($0.id) } }
+    /// "Áp dụng tất cả" chỉ gồm việc hoàn tác được; việc dọn bằng lệnh công cụ (không hoàn tác) phải bấm riêng từng cái.
+    var pendingSafeSteps: [AdvisorStep] { planRows.filter { $0.action.kind != .review && $0.action.kind != .cleanTool && !planDone.contains($0.id) } }
 
     /// Làm một bước. Dọn luôn vào Quarantine (hoàn tác được), chỉ mục an toàn không dùng lệnh của công cụ, và không tự đóng app.
     func perform(_ step: AdvisorStep) async {
@@ -86,6 +87,24 @@ extension AppState {
             var r = smart ?? SmartScanResult()
             r.cleanup = results.values.flatMap { $0 }
             smart = r
+        case .cleanTool:
+            var cleaned = false
+            for id in ["system-junk", "dev-junk"] {
+                guard var arr = results[id] else { continue }
+                var any = false
+                for i in arr.indices {
+                    let match = arr[i].safety == .safe && arr[i].command != nil && AdvisorPlanner.sanitizedCategory(arr[i].category) == act.category
+                    arr[i].selected = match; any = any || match
+                }
+                guard any else { continue }
+                cleaned = true
+                results[id] = arr
+                await clean(id, mode: .permanent, allowQuit: false)   // chạy lệnh của công cụ; không có Quarantine nên ghi đúng là xóa
+            }
+            guard cleaned else { notify(tr("Không còn mục nào để dọn trong nhóm này."), .warning); return }
+            var r = smart ?? SmartScanResult()
+            r.cleanup = results.values.flatMap { $0 }
+            smart = r
         case .terminateAgents:
             for a in (smart?.flaggedAgents ?? []) { await terminateAgent(a) }
         case .review:
@@ -106,6 +125,13 @@ extension AppState {
                 title: trf("Dọn %@?", "\(a.category) · \(ByteFormat.string(Int64(a.megabytes) * 1_000_000))"),
                 message: trf("Các mục sẽ được chuyển vào Quarantine và khôi phục được trong %@ ngày.", "\(retentionDays)"),
                 confirmTitle: tr("Chuyển vào Quarantine"), symbol: "v.smartScan", action: { Task { await self.perform(step) } })
+        case .cleanTool:
+            let what = Set(((results["system-junk"] ?? []) + (results["dev-junk"] ?? []))
+                .filter { $0.safety == .safe && $0.command != nil && AdvisorPlanner.sanitizedCategory($0.category) == a.category }.map(\.title)).sorted().joined(separator: ", ")
+            confirmRequest = ConfirmRequest(
+                title: trf("Dọn %@?", "\(a.category) · \(ByteFormat.string(Int64(a.megabytes) * 1_000_000))"),
+                message: trf("Chạy lệnh dọn của chính công cụ (%@). Chỉ xóa dữ liệu có thể tạo lại hoặc tải lại. Không thể hoàn tác.", what),
+                confirmTitle: tr("Dọn không hoàn tác"), destructive: true, symbol: "v.trash", action: { Task { await self.perform(step) } })
         case .terminateAgents:
             confirmRequest = ConfirmRequest(
                 title: trf("Kết thúc %@ AI agent đáng ngờ?", "\(a.items)"),
@@ -120,7 +146,7 @@ extension AppState {
         guard !steps.isEmpty else { return }
         let lines = steps.map { s -> String in
             switch s.action.kind {
-            case .clean: return "• " + trf("Dọn %@ · %@", s.action.category, ByteFormat.string(Int64(s.action.megabytes) * 1_000_000))
+            case .clean, .cleanTool: return "• " + trf("Dọn %@ · %@", s.action.category, ByteFormat.string(Int64(s.action.megabytes) * 1_000_000))
             case .terminateAgents: return "• " + trf("Kết thúc %@ AI agent đáng ngờ", "\(s.action.items)")
             case .review: return ""
             }
@@ -156,10 +182,14 @@ extension AppState {
 
     func askAdvisor() async {
         guard aiAdvisorEnabled, let input = aiPayload, !adviceLoading else { return }
-        adviceLoading = true; adviceError = nil
-        defer { adviceLoading = false }
+        guard let result = smart else { return }
+        adviceLoading = true; adviceError = nil; adviceStatus = nil; adviceInspected = []; adviceDetails = nil
+        defer { adviceLoading = false; adviceStatus = nil }
         do {
-            let a = try await ScanAdvisor.advise(input, provider: aiProvider, models: aiModels, language: L10n.current.nativeName)
+            let deep = try await ScanAdvisor.adviseDeep(input, result: result, provider: aiProvider, models: aiModels, language: L10n.current.nativeName,
+                                                        deep: aiDeepDive, onStatus: { g in Task { @MainActor in self.adviceStatus = g } })
+            let a = deep.answer
+            adviceInspected = deep.inspected; adviceDetails = deep.details
             // AI trả JSON {summary, actions}. Đọc được thì hiện kế hoạch bấm-được; không thì hiện nguyên văn.
             let plan = smart.flatMap { AdvisorPlanner.parse(a.text, available: AdvisorPlanner.availableActions($0)) }
             advicePlan = plan; planDone = []

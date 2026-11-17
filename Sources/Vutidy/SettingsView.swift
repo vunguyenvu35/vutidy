@@ -277,18 +277,22 @@ struct SettingsOverlay: View {
             }
             SettingsGroup(title: tr("Tư vấn AI")) {
                 SettingRow(title: tr("Bật tư vấn AI"),
-                           desc: tr("Tắt mặc định. Khi bật và bạn bấm Hỏi AI, số liệu tổng hợp của lần quét (nhóm rác, dung lượng, số tiến trình AI agent) được gửi tới dịch vụ AI của nguồn bạn chọn. Không gửi đường dẫn, tên file, tên người dùng hay dòng lệnh. AI chỉ đưa lời khuyên, không tự xóa gì."),
+                           desc: tr("Tắt mặc định. Khi bật và bạn bấm Lấy kế hoạch AI, số liệu tổng hợp của lần quét (nhóm rác, dung lượng, số tiến trình AI agent) được gửi tới dịch vụ AI của nguồn bạn chọn. Không gửi nội dung file, tên người dùng hay dòng lệnh. AI chỉ đưa lời khuyên, mọi thay đổi do bạn bấm."),
                            showDivider: state.aiAdvisorEnabled) {
                     SwitchRow(isOn: $state.aiAdvisorEnabled, label: tr("Bật tư vấn AI"))
                 }
                 if state.aiAdvisorEnabled {
-                    SettingRow(title: tr("Nguồn AI"), desc: aiSourceDesc,
-                               showDivider: state.aiProvider == .api || state.aiProvider == .auto) {
+                    SettingRow(title: tr("Nguồn AI"), desc: aiSourceDesc, showDivider: true) {
                         VSelect(selection: $state.aiProvider,
                                 options: ([AdvisorProvider.auto] + AdvisorProvider.installedCLIs + [.api]).map { ($0, $0.displayName) }, width: 200)
                     }
                     if state.aiProvider == .api || state.aiProvider == .auto {
-                        SettingRow(title: tr("Anthropic API key"), desc: tr("Lưu trong Keychain của bạn."), showDivider: state.aiProvider == .api) { AdvisorKeyField() }
+                        SettingRow(title: tr("Anthropic API key"), desc: tr("Lưu trong Keychain của bạn."), showDivider: true) { AdvisorKeyField() }
+                    }
+                    SettingRow(title: tr("Cho AI xem sâu khi cần"),
+                               desc: tr("AI có thể xin xem chi tiết một vài nhóm (tên mục, dung lượng, tuổi, vị trí đã ẩn tên người dùng và project; với Docker thêm danh sách image). Chỉ gửi đúng nhóm AI hỏi, và bạn xem lại được dữ liệu đó."),
+                               showDivider: state.aiProvider != .auto) {
+                        SwitchRow(isOn: $state.aiDeepDive, label: tr("Cho AI xem sâu khi cần"))
                     }
                     if state.aiProvider != .auto {
                         SettingRow(title: tr("Model"), desc: tr("Model dùng cho nguồn này. Để mặc định thì công cụ tự chọn."), showDivider: false) {

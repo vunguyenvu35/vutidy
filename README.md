@@ -19,8 +19,9 @@
 - **You see what goes before it goes.** Every page lists each item with its path, or the exact command it would run (`docker image prune -f`, `brew cleanup`…). **Preview (dry-run)** does the same steps and changes nothing.
 - **Cleaning is undoable.** By default items move to a **Quarantine** you can restore from for 7 days, with the original path and permissions. Nothing is deleted for good unless you choose that.
 - **Built for developers, too.** Docker images and build cache, JetBrains and Xcode leftovers, Node, Go, Python, PHP, Homebrew, Gradle, Cargo, Ollama and Hugging Face models, and `node_modules` in projects you have not touched for weeks.
-- **A hard safety layer.** A blocklist that no rule can override keeps `~/Documents`, `~/Desktop`, keychains, `.ssh` and system folders out of reach. Running apps are skipped. Every deletion is written to an audit log.
-- **Private by design.** No account, no telemetry, nothing about your Mac is uploaded. The only automatic request is the optional update check, which asks GitHub for the newest version number.
+- **A hard safety layer.** A blocklist that no rule can override keeps `~/Documents`, `~/Desktop`, keychains, `.ssh` and system folders out of reach. Apps that are running are skipped; browsers and a few chat and music apps can be closed politely and reopened after cleaning if you allow it. Every deletion is written to an audit log.
+- **Private by design.** No account, no telemetry, and nothing about your Mac leaves it unless you start it. The only automatic request is the optional update check, which asks GitHub for the newest version number.
+- **AI Advisor (optional, off by default).** After a scan, Vutidy can ask an AI you already use on your Mac (Claude Code, Codex, Antigravity, Gemini CLI) or the Claude API with your own key to rank what is worth cleaning. It can look deeper into big groups such as Docker, and you apply each step with one click. The AI only advises; cleaning goes to the Quarantine, and tool commands that cannot be undone are marked and confirmed one by one. **Turning it on sends scan totals (and, if the AI asks, anonymized item details) to the AI service of the source you pick**; see [the security policy](SECURITY.md) for exactly what.
 - **Native and light.** Swift and SwiftUI, a menu bar popover that keeps watching your Mac, and a `vutidy-cli` for the terminal. In English, Tiếng Việt, 日本語 and 中文.
 
 ## What you can do
@@ -84,7 +85,7 @@ The [user guide](docs/user-guide/README.md) walks through every screen with scre
 | **Where it lives** | `~/Library/Application Support/Vutidy/` (the Quarantine, the audit log, your own rules and the speed-test history) |
 | **Undo** | Cleaned items wait in the Quarantine for 7 days (configurable) and restore to their exact original path. |
 | **Never touched** | `~/Documents`, `~/Desktop`, keychains, `~/.ssh`, system folders and apps that are running. No cleaning rule can override this. |
-| **What leaves your Mac** | Nothing, except the optional update check (a request to GitHub for the newest version number) and what you start yourself: the speed test, a Homebrew update, opening a link in your browser. |
+| **What leaves your Mac** | Nothing, except the optional update check (a request to GitHub for the newest version number) and what you start yourself: the speed test, a Homebrew update, opening a link in your browser, and the **AI Advisor** if you turn it on (scan totals and, if the AI asks, anonymized item details, sent to the source you chose). |
 | **No telemetry** | No analytics, no account, no crash reporter. |
 | **Record** | Every delete, move and command is written to an audit log you can read. |
 

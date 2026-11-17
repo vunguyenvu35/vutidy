@@ -61,23 +61,52 @@ public enum DockerDetector {
         }
     }
 
+    /// Tổng dung lượng image "dangling" (không tên): đúng phần `docker image prune -f` xóa được.
+    static func danglingBytes() async -> Int64 {
+        let r = await ProcessRunner.run(["docker", "images", "-f", "dangling=true", "--format", "{{.Size}}"], timeout: 20)
+        guard r.ok else { return 0 }
+        return r.stdout.split(separator: "\n").reduce(Int64(0)) { $0 + parseSize(String($1)) }
+    }
+
+    /// Tách dòng "Images" của `docker system df` thành hai mục đúng với lệnh sẽ chạy:
+    /// dangling (xóa bằng `prune -f`, an toàn) và image có tag nhưng không dùng (cần `prune -a -f`, có thể gồm image build cục bộ → xem lại).
+    /// `df` báo Reclaimable gồm cả hai; chỉ lấy phần dangling cho mục "an toàn" thì con số mới khớp với những gì lệnh giải phóng thật.
+    static func imageItems(reclaimable: Int64, dangling: Int64, dir: URL) -> [ScanItem] {
+        let d = min(max(0, dangling), reclaimable)
+        var out: [ScanItem] = []
+        if d > 0 {
+            out.append(ScanItem(url: dir, title: tr("Image không tên (dangling)"), allocatedSize: d, category: "Docker", ruleID: "docker-images",
+                                safety: .safe, command: ["docker", "image", "prune", "-f"], detail: tr("Dọn bằng lệnh docker, không hoàn tác")))
+        }
+        if reclaimable - d > 0 {
+            out.append(ScanItem(url: dir, title: tr("Image có tag không dùng"), allocatedSize: reclaimable - d, category: "Docker", ruleID: "docker-images-tagged",
+                                safety: .review, command: ["docker", "image", "prune", "-a", "-f"],
+                                detail: tr("Gồm cả image build cục bộ không có trên registry: xóa rồi có thể không tải lại được")))
+        }
+        return out
+    }
+
     public static func scan() async -> [ScanItem] {
         guard ProcessRunner.which("docker") != nil else { return [] }
         let r = await ProcessRunner.run(["docker", "system", "df", "--format", "{{json .}}"], timeout: 20)
         guard r.ok else { return [] }
         let dockerDir = URL(fileURLWithPath: NSHomeDirectory() + "/Library/Containers/com.docker.docker")
         let map: [String: (String, [String], SafetyLevel, String)] = [
-            "Images": (tr("Image không dùng"), ["docker", "image", "prune", "-f"], .safe, "docker-images"),
             "Build Cache": ("Build cache", ["docker", "builder", "prune", "-f"], .safe, "docker-build-cache"),
             "Containers": (tr("Container đã dừng"), ["docker", "container", "prune", "-f"], .review, "docker-containers"),
             "Local Volumes": (tr("Volume không dùng"), ["docker", "volume", "prune", "-f"], .review, "docker-volumes"),
         ]
-        return parse(r.stdout).compactMap { row in
-            guard row.bytes > 0, let m = map[row.type] else { return nil }
-            return ScanItem(url: dockerDir, title: m.0, allocatedSize: row.bytes, category: "Docker",
-                            ruleID: m.3, safety: m.2, command: m.1,
-                            detail: m.2 == .review ? tr("Volume/container có thể chứa dữ liệu") : tr("Dọn bằng lệnh docker, không hoàn tác"))
+        var items: [ScanItem] = []
+        for row in parse(r.stdout) where row.bytes > 0 {
+            if row.type == "Images" {
+                items += imageItems(reclaimable: row.bytes, dangling: await danglingBytes(), dir: dockerDir)
+            } else if let m = map[row.type] {
+                items.append(ScanItem(url: dockerDir, title: m.0, allocatedSize: row.bytes, category: "Docker",
+                                      ruleID: m.3, safety: m.2, command: m.1,
+                                      detail: m.2 == .review ? tr("Volume/container có thể chứa dữ liệu") : tr("Dọn bằng lệnh docker, không hoàn tác")))
+            }
         }
+        return items
     }
 }
 

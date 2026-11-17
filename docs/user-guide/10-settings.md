@@ -92,7 +92,7 @@ Every action has a default key shown as key caps. Click a key cap, press the new
 | **Quarantine** | Size and number of items, and **Empty Quarantine** (asks first, cannot be undone) |
 | **Audit log** | Its path and size, **Show in Finder** |
 | **Custom rules** | The `Rules` folder where your own rule files go, **Open rules folder** |
-| **Privacy note** | Vutidy has no telemetry and sends nothing anywhere |
+| **Privacy note** | Vutidy has no telemetry and sends nothing unless you start it. The optional AI Advisor (*Settings → Cleanup → AI advice*, off by default) sends scan totals to the AI source you pick; see [Smart Scan](02-smart-scan.md#ai-advisor) |
 
 ## Help and support
 

@@ -3,8 +3,8 @@ import CoreKit
 
 /// Một hành động app có thể thực hiện và AI được phép đề xuất. AI chỉ chọn trong danh sách này (theo `id`), không tự nghĩ ra lệnh.
 public struct AdvisorAction: Codable, Sendable, Hashable, Identifiable {
-    public enum Kind: String, Codable, Sendable { case clean, terminateAgents, review }
-    public let id: String          // "clean:Docker" · "terminate-agents" · "review:Node"
+    public enum Kind: String, Codable, Sendable { case clean, cleanTool, terminateAgents, review }
+    public let id: String          // "clean:Cache" · "tool:Docker" · "terminate-agents" · "review:Node"
     public let kind: Kind
     public let category: String    // nhóm rác (rỗng với terminate-agents)
     public let items: Int
@@ -46,6 +46,14 @@ public enum AdvisorPlanner {
             guard size >= minCleanMB else { continue }   // dọn vài KB không đáng thành một bước ("+0 KB" chỉ là nhiễu)
             out.append(.init(id: "clean:\(cat)", kind: .clean, category: cat, items: items.count, megabytes: size))
         }
+        // Dọn bằng lệnh của chính công cụ (docker image prune, go clean, brew cleanup…): thường là phần lớn dung lượng, nhưng KHÔNG hoàn tác được.
+        // Chỉ mục an toàn (image/build cache, cache); volume và container chứa dữ liệu là mục "review" nên không bao giờ vào đây.
+        let tool = r.cleanup.filter { $0.safety == .safe && $0.command != nil && $0.ruleID != "trash" }
+        for (cat, items) in Dictionary(grouping: tool, by: { clean($0.category) }).sorted(by: { $0.key < $1.key }) {
+            let size = mb(items.reduce(0) { $0 + $1.allocatedSize })
+            guard size >= minCleanMB else { continue }
+            out.append(.init(id: "tool:\(cat)", kind: .cleanTool, category: cat, items: items.count, megabytes: size))
+        }
         let flagged = r.flaggedAgents
         if !flagged.isEmpty {
             out.append(.init(id: "terminate-agents", kind: .terminateAgents, category: "", items: flagged.count,
@@ -56,6 +64,19 @@ public enum AdvisorPlanner {
             out.append(.init(id: "review:\(cat)", kind: .review, category: cat, items: items.count, megabytes: mb(items.reduce(0) { $0 + $1.allocatedSize })))
         }
         return out
+    }
+
+    /// AI xin xem sâu một số nhóm thay vì đưa kế hoạch: `{"inspect": ["Docker", "Go"]}`. Trả nil nếu nó đã đưa kế hoạch có hành động,
+    /// hoặc không xin gì hợp lệ. Chỉ nhận tên nhóm trong `allowed`, tối đa `AdvisorInspector.maxGroups`.
+    public static func parseInspectRequest(_ text: String, allowed: [String]) -> [String]? {
+        guard let a = text.firstIndex(of: "{"), let b = text.lastIndex(of: "}"), a < b,
+              let data = String(text[a...b]).data(using: .utf8),
+              let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+              let want = obj["inspect"] as? [String] else { return nil }
+        if let acts = obj["actions"] as? [Any], !acts.isEmpty { return nil }
+        var seen = Set<String>()
+        let ok = want.filter { allowed.contains($0) && seen.insert($0).inserted }.prefix(AdvisorInspector.maxGroups)
+        return ok.isEmpty ? nil : Array(ok)
     }
 
     /// Đọc câu trả lời của AI thành kế hoạch. Chịu được chữ thừa/khung ``` quanh JSON; bỏ mọi `id` không nằm trong `available`.

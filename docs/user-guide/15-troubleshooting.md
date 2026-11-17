@@ -56,7 +56,7 @@ Occasionally the first `swift test` right after a `swift build` reports *externa
 | --- | --- |
 | Quarantine, audit log, custom rules, speed-test history | `~/Library/Application Support/Vutidy` (or `$VUTIDY_HOME`) |
 | Preferences (language, settings, shortcuts) | `~/Library/Preferences` (the app's defaults) |
-| Nothing else | There is no cloud, account or telemetry |
+| Nothing else | There is no cloud, account or telemetry. The optional AI Advisor sends data only if you turn it on |
 
 ## Reset everything
 

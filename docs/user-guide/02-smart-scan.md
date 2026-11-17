@@ -72,6 +72,16 @@ The malware check and the extra groups add some time to the scan (usually under 
 
 Afterwards a toast shows how much was moved, with an **Undo** link that opens the Quarantine.
 
+## AI Advisor
+
+An optional step after a scan, **off by default**. Turn it on in the card under the hero (**Turn on AI Advisor**) or in **Settings → Cleanup → AI advice**, then press **Get AI plan**.
+
+- **What it does.** The AI ranks what is worth doing and gives each step a short reason: clean a group (to the Quarantine), end AI agent processes that lost their parent or burn CPU, or open a page so you can review items yourself. Every step is a button, with **Apply all** for the undoable ones.
+- **Sources.** *Automatic* tries the AI tools already signed in on your Mac (Claude Code, Codex, Antigravity, Gemini CLI) in that order and uses the Claude API with your own key only as a last resort. You can pick one source and a model for it. No API key is needed for the tools.
+- **Looking deeper.** If the totals are not enough (for example what is inside Docker), the AI may ask to look inside up to four groups. Vutidy reads the details on your Mac, read-only, and sends item names, sizes, ages and locations with your user and project names hidden (for Docker: image names, tags and whether a container uses them). Turn this off with **Let the AI look deeper when needed**.
+- **What is sent.** Scan totals, plus those details if the AI asks. Never file contents, command lines or your account. **Show data to be sent** shows exactly what left.
+- **Safety.** The AI can only choose from actions Vutidy offers. Trash, items marked *Review* and Docker volumes or containers are never offered as a clean. Cleaning goes to the Quarantine. Steps that run a tool's own command (Docker, Go, Homebrew) **cannot be undone**, carry a *Can't be undone* label, are left out of **Apply all** and ask for confirmation one at a time.
+
 ## Automatic cleaning
 
 If you do not want to press **Clean** yourself, Smart Scan can clean as soon as it has scanned.
