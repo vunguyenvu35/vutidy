@@ -1,6 +1,6 @@
 # Plan: stronger malware checks and startup control
 
-Status: **in progress**. Part B (see what opens at login) is built; Part A (malware checks) is planned. Update this page as items are done.
+Status: **in progress**. Part B (see what opens at login) is built. Part A (malware checks) is partly built: see [Built in Part A](#built-in-part-a). Update this page as items are done.
 
 ## Contents
 
@@ -25,7 +25,20 @@ Status: **in progress**. Part B (see what opens at login) is built; Part A (malw
 
 ## Part A: malware checks
 
-What exists today ([`MalwareCheck.swift`](../../Sources/Modules/MalwareCheck.swift), [`Protection.swift`](../../Sources/Modules/Protection.swift)): security posture (SIP, Gatekeeper, XProtect, FileVault, Firewall), up to 150 apps checked for signature and notarization, launch agents and daemons (odd locations, Apple impersonation, download-and-run commands, unsigned), shell profiles and cron, and an FSEvents monitor that reports after a file is written.
+What exists today ([`MalwareCheck.swift`](../../Sources/Modules/MalwareCheck.swift), [`Protection.swift`](../../Sources/Modules/Protection.swift)): security posture (SIP, Gatekeeper, XProtect, FileVault, Firewall), up to 300 apps checked for signature and notarization, launch agents and daemons (odd locations, Apple impersonation, download-and-run commands, unsigned), shell profiles and cron, and an FSEvents monitor that reports after a file is written.
+
+### Built in Part A
+
+| Item | What it does | Where |
+| --- | --- | --- |
+| **Act on findings** (new) | Each finding can be **quarantined** (restorable for 7 days; a launch item is disabled first), **disabled** (launch items) or **ignored**. Shell profiles, cron and system settings are report-only: Vutidy does not edit your dotfiles | `AppState.malwareQuarantine/Disable/Ignore`, `MalwareView.swift` |
+| **A6 baseline + A8 allowlist** | `MalwareStore` keeps the ignore list and the findings of the last scan in `malware-state.json`. Later scans mark what is **new**; ignored items are hidden and can be shown again. The first scan marks nothing as new. Keys use a stable code, not translated text | `MalwareStore.swift` |
+| **Sensitive permissions (TCC)** (new) | Lists third-party apps holding Full Disk Access, Accessibility, Screen Recording, Input Monitoring or input control. Flags unsigned, tampered or **uninstalled** apps that still hold them. Needs Full Disk Access to read `TCC.db`; without it the card says so | `TCCAudit` in `MalwareExtra.swift` |
+| **A2 (part)** | Configuration profiles, Chromium-family browser extensions (all sites + cookies/proxy/debugger/native messaging…), system extensions, `DYLD_*` in launchd plists, remote system proxy / PAC, `/etc/hosts` redirects, `~/.ssh/authorized_keys` | `MalwareExtra.swift` |
+| **Stray executables** (new) | Hidden Mach-O files directly in the home folder (high); unsigned executables in `~/Library/Application Support` (low, medium if hidden) | `scanStrayExecutables` |
+| **Small IOC list** (new, narrower than A11) | A few published indicators built in, plus an optional `malware-ioc.json` the user can extend. No update service, no network, no hashes | `MalwareIOC` |
+
+Not yet done from A2: `emond`, `at` jobs, folder actions, kernel extensions, Safari extensions, Login Items cross-check. The real-time monitor for new launch items already existed (`RealtimeMonitor`).
 
 ### Phase 1: cheap and valuable (no infrastructure)
 

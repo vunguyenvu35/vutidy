@@ -327,6 +327,50 @@ final class AppState: ObservableObject {
         malwareScanning = false; malwareStatus = ""
     }
 
+    // MARK: Xử lý phát hiện malware
+
+    private func removeMalwareFinding(_ f: SecurityFinding) {
+        malwareReport?.findings.removeAll { $0.key == f.key }
+    }
+
+    /// Chuyển file nghi ngờ vào Quarantine (khôi phục được trong 7 ngày). Launch item được tắt trước để dừng tiến trình đang chạy.
+    func malwareQuarantine(_ f: SecurityFinding) async {
+        guard f.canQuarantine, let path = f.path else { return }
+        let url = URL(fileURLWithPath: path)
+        if let why = executor.blocklist.reason(for: url) {
+            notify(trf("Không thể cách ly: %@", "\(why)"), .error); return
+        }
+        if f.source == .launchItem, let label = f.label { _ = await Optimization.disableLaunchItem(plistPath: path, label: label) }
+        let bytes = FileWalker.allocatedSize(of: url)
+        do {
+            try await executor.quarantine.add(url, ruleID: "malware.\(f.code)", bytes: bytes)
+            executor.audit.append(AuditRecord(date: Date(), action: "quarantine", path: path, bytes: bytes,
+                                              ruleID: "malware.\(f.code)", mode: "malware", result: "done"))
+            removeMalwareFinding(f)
+            notify(trf("Đã cách ly %@. Khôi phục tại Quarantine trong 7 ngày.", url.lastPathComponent))
+        } catch {
+            notify(trf("Không thể cách ly: %@", error.localizedDescription), .error)
+        }
+    }
+
+    func malwareDisable(_ f: SecurityFinding) async {
+        guard f.canDisable, let path = f.path, let label = f.label else { return }
+        let r = await Optimization.disableLaunchItem(plistPath: path, label: label)
+        if r.ok { removeMalwareFinding(f); notify(trf("Đã tắt %@", label)) }
+        else { notify(trf("Lỗi: %@", r.stderr.trimmingCharacters(in: .whitespacesAndNewlines)), .error) }
+    }
+
+    func malwareIgnore(_ f: SecurityFinding) {
+        MalwareStore.shared.ignore(f.key)
+        removeMalwareFinding(f)
+        malwareReport?.ignoredCount += 1
+    }
+
+    func malwareClearIgnored() async {
+        MalwareStore.shared.clearIgnored()
+        await runMalwareCheck()
+    }
+
     func checkFDA() {
         // VUTIDY_FAKE_NOFDA: chỉ để chụp tài liệu / thử giao diện "chưa cấp quyền", không đụng tới quyền thật.
         hasFDA = ProcessInfo.processInfo.environment["VUTIDY_FAKE_NOFDA"] != nil ? false : (Self.probeFullDiskAccess() ?? true)

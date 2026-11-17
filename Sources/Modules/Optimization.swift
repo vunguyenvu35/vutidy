@@ -163,3 +163,13 @@ extension Optimization {
         await ProcessRunner.runPrivileged(shell: "/usr/sbin/purge")
     }
 }
+
+extension Optimization {
+    /// Tắt một launch item chỉ từ đường dẫn plist và label (dùng cho kết quả quét malware).
+    public static func disableLaunchItem(plistPath: String, label: String) async -> ProcessResult {
+        let scope: LaunchItem.Scope = plistPath.hasPrefix("/Library/LaunchDaemons") ? .daemon
+            : (plistPath.hasPrefix("/Library/LaunchAgents") ? .systemAgent : .userAgent)
+        let item = LaunchItem(label: label, plist: URL(fileURLWithPath: plistPath), scope: scope, program: nil, loaded: true, disabled: false)
+        return await disable(item)
+    }
+}
