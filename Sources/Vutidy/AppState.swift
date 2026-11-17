@@ -339,6 +339,7 @@ final class AppState: ObservableObject {
         ctx.devJunkSafeBytes = (results["dev-junk"] ?? []).filter { $0.safety == .safe }.reduce(0) { $0 + $1.allocatedSize }
         ctx.loginItems = smart?.launchItems.filter { $0.scope == .userAgent }.count ?? 0
         ctx.lastDeepScan = lastDeepScan
+        ctx.lastMalwareCheck = malwareReport?.date
         recommendations = RecommendationEngine().cards(for: ctx, dismissed: dismissStore)
     }
 
@@ -607,6 +608,8 @@ final class AppState: ObservableObject {
         case .openUninstaller: section = .uninstaller
         case .openOptimization, .openBattery: section = .optimization
         case .runDeepScan: section = .protection
+        case .openSmartScan: section = .smartScan
+        case .openMalware: section = .malware
         }
         showMainWindow()
     }

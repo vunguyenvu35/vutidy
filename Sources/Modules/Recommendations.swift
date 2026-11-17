@@ -3,6 +3,7 @@ import CoreKit
 
 public enum RecommendationAction: Sendable, Hashable {
     case openCleanup, openSpaceLens, openDevJunk, openUpdater, openUninstaller, openOptimization, openBattery, runDeepScan, thinSnapshots
+    case openSmartScan, openMalware
 }
 
 public struct Recommendation: Identifiable, Sendable, Hashable {
@@ -25,6 +26,8 @@ public struct SystemContext: Sendable {
     public var unusedApps: Int = 0
     public var loginItems: Int = 0
     public var lastDeepScan: Date?
+    /// Lần kiểm tra malware gần nhất (kèm danh sách quyền nhạy cảm); nil = chưa từng.
+    public var lastMalwareCheck: Date?
     public init(disk: DiskInfo, battery: BatteryInfo? = nil) { self.disk = disk; self.battery = battery }
 }
 
@@ -37,7 +40,7 @@ public struct RecommendationThresholds: Codable, Sendable {
     public var batteryHealth: Double = 0.80
     public var memoryAvailableFraction: Double = 0.10
     public var swapBytes: Int64 = 8_000_000_000
-    public var maxCards: Int = 5
+    public var maxCards: Int = 8
     public init() {}
 }
 
@@ -69,6 +72,15 @@ public struct DefaultRecommendations: RecommendationProvider {
         if c.lastDeepScan == nil || Date().timeIntervalSince(c.lastDeepScan!) > Double(t.deepScanDays) * 86_400 {
             r.append(.init(id: "deep-scan", priority: 60, icon: "shield", title: trf("Chưa quét persistence trong %@ ngày.", "\(t.deepScanDays)"),
                            actionTitle: tr("Quét ngay"), action: .runDeepScan, severity: 1))
+        }
+        // Gợi ý thường trực (ưu tiên thấp): chỉ hiện khi đã lâu chưa làm, để băng chuyền luôn có việc đáng làm tiếp theo.
+        if c.lastDeepScan == nil || Date().timeIntervalSince(c.lastDeepScan!) > 86_400 {
+            r.append(.init(id: "smart-scan", priority: 45, icon: "sparkles", title: tr("Dọn rác mới và tối ưu Mac của bạn."),
+                           actionTitle: tr("Chạy Smart Scan"), action: .openSmartScan, severity: 1))
+        }
+        if c.lastMalwareCheck == nil || Date().timeIntervalSince(c.lastMalwareCheck!) > Double(t.deepScanDays * 2) * 86_400 {
+            r.append(.init(id: "privacy-review", priority: 35, icon: "hand.raised", title: tr("Xem lại app nào được truy cập dữ liệu nhạy cảm (đĩa, màn hình, bàn phím)."),
+                           actionTitle: tr("Xem ngay"), action: .openMalware, severity: 1))
         }
         if c.devJunkSafeBytes > t.devJunkBytes {
             r.append(.init(id: "dev-junk", priority: 80, icon: "hammer", title: trf("Dev Junk có thể dọn: %@.", "\(ByteFormat.string(c.devJunkSafeBytes))"),

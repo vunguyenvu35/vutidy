@@ -57,27 +57,32 @@ struct PopoverView: View {
     @ViewState private var devicesLoaded = false
     @ViewState private var speed: SpeedResult?
     @ViewState private var testing = false
-    @ViewState private var showAllCards = false
     @ViewState private var turbo: TurboBoost.Status?
     @ViewState private var turboBusy = false
     @ViewState private var contentHeight: CGFloat = 0
     @Environment(\.openWindow) private var openWindow
 
+    /// Popover không cao hơn vùng nhìn thấy của màn hình (trừ thanh menu); cao hơn thì cuộn dọc.
+    static var maxHeight: CGFloat { (NSScreen.main?.visibleFrame.height ?? 800) - 12 }
+
     var body: some View {
         let s = state.snapshot
         // Nền gắn vào chính nội dung; PopoverTopPin giữ cạnh trên của cửa sổ khi nó co/giãn theo nội dung.
+        ScrollView(.vertical, showsIndicators: false) {
         VStack(alignment: .leading, spacing: 12) {
-            header
-            recommendations
-            togglesRow
-            protectionCard
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
-                diskTile(s); memoryTile(s); cpuTile(s); batteryTile(s); networkTile(s); devicesTile
+                header
+                recommendations
+                togglesRow
+                protectionCard
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+                    diskTile(s); memoryTile(s); cpuTile(s); batteryTile(s); networkTile(s); devicesTile
+                }
+                footer
             }
-            footer
+            .padding(14)
         }
-        .padding(14)
         .frame(width: 400, alignment: .top)
+        .frame(maxHeight: Self.maxHeight)
         // Nền phải tràn qua vùng an toàn: cửa sổ MenuBarExtra có thể chừa một dải phía trên, nếu nền chỉ phủ phần nội dung
         // thì dải đó lộ lớp vật liệu mờ (màu của cửa sổ phía sau) thành một băng sai màu trên đầu popover.
         .background(ZStack { PageBackground(page: .smartScan); Color.black.opacity(0.18) }.ignoresSafeArea())
@@ -103,31 +108,48 @@ struct PopoverView: View {
         }
     }
 
+    /// Băng chuyền "Gợi ý": mỗi thẻ một việc đáng làm (biểu tượng, lời gợi ý, nút), vuốt ngang để xem tiếp; thẻ thứ ba ló ra một phần.
+    /// Việc gấp (ưu tiên ≥ 80) có nút nổi bật; bấm ✕ để ẩn thẻ 7 ngày (hiện lại nếu tình trạng xấu đi nhiều).
     @ViewBuilder var recommendations: some View {
         let cards = state.recommendations
         if !cards.isEmpty {
-            let shown = showAllCards ? cards : Array(cards.prefix(2))
-            VStack(spacing: 8) {
-                ForEach(shown) { r in
-                    HStack(spacing: 12) {
-                        SolidIcon(symbol: r.icon, tint: tint(for: r), size: 34)
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(r.title).font(.vt(size: 13, weight: .medium)).foregroundStyle(.white)
-                                .fixedSize(horizontal: false, vertical: true)
-                            Button(r.actionTitle) { state.perform(r.action); activate() }.buttonStyle(SecondaryButtonStyle()).controlSize(.small)
-                        }
-                        Spacer(minLength: 0)
-                        Button { state.dismissStore.dismiss(r); state.pollSystem() } label: { Image(systemName: "xmark").font(.system(size: 10, weight: .bold)) }
-                            .buttonStyle(PlainPointerStyle()).foregroundStyle(Theme.Text.tertiary).help(tr("Ẩn thông báo"))
+            VStack(alignment: .leading, spacing: 8) {
+                Text(tr("Gợi ý")).font(.vt(size: 15, weight: .bold, design: .rounded)).foregroundStyle(.white)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 10) {
+                        ForEach(cards) { r in recommendationCard(r) }
                     }
-                    .padding(12).frame(maxWidth: .infinity, alignment: .leading).glassSurface(radius: 14, strong: false)
+                    .padding(.horizontal, 14)
                 }
-                if cards.count > 2 {
-                    Button(showAllCards ? tr("Thu gọn") : trf("Hiện tất cả (%@)", "\(cards.count)")) { showAllCards.toggle() }
-                        .buttonStyle(TextActionStyle(color: Theme.Text.secondary)).frame(maxWidth: .infinity)
-                }
+                .padding(.horizontal, -14)   // băng chuyền chạy sát mép popover, thẻ đầu vẫn thẳng hàng với phần còn lại
             }
         }
+    }
+
+    func recommendationCard(_ r: Recommendation) -> some View {
+        let urgent = r.priority >= 80
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top) {
+                Image(systemName: r.icon).font(.system(size: 20, weight: .regular)).foregroundStyle(.white).frame(height: 24)
+                Spacer(minLength: 0)
+                Button { state.dismissStore.dismiss(r); state.pollSystem() } label: {
+                    Image(systemName: "xmark.circle.fill").font(.system(size: 15)).foregroundStyle(Theme.Text.tertiary)
+                }.buttonStyle(PlainPointerStyle()).help(tr("Ẩn thông báo"))
+            }
+            Text(r.title).font(.vt(size: 13, weight: .medium)).foregroundStyle(.white)
+                .lineLimit(3).fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 4)
+            Group {
+                if urgent {
+                    Button { state.perform(r.action); activate() } label: { Text(r.actionTitle) }.buttonStyle(PrimaryButtonStyle(fullWidth: true))
+                } else {
+                    Button { state.perform(r.action); activate() } label: { Text(r.actionTitle) }.buttonStyle(SecondaryButtonStyle(fullWidth: true))
+                }
+            }.controlSize(.small)
+        }
+        .padding(12)
+        .frame(width: 168, height: 148, alignment: .topLeading)
+        .glassSurface(radius: 14, strong: false)
     }
 
     func tint(for r: Recommendation) -> Color {
@@ -137,7 +159,8 @@ struct PopoverView: View {
         case .openUpdater: return Page.updater.palette.glow
         case .openUninstaller: return Page.uninstaller.palette.glow
         case .openOptimization, .openBattery: return Page.optimization.palette.glow
-        case .runDeepScan: return Page.protection.palette.glow
+        case .runDeepScan, .openMalware: return Page.protection.palette.glow
+        case .openSmartScan: return Page.smartScan.palette.glow
         }
     }
 

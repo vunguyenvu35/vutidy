@@ -1,5 +1,9 @@
 <p align="center"><img src="docs/assets/brand/logo-mark-256.png" alt="Vutidy" width="88"></p>
 
+# Unreleased
+
+- **Recommendations carousel in the menu bar popover.** Swipe sideways through cards, each with one thing worth doing next and a button: free purgeable space, memory pressure, low disk, Dev Junk, app updates, apps you have not opened for 90 days, a Smart Scan when the last one is over a day old, and a review of which apps can reach sensitive data. Urgent cards get a highlighted button; **✕** hides a card for 7 days (it comes back if things get much worse). On a short screen the popover stops at the screen height and scrolls.
+
 # Vutidy 0.6.0
 
 Release date: 2026-11-17 · Platform: macOS 13 or later (only tried on Apple Silicon and one Intel Mac) · Status: **pre-release**. The [known issues of 0.1.0](#vutidy-010) still apply.

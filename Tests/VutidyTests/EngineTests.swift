@@ -189,7 +189,7 @@ import Foundation
         #expect(cards.first?.id == "disk-low")
         #expect(cards.count <= 5)
         #expect(cards.map(\.priority) == cards.map(\.priority).sorted(by: >))
-        var healthy = SystemContext(disk: DiskInfo(total: 1000, available: 600, availableImportant: 600)); healthy.lastDeepScan = Date()
+        var healthy = SystemContext(disk: DiskInfo(total: 1000, available: 600, availableImportant: 600)); healthy.lastDeepScan = Date(); healthy.lastMalwareCheck = Date()
         #expect(RecommendationEngine().cards(for: healthy).isEmpty)
     }
     @Test func dismissHidesUntilWorse() {
