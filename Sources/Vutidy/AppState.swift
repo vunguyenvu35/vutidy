@@ -206,11 +206,21 @@ final class AppState: ObservableObject {
     }
     /// Tư vấn AI sau Smart Scan. Mặc định tắt: khi bật, số liệu tổng hợp (không đường dẫn) được gửi tới Claude API khi bạn bấm hỏi.
     @Published var aiAdvisorEnabled: Bool = UserDefaults.standard.bool(forKey: "aiAdvisorEnabled") {
-        didSet { UserDefaults.standard.set(aiAdvisorEnabled, forKey: "aiAdvisorEnabled"); if !aiAdvisorEnabled { advice = nil; adviceError = nil } }
+        didSet { UserDefaults.standard.set(aiAdvisorEnabled, forKey: "aiAdvisorEnabled"); if !aiAdvisorEnabled { advice = nil; adviceError = nil; advicePlan = nil } }
     }
-    @Published var aiModel: String = UserDefaults.standard.string(forKey: "aiModel") ?? ScanAdvisor.defaultModel {
-        didSet { UserDefaults.standard.set(aiModel, forKey: "aiModel") }
+    /// Model đã chọn cho từng nguồn AI (khóa là `AdvisorProvider.rawValue`); rỗng = mặc định của công cụ.
+    @Published var aiModels: [String: String] = (UserDefaults.standard.dictionary(forKey: "aiModels") as? [String: String]) ?? [:] {
+        didSet { UserDefaults.standard.set(aiModels, forKey: "aiModels") }
     }
+    /// Danh sách model lấy từ từng công cụ (đã tải trong phiên này).
+    @Published var aiModelOptions: [String: [AdvisorModel]] = [:]
+    @Published var aiProvider: AdvisorProvider = AdvisorProvider(rawValue: UserDefaults.standard.string(forKey: "aiProvider") ?? "") ?? .auto {
+        didSet { UserDefaults.standard.set(aiProvider.rawValue, forKey: "aiProvider") }
+    }
+    @Published var adviceSource: String?
+    /// Kế hoạch hành động AI đề xuất (đã lọc theo hành động app cho phép) và các bước đã làm xong.
+    @Published var advicePlan: AdvisorPlan?
+    @Published var planDone: Set<String> = []
     @Published var aiHasKey: Bool = AdvisorKeychain.hasKey
     @Published var advice: String?
     @Published var adviceError: String?
@@ -531,7 +541,7 @@ final class AppState: ObservableObject {
         async let careTask = SmartCare.gather()
         async let malwareTask: Void = runMalwareCheck()
         let r = await SmartScan.run(modules: mods, progress: { [weak self] s in Task { @MainActor in self?.status["smart"] = s } })
-        advice = nil; adviceError = nil
+        advice = nil; adviceError = nil; advicePlan = nil; planDone = []
         smart = r
         care = await careTask
         await malwareTask
@@ -544,6 +554,7 @@ final class AppState: ObservableObject {
         for id in results.keys { results[id]?.sort { $0.allocatedSize > $1.allocatedSize } }
         smartScanning = false; status["smart"] = nil
         pollSystem()
+        if ProcessInfo.processInfo.environment["VUTIDY_FAKE_ADVICE"] != nil { installFakeAdvice() }
         if autoClean ?? autoCleanAfterScan { await autoCleanSafe() }
     }
 

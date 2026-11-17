@@ -247,6 +247,18 @@ struct SettingsOverlay: View {
         }
     }
 
+    /// Mô tả nguồn AI: những CLI đã tìm thấy trên máy.
+    var aiSourceDesc: String {
+        switch state.aiProvider {
+        case .api: return tr("Gọi Anthropic API bằng API key của bạn. Cần thêm key bên dưới.")
+        case .auto:
+            let found = AdvisorProvider.installedCLIs.map(\.displayName)
+            let list = found.isEmpty ? tr("Không tìm thấy công cụ AI nào trên máy.") : trf("Tìm thấy: %@.", found.joined(separator: ", "))
+            return list + " " + tr("Dùng tài khoản đã đăng nhập sẵn, không cần API key.")
+        default: return tr("Dùng tài khoản bạn đã đăng nhập sẵn trong công cụ này, không cần API key.")
+        }
+    }
+
     // MARK: Dọn dẹp
 
     var cleaning: some View {
@@ -265,14 +277,23 @@ struct SettingsOverlay: View {
             }
             SettingsGroup(title: tr("Tư vấn AI")) {
                 SettingRow(title: tr("Bật tư vấn AI"),
-                           desc: tr("Tắt mặc định. Khi bật và bạn bấm Hỏi AI, số liệu tổng hợp của lần quét (nhóm rác, dung lượng, số tiến trình AI agent) được gửi tới Claude API. Không gửi đường dẫn, tên file, tên người dùng hay dòng lệnh. AI chỉ đưa lời khuyên, không tự xóa gì."),
+                           desc: tr("Tắt mặc định. Khi bật và bạn bấm Hỏi AI, số liệu tổng hợp của lần quét (nhóm rác, dung lượng, số tiến trình AI agent) được gửi tới dịch vụ AI của nguồn bạn chọn. Không gửi đường dẫn, tên file, tên người dùng hay dòng lệnh. AI chỉ đưa lời khuyên, không tự xóa gì."),
                            showDivider: state.aiAdvisorEnabled) {
                     SwitchRow(isOn: $state.aiAdvisorEnabled, label: tr("Bật tư vấn AI"))
                 }
                 if state.aiAdvisorEnabled {
-                    SettingRow(title: tr("Anthropic API key"), desc: tr("Lưu trong Keychain của bạn."), showDivider: true) { AdvisorKeyField() }
-                    SettingRow(title: tr("Model"), desc: tr("Mã model Claude dùng cho tư vấn."), showDivider: false) {
-                        TextField(ScanAdvisor.defaultModel, text: $state.aiModel).textFieldStyle(.roundedBorder).frame(width: 200)
+                    SettingRow(title: tr("Nguồn AI"), desc: aiSourceDesc,
+                               showDivider: state.aiProvider == .api || state.aiProvider == .auto) {
+                        VSelect(selection: $state.aiProvider,
+                                options: ([AdvisorProvider.auto] + AdvisorProvider.installedCLIs + [.api]).map { ($0, $0.displayName) }, width: 200)
+                    }
+                    if state.aiProvider == .api || state.aiProvider == .auto {
+                        SettingRow(title: tr("Anthropic API key"), desc: tr("Lưu trong Keychain của bạn."), showDivider: state.aiProvider == .api) { AdvisorKeyField() }
+                    }
+                    if state.aiProvider != .auto {
+                        SettingRow(title: tr("Model"), desc: tr("Model dùng cho nguồn này. Để mặc định thì công cụ tự chọn."), showDivider: false) {
+                            AdvisorModelPicker(provider: state.aiProvider)
+                        }
                     }
                 }
             }

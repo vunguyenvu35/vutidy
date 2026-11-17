@@ -10,7 +10,8 @@ struct SmartScanView: View {
     var body: some View {
         let cleanable = state.smart?.cleanableBytes ?? 0
         VStack(alignment: .leading, spacing: 24) {
-            SmartScanDashboard(onClean: { confirm = true }, details: cleanable > 0 && state.cleaning.isEmpty && !state.smartScanning ? AnyView(detailsPanel) : nil)
+            SmartScanDashboard(onClean: { confirm = true }, details: cleanable > 0 && state.cleaning.isEmpty && !state.smartScanning ? AnyView(detailsPanel) : nil,
+                               advisor: state.smart != nil && state.cleaning.isEmpty && !state.smartScanning ? AnyView(AIAdvisorCard()) : nil)
             AgentsPanel()
         }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)

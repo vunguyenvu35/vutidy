@@ -11,6 +11,8 @@ struct SmartScanDashboard: View {
     var onClean: () -> Void = {}
     /// Bảng "Sẽ dọn những gì" khi đã có mục để dọn.
     var details: AnyView? = nil
+    /// Thẻ AI Advisor, ngay dưới hero (tính năng chủ lực nên không nằm dưới đáy trang).
+    var advisor: AnyView? = nil
     @ViewState private var hovered: Int?
 
     enum Phase { case idle, scanning, cleaning, done }
@@ -55,6 +57,7 @@ struct SmartScanDashboard: View {
                 RatioHStack(ratio: 1.15, spacing: 20) { heroCard; diskCard }
                 VStack(spacing: 20) { heroCard; diskCard }
             }
+            if let advisor { advisor }
             if let details { details }
             checks
         }

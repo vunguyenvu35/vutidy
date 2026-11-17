@@ -818,6 +818,23 @@ struct VTextField: View {
     }
 }
 
+/// Ô nhập một dòng không biểu tượng (khóa API, mã model), cùng kiểu kính với `VSelect`/`VTextField`. `secure`: che ký tự.
+struct VInput: View {
+    let placeholder: String
+    @Binding var text: String
+    var secure = false
+    var width: CGFloat = 200
+    @ViewState private var hover = false
+    var body: some View {
+        GlassField(hover: hover) {
+            Group {
+                if secure { SecureField(placeholder, text: $text) } else { TextField(placeholder, text: $text) }
+            }
+            .textFieldStyle(.plain).font(.vt(size: 13)).foregroundStyle(.white).frame(width: width - 24)
+        }.onHover { hover = $0 }
+    }
+}
+
 /// Nhóm "nhãn + ô chọn" dùng cho thanh bộ lọc.
 struct LabeledControl<Control: View>: View {
     let label: String

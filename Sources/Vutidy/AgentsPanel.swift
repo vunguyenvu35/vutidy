@@ -5,19 +5,17 @@ import Modules
 /// Dưới kết quả Smart Scan: tiến trình AI agent đang chạy (kèm sub-agent) và bước tư vấn AI tùy chọn.
 struct AgentsPanel: View {
     @EnvironmentObject var state: AppState
-    @ViewState private var showPayload = false
     /// nil = tự động: mở khi có tiến trình đáng ngờ, còn lại thu gọn (cùng kiểu panel "Sẽ dọn những gì").
     @ViewState private var open: Bool? = nil
     var isOpen: Bool { open ?? ((state.smart?.flaggedAgents.count ?? 0) > 0) }
 
     var agents: [AgentProcess] { state.smart?.agents ?? [] }
-    var visible: Bool { state.smart != nil && !state.smartScanning && (!agents.isEmpty || state.aiAdvisorEnabled) }
+    var visible: Bool { state.smart != nil && !state.smartScanning && !agents.isEmpty }
 
     var body: some View {
         if visible {
             VStack(alignment: .leading, spacing: 16) {
-                if !agents.isEmpty { agentsCard }
-                if state.aiAdvisorEnabled { advisorCard }
+                agentsCard
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -109,40 +107,7 @@ struct AgentsPanel: View {
         .help("PID \(a.pid) · \(a.command)")
     }
 
-    // MARK: Tư vấn AI
 
-    var advisorCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(tr("Tư vấn AI")).font(Theme.Font.heading).foregroundStyle(Theme.Text.primary)
-                    Text(tr("Gửi số liệu tổng hợp tới Claude API. Không có đường dẫn hay tên file. AI chỉ khuyên, không tự xóa gì.")).font(Theme.Font.caption)
-                        .foregroundStyle(Theme.Text.secondary).fixedSize(horizontal: false, vertical: true)
-                }
-                Spacer(minLength: 12)
-                if state.adviceLoading { VSpinner(size: 16) }
-                else if state.aiHasKey {
-                    Button(state.advice == nil ? tr("Hỏi AI") : tr("Hỏi lại")) { Task { await state.askAdvisor() } }.buttonStyle(SecondaryButtonStyle())
-                } else {
-                    Button(tr("Thêm API key…")) { state.settingsOpen = true }.buttonStyle(SecondaryButtonStyle())
-                }
-            }
-            if let a = state.advice { Text(a).font(.vt(size: 13)).lineSpacing(3).foregroundStyle(Theme.Text.primary).textSelection(.enabled)
-                .fixedSize(horizontal: false, vertical: true) }
-            if let e = state.adviceError { Text(e).font(Theme.Font.caption).foregroundStyle(Theme.Review.text).fixedSize(horizontal: false, vertical: true) }
-            Button { showPayload.toggle() } label: {
-                Text(showPayload ? tr("Ẩn dữ liệu sẽ gửi") : tr("Xem dữ liệu sẽ gửi")).font(Theme.Font.caption).foregroundStyle(Theme.Text.tertiary)
-            }.buttonStyle(PlainPointerStyle())
-            if showPayload, let p = state.aiPayload {
-                Text(ScanAdvisor.json(p)).font(.system(size: 11, design: .monospaced)).foregroundStyle(Theme.Text.secondary).textSelection(.enabled)
-                    .padding(10).frame(maxWidth: .infinity, alignment: .leading)
-                    .background(RoundedRectangle(cornerRadius: 8).fill(Color.black.opacity(0.25)))
-            }
-        }
-        .padding(18)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.white.opacity(0.05)))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.white.opacity(0.06)))
-    }
 }
 
 /// Ô nhập API key trong Settings. Key chỉ vào Keychain, không hiển thị lại.
@@ -155,11 +120,50 @@ struct AdvisorKeyField: View {
                 Label(tr("Đã lưu trong Keychain"), systemImage: "checkmark.seal").font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary)
                 Button(tr("Xóa key")) { AdvisorKeychain.delete(); state.aiHasKey = false }.buttonStyle(SecondaryButtonStyle())
             } else {
-                SecureField("sk-ant-…", text: $draft).textFieldStyle(.roundedBorder).frame(width: 200)
+                VInput(placeholder: "sk-ant-…", text: $draft, secure: true, width: 190)
+                    // Mở Settings không được tự đặt con trỏ nhập liệu (viền focus) vào ô này.
+                    .onAppear { DispatchQueue.main.async { NSApp.keyWindow?.makeFirstResponder(nil) } }
                 Button(tr("Lưu")) {
                     if AdvisorKeychain.save(draft) { state.aiHasKey = AdvisorKeychain.hasKey; draft = "" }
                 }.buttonStyle(SecondaryButtonStyle()).disabled(draft.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }
+    }
+}
+
+/// Ô chọn model cho một nguồn AI: "Mặc định", các model của công cụ, và "Tùy chỉnh…" để nhập mã model bất kỳ.
+struct AdvisorModelPicker: View {
+    @EnvironmentObject var state: AppState
+    let provider: AdvisorProvider
+    @ViewState private var customMode = false
+    private let customTag = "__custom__"
+
+    var current: String { state.aiModels[provider.rawValue] ?? "" }
+    var models: [AdvisorModel] { state.aiModelOptions[provider.rawValue] ?? AdvisorModels.builtin(for: provider) }
+    /// "Default (Haiku 5.5)": tên ngắn, vì ô chọn chỉ rộng 200pt.
+    var defaultTitle: String {
+        guard provider == .api else { return tr("Mặc định của công cụ") }
+        let short = AdvisorModels.claude.first { $0.id == ScanAdvisor.defaultModel }?.name.replacingOccurrences(of: "Claude ", with: "") ?? ScanAdvisor.defaultModel
+        return trf("Mặc định (%@)", short)
+    }
+    var isCustom: Bool { customMode || (!current.isEmpty && !models.contains { $0.id == current }) }
+
+    var selection: Binding<String> {
+        Binding(get: { isCustom ? customTag : current },
+                set: { v in
+                    if v == customTag { customMode = true }
+                    else { customMode = false; state.aiModels[provider.rawValue] = v }
+                })
+    }
+
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 8) {
+            VSelect(selection: selection,
+                    options: [("", defaultTitle)] + models.map { ($0.id, $0.name) } + [(customTag, tr("Tùy chỉnh…"))], width: 200)
+            if isCustom {
+                VInput(placeholder: tr("Mã model"), text: Binding(get: { current }, set: { state.aiModels[provider.rawValue] = $0 }), width: 200)
+            }
+        }
+        .task(id: provider) { customMode = false; await state.loadAIModels(provider) }
     }
 }

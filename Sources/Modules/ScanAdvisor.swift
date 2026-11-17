@@ -24,6 +24,14 @@ public struct AdvisorInput: Codable, Sendable, Equatable {
     public var agentProcesses: [Agents]
     public var suspiciousLaunchItems: Int
     public var cpuHeavyProcesses: Int
+    /// Hành động AI được phép chọn (xem `AdvisorPlanner`). AI chỉ trả về `id` trong danh sách này.
+    public var availableActions: [ActionInfo]
+
+    public struct ActionInfo: Codable, Sendable, Equatable {
+        public var id: String
+        public var items: Int
+        public var megabytes: Int
+    }
 }
 
 public enum ScanAdvisor {
@@ -32,6 +40,12 @@ public enum ScanAdvisor {
 
     public enum AdvisorError: Error, Equatable {
         case noKey, http(Int, String), empty, network(String)
+        /// Không có CLI nào dùng được và cũng không có API key.
+        case noProvider
+        /// CLI có cài nhưng chưa đăng nhập.
+        case notLoggedIn(String)
+        /// CLI chạy lỗi (tên, chi tiết ngắn).
+        case cli(String, String)
     }
 
     // MARK: Dữ liệu gửi đi
@@ -60,7 +74,8 @@ public enum ScanAdvisor {
         }.sorted { $0.kind < $1.kind }
 
         return AdvisorInput(diskTotalGB: gb(diskTotal), diskFreeGB: gb(diskFree), cleanup: Array(groups), agentProcesses: agents,
-                            suspiciousLaunchItems: r.suspiciousCount, cpuHeavyProcesses: r.consumers.filter { $0.cpu >= 50 }.count)
+                            suspiciousLaunchItems: r.suspiciousCount, cpuHeavyProcesses: r.consumers.filter { $0.cpu >= 50 }.count,
+                            availableActions: AdvisorPlanner.availableActions(r).map { .init(id: $0.id, items: $0.items, megabytes: $0.megabytes) })
     }
 
     public static func json(_ input: AdvisorInput) -> String {
@@ -73,15 +88,19 @@ public enum ScanAdvisor {
 
     static func systemPrompt(language: String) -> String {
         """
-        You are the advisor inside Vutidy, a macOS cleaner. You receive anonymized scan totals (no paths, no file names).
-        Give a short, practical plan: which cleanup groups are worth cleaning first and why, what to do about AI agent \
-        processes (orphaned = parent died, runaway = high CPU for a long time; sub-agents belong to a parent agent), and \
-        anything that deserves a manual look. Never suggest deleting items marked "review" without the user checking them. \
-        You cannot take actions yourself; the user decides. Be concise: at most 6 short bullet points, no preamble. \
-        Reply in \(language).
+        You are the advisor inside Vutidy, a macOS cleaner. You receive anonymized scan totals (no paths, no file names) \
+        and "availableActions": the only things the app can do for the user right now.
+        Decide what is worth doing and in which order. Orphaned agent processes lost their parent; runaway ones burned \
+        high CPU for a long time; sub-agents belong to a parent agent (do not touch healthy agents). Actions: \
+        "clean:<group>" moves that group's safe items to Quarantine (undoable); "terminate-agents" quits orphaned or \
+        runaway agent processes; "review:<group>" only opens the page so the user can check items themselves. \
+        Never pick an id that is not in availableActions, and never use clean for something that needs review.
+        Reply with ONLY a JSON object, no prose, no code fences:
+        {"summary": "<2-4 short lines of plain text>", "actions": [{"id": "<id from availableActions>", "reason": "<one short sentence>"}]}
+        Put the most valuable action first, at most 6 actions, skip actions that are not worth it. \
+        Write summary and reasons in \(language).
         """
     }
-
     public static func request(input: AdvisorInput, apiKey: String, model: String, language: String) throws -> URLRequest {
         var req = URLRequest(url: endpoint, timeoutInterval: 60)
         req.httpMethod = "POST"
@@ -108,6 +127,34 @@ public enum ScanAdvisor {
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }.joined(separator: "\n")
         if text.isEmpty { throw AdvisorError.empty }
         return text
+    }
+
+    /// Prompt đầy đủ cho CLI (không có kênh system riêng): hướng dẫn + số liệu.
+    static func cliPrompt(input: AdvisorInput, language: String) -> String {
+        systemPrompt(language: language) + "\n\nScan summary:\n" + json(input)
+    }
+
+    /// Chọn nguồn tư vấn: CLI đã đăng nhập trên máy trước, API key (nếu có) là phương án cuối. `.auto` thử lần lượt đến khi có câu trả lời.
+    /// `models`: model đã chọn cho từng nguồn (khóa là `AdvisorProvider.rawValue`); rỗng = mặc định của công cụ.
+    public static func advise(_ input: AdvisorInput, provider: AdvisorProvider, models: [String: String], language: String) async throws -> AdvisorAnswer {
+        func model(_ p: AdvisorProvider) -> String { (models[p.rawValue] ?? "").trimmingCharacters(in: .whitespaces) }
+        let apiModel = model(.api).isEmpty ? defaultModel : model(.api)
+        let prompt = cliPrompt(input: input, language: language)
+        switch provider {
+        case .api:
+            return AdvisorAnswer(text: try await advise(input, model: apiModel, language: language), provider: .api)
+        case .auto:
+            var firstError: Error?
+            for p in AdvisorProvider.installedCLIs {
+                do { return AdvisorAnswer(text: try await AdvisorCLI.ask(p, prompt: prompt, model: model(p)), provider: p) }
+                catch { firstError = firstError ?? error }
+            }
+            if AdvisorKeychain.hasKey { return AdvisorAnswer(text: try await advise(input, model: apiModel, language: language), provider: .api) }
+            throw firstError ?? AdvisorError.noProvider
+        default:
+            guard provider.isInstalled else { throw AdvisorError.noProvider }
+            return AdvisorAnswer(text: try await AdvisorCLI.ask(provider, prompt: prompt, model: model(provider)), provider: provider)
+        }
     }
 
     /// `send` có thể thay thế khi kiểm thử.
