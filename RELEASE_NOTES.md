@@ -1,6 +1,10 @@
 <p align="center"><img src="docs/assets/brand/logo-mark-256.png" alt="Vutidy" width="88"></p>
 
-# Unreleased
+# Vutidy 0.6.0
+
+Release date: 2026-11-17 · Platform: macOS 13 or later (only tried on Apple Silicon and one Intel Mac) · Status: **pre-release**. The [known issues of 0.1.0](#vutidy-010) still apply.
+
+## What's new in 0.6.0
 
 - **AI malware analysis (optional, off by default).** With the AI Advisor on, **Analyze with AI** on the Malware page asks the AI you chose (the same tools or API key as the advisor) to judge each finding as malicious, suspicious or likely benign and to suggest one action: quarantine, switch off, ignore or leave. Only anonymized descriptions are sent (your home folder and user name are hidden; no file contents), and **Show data sent** lists them. The AI cannot run anything: you confirm every action, the quarantine for all flagged items included, and files go to the Quarantine for 7 days. See the [security policy](SECURITY.md).
 - **Real-time monitor is on by default.** It starts when the app opens and watches new files in Downloads, Desktop, Applications and the launch folders (it detects after a file is written and cannot block it). Switch it off with the *Real-time* tile or in *Settings*; a choice you already made is kept.
