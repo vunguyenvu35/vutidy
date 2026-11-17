@@ -200,6 +200,10 @@ final class AppState: ObservableObject {
     @Published var autoCleanAfterScan: Bool = UserDefaults.standard.bool(forKey: "autoCleanAfterScan") {
         didSet { UserDefaults.standard.set(autoCleanAfterScan, forKey: "autoCleanAfterScan") }
     }
+    /// Khi dọn tự động: gồm cả mục An toàn KHÔNG hoàn tác được (lệnh docker/go/brew prune) và Thùng rác (xóa vĩnh viễn). Mặc định tắt.
+    @Published var autoCleanIrreversible: Bool = UserDefaults.standard.bool(forKey: "autoCleanIrreversible") {
+        didSet { UserDefaults.standard.set(autoCleanIrreversible, forKey: "autoCleanIrreversible") }
+    }
     @Published var retentionDays: Int = UserDefaults.standard.object(forKey: "retentionDays") as? Int ?? 7 {
         didSet {
             UserDefaults.standard.set(retentionDays, forKey: "retentionDays")

@@ -4,38 +4,43 @@ import SafetyLayer
 import Modules
 
 extension AppState {
-    /// Mục mà dọn tự động được phép đụng tới: An toàn **và** hoàn tác được — tức là file đi vào Quarantine.
-    /// Không tự dọn: mục dùng lệnh của công cụ (`docker prune`, `go clean`, `brew cleanup`: không khôi phục được),
-    /// nội dung Thùng rác (xóa vĩnh viễn) và mọi mục cần xem lại.
-    static func isAutoCleanable(_ i: ScanItem) -> Bool { i.isAutoCleanable }
-
-    /// Dọn ngay các mục đủ điều kiện sau một lần Smart Scan, rồi báo một thông báo gộp (có nút Hoàn tác).
-    /// Phần không hoàn tác được vẫn nằm chờ trong danh sách để người dùng tự bấm Dọn.
+    /// Dọn ngay các mục đủ điều kiện sau một lần Smart Scan, rồi báo một thông báo gộp.
+    ///
+    /// Mặc định chỉ lấy mục An toàn **và** hoàn tác được (file vào Quarantine). Khi người dùng bật
+    /// "Gồm cả mục không hoàn tác được" thì lấy luôn mục An toàn dùng lệnh của công cụ (`docker prune`, `go clean`,
+    /// `brew cleanup`) và Thùng rác (xóa vĩnh viễn) — giống nút Dọn. Mục cần xem lại không bao giờ tự dọn.
     func autoCleanSafe() async {
-        let ids = ["system-junk", "dev-junk"]
-        var bytes: Int64 = 0, done = 0, failed = 0
-        for id in ids {
-            guard var arr = results[id], arr.contains(where: Self.isAutoCleanable) else { continue }
-            for i in arr.indices { arr[i].selected = Self.isAutoCleanable(arr[i]) }
+        let all = autoCleanIrreversible
+        func eligible(_ i: ScanItem) -> Bool { all ? i.safety == .safe : i.isAutoCleanable }
+        var bytes: Int64 = 0, done = 0, failed = 0, permanent: Int64 = 0   // permanent: phần Thùng rác đã xóa hẳn (để quyết định có nút Hoàn tác)
+
+        for id in ["system-junk", "dev-junk", "trash"] {
+            if id == "trash" && !all { continue }                       // Thùng rác chỉ khi người dùng cho phép xóa vĩnh viễn
+            guard var arr = results[id], arr.contains(where: eligible) else { continue }
+            for i in arr.indices { arr[i].selected = eligible(arr[i]) }
             results[id] = arr
-            await clean(id, mode: .quarantine, quiet: true)
-            if let r = lastReport { bytes += r.reclaimedBytes; done += r.doneCount; failed += r.failures.count }
+            await clean(id, mode: id == "trash" ? .permanent : .quarantine, quiet: true)
+            if let r = lastReport {
+                bytes += r.reclaimedBytes; done += r.doneCount; failed += r.failures.count
+                if id == "trash" { permanent += r.reclaimedBytes }
+            }
         }
-        // Cập nhật kết quả Smart Scan theo những gì còn lại (số "có thể lấy lại" co lại, phần chờ bạn quyết định còn nguyên).
+        // Cập nhật kết quả Smart Scan theo những gì còn lại.
         var r = smart ?? SmartScanResult()
         r.cleanup = results.values.flatMap { $0 }
         smart = r
 
-        let waiting = (results["dev-junk"] ?? []).filter { $0.safety == .safe && $0.command != nil }
-            + (results["trash"] ?? []).filter { $0.safety == .safe }
+        let waiting = ["system-junk", "dev-junk", "trash"].flatMap { results[$0] ?? [] }.filter { $0.safety == .safe }
         let waitingBytes = waiting.reduce(Int64(0)) { $0 + $1.allocatedSize }
         guard done > 0 || failed > 0 else {
             if waitingBytes > 0 { notify(trf("Không có gì tự dọn được. %@ chờ bạn bấm Dọn.", ByteFormat.string(waitingBytes)), .warning) }
             return
         }
-        var msg = trf("Đã tự dọn %@ vào Quarantine · hoàn tác trong %@ ngày", ByteFormat.string(bytes), "\(retentionDays)")
+        var msg = all
+            ? trf("Đã tự dọn %@ · file vào Quarantine hoàn tác được trong %@ ngày; lệnh docker/go/brew và Thùng rác đã xóa hẳn", ByteFormat.string(bytes), "\(retentionDays)")
+            : trf("Đã tự dọn %@ vào Quarantine · hoàn tác trong %@ ngày", ByteFormat.string(bytes), "\(retentionDays)")
         if failed > 0 { msg += trf(" · %@ lỗi", "\(failed)") }
         if waitingBytes > 0 { msg += trf(" · %@ chờ bạn bấm Dọn", ByteFormat.string(waitingBytes)) }
-        notify(msg, failed == 0 ? .success : .warning, undo: true)
+        notify(msg, failed == 0 ? .success : .warning, undo: bytes - permanent > 0)
     }
 }

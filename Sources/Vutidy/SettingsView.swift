@@ -243,9 +243,14 @@ struct SettingsOverlay: View {
         VStack(alignment: .leading, spacing: 18) {
             SettingsGroup(title: "Smart Scan") {
                 SettingRow(title: tr("Dọn tự động sau khi quét"),
-                           desc: tr("Quét xong, tự chuyển các mục An toàn vào Quarantine (hoàn tác được). Lệnh docker/go/brew, Thùng rác và mục cần xem lại không bao giờ tự dọn: chúng vẫn chờ bạn bấm Dọn."),
-                           showDivider: false) {
+                           desc: tr("Quét xong, tự chuyển các mục An toàn vào Quarantine (hoàn tác được). Lệnh docker/go/brew, Thùng rác và mục cần xem lại không tự dọn: chúng chờ bạn bấm Dọn, trừ khi bạn bật lựa chọn bên dưới."),
+                           showDivider: true) {
                     SwitchRow(isOn: $state.autoCleanAfterScan, label: tr("Dọn tự động sau khi quét"))
+                }
+                SettingRow(title: tr("Gồm cả mục không hoàn tác được"),
+                           desc: tr("Dọn luôn Docker, Go, Homebrew (lệnh của công cụ) và Thùng rác khi dọn tự động. Những mục này xóa vĩnh viễn, không khôi phục được. Mục cần xem lại vẫn không bao giờ tự dọn."),
+                           showDivider: false) {
+                    SwitchRow(isOn: $state.autoCleanIrreversible, label: tr("Gồm cả mục không hoàn tác được")).disabled(!state.autoCleanAfterScan)
                 }
             }
             SettingsGroup(title: "Quarantine") {

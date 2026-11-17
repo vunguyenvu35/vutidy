@@ -89,6 +89,10 @@ It is deliberately careful. Automatic cleaning takes only items that are **Safe*
 
 When it finishes, one notification says how much went to the Quarantine, with **Undo**, and how much is still waiting (for example *435 MB waiting for you to press Clean*). That remainder stays in **What will be cleaned**, and **Clean** still asks you before it runs the irreversible items. Automatic cleaning is **off by default**.
 
+**Want it to clean everything Safe, including those?** Turn on **Settings → Cleanup → Smart Scan → Include items that cannot be undone**. Automatic cleaning then also runs the tool commands (Docker, Go, Homebrew) and empties the Trash, like the *Clean* button does, so nothing Safe is left waiting. Those items are **deleted for good**; the notification says how much went to the Quarantine (undo possible) and that the rest is gone. Items marked *Review* are still never cleaned automatically, and the other four health groups only report.
+
+**What stays amber afterwards.** *Protection*, *Performance*, *Applications* and *Large & Old Files* are things that need a decision, not junk: a suspicious launch item, apps that open at login, an app update, a large file you may still want. Vutidy lists them with **Review** but never changes them for you.
+
 ## Limits
 
 - The sizes are *allocated* sizes. APFS clones and purgeable space make the real gain differ a little, so the numbers are estimates.
