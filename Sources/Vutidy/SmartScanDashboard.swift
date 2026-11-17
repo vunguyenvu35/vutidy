@@ -195,6 +195,9 @@ struct SmartScanDashboard: View {
                 primaryButton(trf("Dọn %@", ByteFormat.string(cleanable)), shortcut: "⌘↵") { onClean() }
                 secondaryButton(tr("Xem trước (dry-run)")) { Task { await state.cleanSmart(mode: .dryRun) } }
                 linkButton(tr("Quét lại"), icon: "arrow.clockwise") { Task { await state.runSmartScan() } }
+                if !state.autoCleanAfterScan {
+                    linkButton(tr("Quét và dọn luôn"), help: scanAndCleanHelp) { Task { await state.runSmartScan(autoClean: true) } }
+                }
             } else if phase == .done {
                 primaryButton(tr("Quét lại"), icon: "arrow.clockwise", shortcut: "⌘↵") { Task { await state.runSmartScan() } }
                 if !state.autoCleanAfterScan {
