@@ -250,7 +250,7 @@ struct CleanupView: View {
                 }
             if section != .trash { modeMenu.disabled(busy).opacity(busy ? 0.5 : 1) }
             Button {
-                if state.confirmBeforeClean { confirm = true } else { Task { await state.clean(id, mode: effectiveMode) } }
+                if state.confirmBeforeClean || !quitNotice.isEmpty { confirm = true } else { Task { await state.clean(id, mode: effectiveMode) } }
             } label: {
                 if busy {
                     HStack(spacing: 8) { VSpinner(size: 16, lineWidth: 2); Text(tr("Đang dọn…")) }
@@ -290,7 +290,16 @@ struct CleanupView: View {
     }
 
     var confirmTitle: String { "\(effectiveMode == .dryRun ? tr("Xem trước") : tr("Dọn")) \(ByteFormat.string(state.selectedBytes(id)))?" }
-    var confirmMessage: String {
+    /// Dòng báo các app sẽ được đóng rồi mở lại (rỗng nếu không cần).
+    var quitNotice: String {
+        guard effectiveMode != .dryRun else { return "" }
+        let apps = state.appsToQuit(for: id)
+        return apps.isEmpty ? "" : "\n\n" + trf("Sẽ đóng rồi mở lại: %@. Lưu công việc của bạn trước.", apps.map(\.name).joined(separator: ", "))
+    }
+
+    var confirmMessage: String { confirmBase + quitNotice }
+
+    var confirmBase: String {
         switch effectiveMode {
         case .quarantine: return trf("Các mục sẽ được chuyển vào Quarantine và khôi phục được trong %@ ngày.", "\(state.retentionDays)")
         case .moveToTrash: return tr("Các mục sẽ được chuyển vào Thùng rác.")

@@ -6,6 +6,9 @@ import Modules
 struct AgentsPanel: View {
     @EnvironmentObject var state: AppState
     @ViewState private var showPayload = false
+    /// nil = tự động: mở khi có tiến trình đáng ngờ, còn lại thu gọn (cùng kiểu panel "Sẽ dọn những gì").
+    @ViewState private var open: Bool? = nil
+    var isOpen: Bool { open ?? ((state.smart?.flaggedAgents.count ?? 0) > 0) }
 
     var agents: [AgentProcess] { state.smart?.agents ?? [] }
     var visible: Bool { state.smart != nil && !state.smartScanning && (!agents.isEmpty || state.aiAdvisorEnabled) }
@@ -40,15 +43,23 @@ struct AgentsPanel: View {
 
     var agentsCard: some View {
         VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(tr("AI agent đang chạy")).font(Theme.Font.heading).foregroundStyle(Theme.Text.primary)
-                Text(summary).font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary)
-            }.padding(.horizontal, 18).padding(.vertical, 14)
-            ForEach(agents.prefix(12)) { a in
+            Button { open = !isOpen } label: {
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(tr("AI agent đang chạy")).font(Theme.Font.heading).foregroundStyle(Theme.Text.primary)
+                        Text(summary).font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary)
+                    }
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.down").font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.Text.tertiary)
+                        .rotationEffect(.degrees(isOpen ? 180 : 0))
+                }
+                .padding(.horizontal, 18).padding(.vertical, 14).contentShape(Rectangle())
+            }.buttonStyle(PlainPointerStyle())
+            if isOpen { ForEach(agents.prefix(12)) { a in
                 Divider().overlay(Theme.Border.subtle)
                 row(a)
-            }
-            if agents.count > 12 {
+            } }
+            if isOpen && agents.count > 12 {
                 Text(trf("+%@ tiến trình khác", "\(agents.count - 12)")).font(Theme.Font.caption).foregroundStyle(Theme.Text.tertiary)
                     .padding(.horizontal, 18).padding(.bottom, 12)
             }
@@ -64,6 +75,13 @@ struct AgentsPanel: View {
         return nil
     }
 
+    func uptime(_ a: AgentProcess) -> String {
+        let f = DateComponentsFormatter()
+        f.allowedUnits = [.day, .hour, .minute]; f.unitsStyle = .abbreviated; f.maximumUnitCount = 2
+        f.calendar = { var c = Calendar.current; c.locale = L10n.locale; return c }()
+        return trf("Chạy %@", f.string(from: max(60, a.elapsed)) ?? "")
+    }
+
     func row(_ a: AgentProcess) -> some View {
         HStack(spacing: 12) {
             if a.parentAgent != nil { Image(systemName: "arrow.turn.down.right").font(.system(size: 10)).foregroundStyle(Theme.Text.tertiary) }
@@ -77,7 +95,7 @@ struct AgentsPanel: View {
                             .background(Capsule().fill(Color.white.opacity(0.08)))
                     }
                 }
-                Text(a.command).font(.vt(size: 11)).foregroundStyle(Theme.Text.tertiary).lineLimit(1).truncationMode(.middle)
+                Text(uptime(a)).font(.vt(size: 11)).foregroundStyle(Theme.Text.tertiary).lineLimit(1)
             }
             Spacer(minLength: 8)
             Text(String(format: "%.0f%%", a.cpu)).font(Theme.Font.caption).monospacedDigit().foregroundStyle(Theme.Text.secondary)
@@ -88,6 +106,7 @@ struct AgentsPanel: View {
             }
         }
         .padding(.leading, a.parentAgent != nil ? 34 : 18).padding(.trailing, 18).padding(.vertical, 9)
+        .help("PID \(a.pid) · \(a.command)")
     }
 
     // MARK: Tư vấn AI

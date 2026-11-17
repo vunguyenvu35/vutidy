@@ -54,14 +54,16 @@ struct CareGroups {
 
     var performance: Group {
         guard scanned else { return Group(id: "performance", page: .optimization, title: tr("Hiệu năng"), summary: tr("Chưa quét"), status: .pending, review: .optimization) }
+        // Điều cần chú ý đứng trước, tối đa 3 ý: thẻ cao cố định nên mô tả dài sẽ đẩy trạng thái ra khỏi thẻ.
         var parts: [String] = []
-        if let m = state.snapshot?.memory { parts.append(ByteFormat.string(m.available) + tr(" khả dụng")) }
-        let on = state.care?.loginOn ?? 0
-        if state.care != nil { parts.append(trf("%@ app mở khi đăng nhập", "\(on)")) }
         let missing = state.care?.loginMissing ?? 0
-        if missing > 0 { parts.append(trf("%@ mục không còn file", "\(missing)")) }
         let heavy = (state.smart?.consumers.filter { $0.cpu >= 50 }.count) ?? 0
         if heavy > 0 { parts.append(trf("%@ tiến trình ngốn CPU", "\(heavy)")) }
+        if missing > 0 { parts.append(trf("%@ mục không còn file", "\(missing)")) }
+        let on = state.care?.loginOn ?? 0
+        if state.care != nil { parts.append(trf("%@ app mở khi đăng nhập", "\(on)")) }
+        if let m = state.snapshot?.memory { parts.append(ByteFormat.string(m.available) + tr(" khả dụng")) }
+        parts = Array(parts.prefix(3))
         let attention = missing > 0 || heavy > 0
         return Group(id: "performance", page: .optimization, title: tr("Hiệu năng"), summary: parts.joined(separator: " · "),
                      status: attention ? .attention : .ok, review: .optimization)

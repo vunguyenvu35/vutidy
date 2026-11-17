@@ -14,12 +14,15 @@ import Foundation
         #expect(AgentProcesses.classify(command: "npm exec @modelcontextprotocol/server-filesystem /tmp") == .mcp)
         #expect(AgentProcesses.classify(command: "node /x/chrome-devtools-mcp/build/index.js") == .mcp)
         #expect(AgentProcesses.classify(command: "/usr/local/bin/ollama serve") == .ollama)
+        #expect(AgentProcesses.classify(command: "npx -y @playwright/mcp@latest") == .mcp)
     }
 
     @Test func ignoresUnrelatedAndDesktopApps() {
         #expect(AgentProcesses.classify(command: "/Applications/Claude.app/Contents/MacOS/Claude") == nil)
         #expect(AgentProcesses.classify(command: "/usr/bin/ssh host") == nil)
         #expect(AgentProcesses.classify(command: "/usr/sbin/mcpd") == nil)
+        // Hồi quy: `mcp` chỉ nằm trong cờ hoặc URL thì không phải MCP server (docker-agent bị nhận nhầm).
+        #expect(AgentProcesses.classify(command: "/Applications/Docker.app/cli-plugins/docker-agent serve api --mcp-oauth-redirect-uri https://x.docker.com/gordon/mcp-oauth/callback") == nil)
     }
 
     @Test func parsesPsOutputAndElapsed() {
@@ -27,7 +30,8 @@ import Foundation
         let rows = AgentProcesses.parse(out)
         #expect(rows.count == 1)
         #expect(rows[0].ppid == 1 && rows[0].rssBytes == 20480 * 1024 && rows[0].tty == "??")
-        #expect(rows[0].elapsed == 2 * 86400 + 3 * 3600 + 4 * 60 + 5)
+        let expected: TimeInterval = 183_845   // 2 ngày 3 giờ 4 phút 5 giây
+        #expect(rows[0].elapsed == expected)
         #expect(AgentProcesses.parseElapsed("05:12") == 312)
         #expect(AgentProcesses.parseElapsed("1:02:03") == 3723)
         #expect(AgentProcesses.parseElapsed("xx") == nil)

@@ -156,16 +156,13 @@ struct SmartScanDashboard: View {
             HStack(spacing: 10) {
                 if let icon { Image(systemName: icon).font(.system(size: 14, weight: .semibold)) }
                 Text(title).font(.vt(size: 14, weight: .semibold)).lineLimit(1).fixedSize()
-                if let shortcut {
-                    Text(shortcut).font(.vt(size: 11, weight: .medium)).padding(.horizontal, 6).padding(.vertical, 2)
-                        .background(RoundedRectangle(cornerRadius: 5).fill(Color.white.opacity(0.18)))
-                }
             }
             .foregroundStyle(.white).padding(.horizontal, 18).frame(height: 40)
             .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(P.accent))
             .contentShape(RoundedRectangle(cornerRadius: 9))
         }
         .buttonStyle(PlainPointerStyle()).keyboardShortcut(.return, modifiers: .command)
+        .help(shortcut ?? "")   // phím tắt chỉ hiện trong tooltip, không chen vào nút
     }
 
     func secondaryButton(_ title: String, help: String? = nil, action: @escaping () -> Void) -> some View {
@@ -388,7 +385,7 @@ private struct CheckCard: View {
             Text(module.title).font(.vt(size: 18, weight: .bold)).tracking(-0.2).foregroundStyle(.white).padding(.top, 10)
             Text(summary ?? module.desc).font(.vt(size: 13)).lineSpacing(3)
                 .foregroundStyle(summary == nil ? Color(hex: 0xBDB9D2) : .white.opacity(0.92))
-                .lineLimit(4).fixedSize(horizontal: false, vertical: true)
+                .lineLimit(3).fixedSize(horizontal: false, vertical: true)   // thẻ cao cố định: quá 3 dòng sẽ đẩy hàng trạng thái ra khỏi thẻ
             Spacer(minLength: 0)
             HStack(spacing: 8) {
                 if busy { VSpinner(size: 12, lineWidth: 1.5) } else { Circle().fill(dot).frame(width: 6, height: 6) }

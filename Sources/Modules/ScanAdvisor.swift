@@ -104,8 +104,8 @@ public enum ScanAdvisor {
         }
         guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let content = obj["content"] as? [[String: Any]] else { throw AdvisorError.empty }
-        let text = content.compactMap { $0["type"] as? String == "text" ? $0["text"] as? String : nil }.joined(separator: "\n")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let text = content.compactMap { $0["type"] as? String == "text" ? $0["text"] as? String : nil }
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }.joined(separator: "\n")
         if text.isEmpty { throw AdvisorError.empty }
         return text
     }

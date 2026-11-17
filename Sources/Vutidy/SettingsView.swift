@@ -276,6 +276,13 @@ struct SettingsOverlay: View {
                     }
                 }
             }
+            SettingsGroup(title: tr("Ứng dụng đang chạy")) {
+                SettingRow(title: tr("Đóng app để dọn cache"),
+                           desc: tr("Trình duyệt, Slack, Discord, Spotify… đang chạy sẽ được đóng lịch sự (như Cmd+Q) trước khi dọn cache của chúng, rồi tự mở lại. App không chịu thoát thì mục của nó bị bỏ qua, không bao giờ ép buộc. Dọn tự động không bao giờ tự đóng app. Tắt thì các mục này luôn bị bỏ qua."),
+                           showDivider: false) {
+                    SwitchRow(isOn: $state.quitAppsToClean, label: tr("Đóng app để dọn cache"))
+                }
+            }
             SettingsGroup(title: "Quarantine") {
                 SettingRow(title: tr("Thời gian giữ"), desc: tr("Số ngày giữ mục đã dọn trước khi xóa hẳn."), showDivider: false) {
                     VStepper(value: $state.retentionDays, range: 1...60) { trf("%@ ngày", "\($0)") }

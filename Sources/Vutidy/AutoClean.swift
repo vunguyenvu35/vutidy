@@ -19,7 +19,7 @@ extension AppState {
             guard var arr = results[id], arr.contains(where: eligible) else { continue }
             for i in arr.indices { arr[i].selected = eligible(arr[i]) }
             results[id] = arr
-            await clean(id, mode: id == "trash" ? .permanent : .quarantine, quiet: true)
+            await clean(id, mode: id == "trash" ? .permanent : .quarantine, quiet: true, allowQuit: false)
             if let r = lastReport {
                 bytes += r.reclaimedBytes; done += r.doneCount; failed += r.failures.count
                 if id == "trash" { permanent += r.reclaimedBytes }

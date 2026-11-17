@@ -816,5 +816,12 @@ enum English {
         "Lưu trong Keychain của bạn.": "Stored in your Keychain.",
         "Model": "Model",
         "Mã model Claude dùng cho tư vấn.": "Claude model ID used for advice.",
+        "Đang đóng %@…": "Closing %@…",
+        "Bỏ qua mục của %@ vì ứng dụng chưa thoát": "Skipped items of %@ because the app did not quit",
+        "Sẽ đóng rồi mở lại: %@. Lưu công việc của bạn trước.": "Will quit and reopen: %@. Save your work first.",
+        "Ứng dụng đang chạy": "Running apps",
+        "Đóng app để dọn cache": "Quit apps to clean their cache",
+        "Trình duyệt, Slack, Discord, Spotify… đang chạy sẽ được đóng lịch sự (như Cmd+Q) trước khi dọn cache của chúng, rồi tự mở lại. App không chịu thoát thì mục của nó bị bỏ qua, không bao giờ ép buộc. Dọn tự động không bao giờ tự đóng app. Tắt thì các mục này luôn bị bỏ qua.": "Running browsers, Slack, Discord, Spotify… are quit politely (like Cmd+Q) before their cache is cleaned, then reopened. An app that refuses to quit has its items skipped; nothing is ever force-quit. Automatic cleaning never quits apps. When off, these items are always skipped.",
+        "Chạy %@": "Running %@",
     ]
 }

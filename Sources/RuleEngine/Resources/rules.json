@@ -1,6 +1,6 @@
 [
   {"id":"user-caches","module":"system-junk","title":"Cache người dùng","group":"Cache","paths":["~/Library/Caches/*"],
-   "exclude":["~/Library/Caches/com.apple.*","~/Library/Caches/CloudKit","~/Library/Caches/JetBrains","~/Library/Caches/Homebrew","~/Library/Caches/go-build","~/Library/Caches/pip","~/Library/Caches/Yarn","~/Library/Caches/CocoaPods","~/Library/Caches/composer","~/Library/Caches/Google","~/Library/Caches/Firefox","~/Library/Caches/company.thebrowser.Browser"],
+   "exclude":["~/Library/Caches/com.apple.*","~/Library/Caches/CloudKit","~/Library/Caches/JetBrains","~/Library/Caches/Homebrew","~/Library/Caches/go-build","~/Library/Caches/pip","~/Library/Caches/Yarn","~/Library/Caches/CocoaPods","~/Library/Caches/composer","~/Library/Caches/Google","~/Library/Caches/BraveSoftware","~/Library/Caches/Microsoft Edge","~/Library/Caches/Firefox","~/Library/Caches/company.thebrowser.Browser"],
    "appNotRunning":true,"safety":"safe"},
   {"id":"user-logs","module":"system-junk","title":"Log người dùng","group":"Log","paths":["~/Library/Logs/*"],
    "exclude":["~/Library/Logs/JetBrains","~/Library/Logs/DiagnosticReports"],"safety":"safe"},
@@ -28,9 +28,11 @@
   {"id":"ollama-models","module":"dev-junk","title":"Model Ollama","group":"LLM","paths":["~/.ollama/models"],"safety":"review","detail":"Chỉ liệt kê; xóa sẽ phải tải lại model"},
   {"id":"huggingface-hub","module":"dev-junk","title":"Model Hugging Face","group":"LLM","paths":["~/.cache/huggingface/hub/*"],"safety":"review"},
 
-  {"id":"chrome-cache","module":"privacy","title":"Cache Chrome","group":"Chrome","paths":["~/Library/Caches/Google/Chrome/*"],"safety":"safe"},
-  {"id":"firefox-cache","module":"privacy","title":"Cache Firefox","group":"Firefox","paths":["~/Library/Caches/Firefox/Profiles/*"],"safety":"safe"},
-  {"id":"arc-cache","module":"privacy","title":"Cache Arc","group":"Arc","paths":["~/Library/Caches/company.thebrowser.Browser"],"safety":"safe"},
-  {"id":"safari-cache","module":"privacy","title":"Cache Safari","group":"Safari","paths":["~/Library/Caches/com.apple.Safari"],"safety":"safe","detail":"Cần Full Disk Access"},
+  {"id":"chrome-cache","module":"privacy","title":"Cache Chrome","group":"Chrome","paths":["~/Library/Caches/Google/Chrome/*"],"quitBundle":"com.google.Chrome","safety":"safe"},
+  {"id":"firefox-cache","module":"privacy","title":"Cache Firefox","group":"Firefox","paths":["~/Library/Caches/Firefox/Profiles/*"],"quitBundle":"org.mozilla.firefox","safety":"safe"},
+  {"id":"brave-cache","module":"privacy","title":"Cache Brave","group":"Brave","paths":["~/Library/Caches/BraveSoftware/Brave-Browser/*"],"quitBundle":"com.brave.Browser","safety":"safe"},
+  {"id":"edge-cache","module":"privacy","title":"Cache Edge","group":"Edge","paths":["~/Library/Caches/Microsoft Edge/*"],"quitBundle":"com.microsoft.edgemac","safety":"safe"},
+  {"id":"arc-cache","module":"privacy","title":"Cache Arc","group":"Arc","paths":["~/Library/Caches/company.thebrowser.Browser"],"quitBundle":"company.thebrowser.Browser","safety":"safe"},
+  {"id":"safari-cache","module":"privacy","title":"Cache Safari","group":"Safari","paths":["~/Library/Caches/com.apple.Safari"],"quitBundle":"com.apple.Safari","safety":"safe","detail":"Cần Full Disk Access"},
   {"id":"recent-items","module":"privacy","title":"Quick Look cache","group":"Hệ thống","paths":["~/Library/Caches/com.apple.QuickLook.thumbnailcache"],"safety":"safe"}
 ]

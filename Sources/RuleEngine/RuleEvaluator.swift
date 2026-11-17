@@ -32,26 +32,33 @@ public struct RuleEvaluator: Sendable {
     func evaluate(_ rule: Rule, running: Set<String>) async -> [ScanItem] {
         if let req = rule.requires, ProcessRunner.which(req) == nil { return [] }
         if let pat = rule.skipIfRunningBundle, running.contains(where: { fnmatch(pat, $0, 0) == 0 }) { return [] }
+        let quitPattern = rule.quitBundle
+        let quitIsRunning = quitPattern.map { p in running.contains { fnmatch(p, $0, 0) == 0 } } ?? false
 
         let excludes = (rule.exclude ?? []).map(expandTilde)
         let now = Date()
-        var matches: [URL] = []
+        var matches: [(URL, String?)] = []
         var seen = Set<String>()
         for p in rule.paths {
             for u in Glob.expand(p) where seen.insert(u.path).inserted {
                 if excludes.contains(where: { fnmatch($0, u.path, 0) == 0 }) { continue }
                 if blocklist.isBlocked(u) { continue }
-                if rule.appNotRunning == true, running.contains(u.lastPathComponent) { continue }
+                var quit: String? = quitIsRunning ? quitPattern : nil
+                if rule.appNotRunning == true, running.contains(u.lastPathComponent) {
+                    // App đang chạy: chỉ app trong danh sách an toàn mới được đóng để dọn, còn lại bỏ qua như trước.
+                    guard AppQuitter.quittable.contains(u.lastPathComponent) else { continue }
+                    quit = u.lastPathComponent
+                }
                 if let days = rule.minAgeDays, days > 0,
                    let m = FileWalker.mtime(of: u), now.timeIntervalSince(m) < Double(days) * 86_400 { continue }
-                matches.append(u)
+                matches.append((u, quit))
             }
         }
-        let sized = await Concurrent.map(matches) { ($0, FileWalker.allocatedSize(of: $0)) }
-        return sized.filter { $0.1 > 0 }.map { (url, size) in
+        let sized = await Concurrent.map(matches) { ($0.0, $0.1, FileWalker.allocatedSize(of: $0.0)) }
+        return sized.filter { $0.2 > 0 }.map { (url, quit, size) in
             ScanItem(url: url, title: displayName(url, rule: rule), allocatedSize: size,
                      category: tr(rule.group), ruleID: rule.id, safety: rule.safety,
-                     command: rule.command, detail: rule.detail.map(tr))
+                     command: rule.command, detail: rule.detail.map(tr), quitBundle: quit)
         }
     }
 

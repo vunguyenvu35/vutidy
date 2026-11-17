@@ -16,7 +16,7 @@ struct SmartScanView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .smooth(showDetails).smooth(state.smartScanning).smooth(state.smart == nil).smooth(state.cleaning.isEmpty)
             .confirmDialog(isPresented: $confirm, title: trf("Dọn %@?", ByteFormat.string(cleanable)),
-                           message: breakdownLine + "\n\n" + trf("Chỉ các mục an toàn. Bạn có thể khôi phục trong %@ ngày. Thùng rác sẽ được dọn vĩnh viễn và mục dùng lệnh CLI (docker, go, brew) không hoàn tác được.", "\(state.retentionDays)"),
+                           message: breakdownLine + quitNotice + "\n\n" + trf("Chỉ các mục an toàn. Bạn có thể khôi phục trong %@ ngày. Thùng rác sẽ được dọn vĩnh viễn và mục dùng lệnh CLI (docker, go, brew) không hoàn tác được.", "\(state.retentionDays)"),
                            confirmTitle: tr("Chuyển vào Quarantine"), symbol: "v.smartScan") {
                 Task { await state.cleanSmart(mode: .quarantine) }
             }
@@ -37,6 +37,12 @@ struct SmartScanView: View {
     }
 
     /// Một dòng tóm tắt cho hộp thoại xác nhận: "Cache 2,44 GB · Docker 7,18 GB · …" (6 nhóm lớn nhất).
+    /// Các app đang chạy phải đóng để dọn cache của chúng (rồi tự mở lại).
+    var quitNotice: String {
+        let names = Set(["system-junk", "dev-junk", "trash"].flatMap { state.appsToQuit(for: $0).map(\.name) }).sorted()
+        return names.isEmpty ? "" : "\n\n" + trf("Sẽ đóng rồi mở lại: %@. Lưu công việc của bạn trước.", names.joined(separator: ", "))
+    }
+
     var breakdownLine: String {
         let g = safeGroups
         let top = g.prefix(6).map { "\($0.name) \(ByteFormat.string($0.size))" }.joined(separator: " · ")

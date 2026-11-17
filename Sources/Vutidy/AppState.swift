@@ -200,6 +200,10 @@ final class AppState: ObservableObject {
     @Published var autoCleanAfterScan: Bool = UserDefaults.standard.bool(forKey: "autoCleanAfterScan") {
         didSet { UserDefaults.standard.set(autoCleanAfterScan, forKey: "autoCleanAfterScan") }
     }
+    /// Dọn cache của app đang chạy (trình duyệt, Slack…): đóng app rồi mở lại sau khi dọn. Tắt thì các mục đó bị bỏ qua.
+    @Published var quitAppsToClean: Bool = (UserDefaults.standard.object(forKey: "quitAppsToClean") as? Bool) ?? true {
+        didSet { UserDefaults.standard.set(quitAppsToClean, forKey: "quitAppsToClean") }
+    }
     /// Tư vấn AI sau Smart Scan. Mặc định tắt: khi bật, số liệu tổng hợp (không đường dẫn) được gửi tới Claude API khi bạn bấm hỏi.
     @Published var aiAdvisorEnabled: Bool = UserDefaults.standard.bool(forKey: "aiAdvisorEnabled") {
         didSet { UserDefaults.standard.set(aiAdvisorEnabled, forKey: "aiAdvisorEnabled"); if !aiAdvisorEnabled { advice = nil; adviceError = nil } }
@@ -435,11 +439,35 @@ final class AppState: ObservableObject {
         (results[id] ?? []).filter(\.selected).reduce(0) { $0 + $1.allocatedSize }
     }
 
-    func clean(_ id: String, mode: CleanMode, quiet: Bool = false) async {
+    /// Các app đang chạy phải đóng để dọn những mục đã chọn của `id`.
+    func appsToQuit(for id: String) -> [RunningApp] {
+        quitAppsToClean ? AppQuitter.running(for: (results[id] ?? []).filter(\.selected)) : []
+    }
+
+    /// `allowQuit`: false cho dọn tự động (không có người dùng): không bao giờ tự đóng app, mục cần đóng app bị bỏ qua.
+    func clean(_ id: String, mode: CleanMode, quiet: Bool = false, allowQuit: Bool = true) async {
         guard !cleaning.contains(id) else { return }
-        let items = results[id] ?? []
-        let selected = items.filter { $0.selected }
+        var items = results[id] ?? []
         cleaning.insert(id)
+
+        // Mục cần app đang chạy: đóng app lịch sự (như Cmd+Q), app nào không thoát thì bỏ qua mục của nó. Xem trước không đóng gì.
+        var reopen: [RunningApp] = []
+        var skippedForApps: [RunningApp] = []
+        if mode != .dryRun {
+            let needed = AppQuitter.running(for: items.filter(\.selected))
+            if !needed.isEmpty {
+                if allowQuit && quitAppsToClean {
+                    cleanProgress[id] = CleanProgress(done: 0, total: items.filter(\.selected).count,
+                                                      current: trf("Đang đóng %@…", needed.map(\.name).joined(separator: ", ")))
+                    let r = await AppQuitter.quit(needed)
+                    reopen = r.quit; skippedForApps = r.refused
+                } else { skippedForApps = needed }
+                for i in items.indices where items[i].selected && skippedForApps.contains(where: { AppQuitter.item(items[i], needs: $0) }) {
+                    items[i].selected = false
+                }
+            }
+        }
+        let selected = items.filter { $0.selected }
         cleanProgress[id] = CleanProgress(done: 0, total: selected.count, current: selected.first?.title ?? "")
         let report = await executor.clean(items, mode: mode, progress: { [weak self] done, total in
             Task { @MainActor in
@@ -448,6 +476,7 @@ final class AppState: ObservableObject {
         })
         cleaning.remove(id)
         cleanProgress[id] = nil
+        await AppQuitter.relaunch(reopen)
         lastReport = report
         let done = Set(report.outcomes.filter { $0.status == .done }.map(\.itemID))
         // Các mục đã dọn mờ đi và co lại có hoạt ảnh; kết quả được ghi lại để hiện màn hoàn tất thay vì bật đột ngột.
@@ -470,6 +499,7 @@ final class AppState: ObservableObject {
         case .permanent: message = trf("Đã xóa %@", "\(ByteFormat.string(report.reclaimedBytes))")
         }
         if !report.failures.isEmpty { message += trf(" · %@ lỗi", "\(report.failures.count)") }
+        if !skippedForApps.isEmpty { message += " · " + trf("Bỏ qua mục của %@ vì ứng dụng chưa thoát", skippedForApps.map(\.name).joined(separator: ", ")) }
         if !quiet { notify(message, report.failures.isEmpty ? .success : .warning, undo: undo) }
         pollSystem()
     }

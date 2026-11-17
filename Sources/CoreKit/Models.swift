@@ -21,10 +21,12 @@ public struct ScanItem: Identifiable, Hashable, Sendable {
     /// Nếu có: dọn bằng lệnh native của công cụ (docker prune, go clean…), không hoàn tác được.
     public var command: [String]?
     public var detail: String?
+    /// Bundle ID (glob) của app phải đóng khi dọn mục này; chỉ đặt khi app đó đang chạy lúc quét.
+    public var quitBundle: String?
 
     public init(id: UUID = UUID(), url: URL, title: String, allocatedSize: Int64,
                 category: String, ruleID: String, safety: SafetyLevel,
-                selected: Bool? = nil, command: [String]? = nil, detail: String? = nil) {
+                selected: Bool? = nil, command: [String]? = nil, detail: String? = nil, quitBundle: String? = nil) {
         self.id = id
         self.url = url
         self.title = title
@@ -35,6 +37,7 @@ public struct ScanItem: Identifiable, Hashable, Sendable {
         self.selected = selected ?? (safety == .safe)
         self.command = command
         self.detail = detail
+        self.quitBundle = quitBundle
     }
 
     public var isCLI: Bool { command != nil }

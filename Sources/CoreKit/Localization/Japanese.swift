@@ -815,5 +815,12 @@ enum Japanese {
         "Lưu trong Keychain của bạn.": "キーチェーンに保存されます。",
         "Model": "モデル",
         "Mã model Claude dùng cho tư vấn.": "アドバイスに使う Claude のモデル ID。",
+        "Đang đóng %@…": "%@ を終了中…",
+        "Bỏ qua mục của %@ vì ứng dụng chưa thoát": "%@ が終了しなかったため、そのアプリの項目をスキップしました",
+        "Sẽ đóng rồi mở lại: %@. Lưu công việc của bạn trước.": "終了して再起動します: %@。先に作業を保存してください。",
+        "Ứng dụng đang chạy": "実行中のアプリ",
+        "Đóng app để dọn cache": "キャッシュ削除のためにアプリを終了",
+        "Trình duyệt, Slack, Discord, Spotify… đang chạy sẽ được đóng lịch sự (như Cmd+Q) trước khi dọn cache của chúng, rồi tự mở lại. App không chịu thoát thì mục của nó bị bỏ qua, không bao giờ ép buộc. Dọn tự động không bao giờ tự đóng app. Tắt thì các mục này luôn bị bỏ qua.": "実行中のブラウザ、Slack、Discord、Spotify などは、キャッシュを削除する前に通常の方法 (Cmd+Q と同じ) で終了し、完了後に再起動します。終了しないアプリの項目はスキップされ、強制終了は行いません。自動クリーンアップはアプリを終了しません。オフの場合、これらの項目は常にスキップされます。",
+        "Chạy %@": "稼働 %@",
     ]
 }

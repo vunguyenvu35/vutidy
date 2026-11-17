@@ -816,5 +816,12 @@ enum Chinese {
         "Lưu trong Keychain của bạn.": "保存在你的钥匙串中。",
         "Model": "模型",
         "Mã model Claude dùng cho tư vấn.": "用于建议的 Claude 模型 ID。",
+        "Đang đóng %@…": "正在关闭 %@…",
+        "Bỏ qua mục của %@ vì ứng dụng chưa thoát": "%@ 未退出,已跳过其项目",
+        "Sẽ đóng rồi mở lại: %@. Lưu công việc của bạn trước.": "将退出并重新打开:%@。请先保存你的工作。",
+        "Ứng dụng đang chạy": "正在运行的应用",
+        "Đóng app để dọn cache": "退出应用以清理缓存",
+        "Trình duyệt, Slack, Discord, Spotify… đang chạy sẽ được đóng lịch sự (như Cmd+Q) trước khi dọn cache của chúng, rồi tự mở lại. App không chịu thoát thì mục của nó bị bỏ qua, không bao giờ ép buộc. Dọn tự động không bao giờ tự đóng app. Tắt thì các mục này luôn bị bỏ qua.": "正在运行的浏览器、Slack、Discord、Spotify 等会在清理缓存前正常退出(与 Cmd+Q 相同),完成后自动重新打开。不肯退出的应用,其项目会被跳过,绝不强制退出。自动清理从不退出应用。关闭后,这些项目总是被跳过。",
+        "Chạy %@": "已运行 %@",
     ]
 }

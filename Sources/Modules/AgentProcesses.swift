@@ -62,7 +62,9 @@ public enum AgentProcesses {
         let exe = (String(first) as NSString).lastPathComponent
         let inApp = lower.contains(".app/contents/")
 
-        if lower.contains("modelcontextprotocol") || lower.range(of: #"(^|[\s/@_-])mcp([\s/@_.-]|$)"#, options: .regularExpression) != nil {
+        // Chỉ xét chương trình và đối số vị trí: bỏ cờ (`-x`, `--mcp-…`) và URL, nếu không `docker-agent --mcp-oauth-redirect-uri …` bị nhận nhầm.
+        let positional = lower.split(separator: " ").filter { !$0.hasPrefix("-") && !$0.contains("://") }.joined(separator: " ")
+        if positional.contains("modelcontextprotocol") || positional.range(of: #"(^|[\s/@_-])mcp([\s/@_.-]|@|$)"#, options: .regularExpression) != nil {
             return .mcp
         }
         if exe == "ollama" { return .ollama }

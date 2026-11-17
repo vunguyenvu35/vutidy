@@ -14,6 +14,8 @@ public struct Rule: Codable, Sendable, Identifiable {
     public var skipIfRunningBundle: String?
     /// Bỏ qua từng mục có tên thư mục trùng bundle ID của app đang chạy.
     public var appNotRunning: Bool?
+    /// Bundle ID (glob) của app phải đóng để dọn rule này. App đang chạy thì mục vẫn được liệt kê và gắn `quitBundle`; lúc dọn app được đóng rồi mở lại.
+    public var quitBundle: String?
     public var safety: SafetyLevel
     /// Lệnh native thay cho xóa file (ví dụ ["go","clean","-cache"]).
     public var command: [String]?

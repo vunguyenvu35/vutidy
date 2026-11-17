@@ -241,3 +241,14 @@ struct PlainPointerStyle: ButtonStyle {
         configuration.label.opacity(configuration.isPressed ? 0.7 : 1).pointerCursor()
     }
 }
+
+extension View {
+    /// Cả vùng bấm được: bàn tay + mở `action`. Control con (nút) vẫn nhận click riêng. `nil` thì không làm gì.
+    @ViewBuilder func clickable(_ action: (() -> Void)?) -> some View {
+        if let action {
+            self.contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .onTapGesture(perform: action).pointerCursor()
+                .accessibilityAddTraits(.isButton)
+        } else { self }
+    }
+}

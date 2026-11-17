@@ -152,8 +152,9 @@ struct PopoverView: View {
 
     // MARK: Ô số liệu — mọi ô cùng một khung (tiêu đề · giá trị · vùng đồ thị · dòng phụ)
 
+    /// `go`: bấm vào ô để mở trang tương ứng (nút bên trong ô, như "Đo tốc độ", vẫn nhận click riêng).
     func tile<M: View>(_ title: String, symbol: String, tint: Color, value v: String, sub: String? = nil,
-                       @ViewBuilder middle: () -> M) -> some View {
+                       go: (() -> Void)? = nil, @ViewBuilder middle: () -> M) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 7) {
                 IconTile(symbol: symbol, tint: tint, size: 22)
@@ -168,6 +169,16 @@ struct PopoverView: View {
         .padding(12)
         .frame(maxWidth: .infinity, minHeight: 128, maxHeight: 128, alignment: .topLeading)
         .glassSurface(radius: 14, strong: false)
+        .clickable(go)
+    }
+
+    /// Mở một trang của cửa sổ chính từ popover.
+    func open(_ page: Page) { state.section = page; activate() }
+
+    /// Mở một pane của System Settings rồi đóng popover.
+    func openSystemSettings(_ url: String) {
+        if let u = URL(string: url) { NSWorkspace.shared.open(u) }
+        AppDelegate.closeMenuBarPopover()
     }
 
     func diskTile(_ s: SystemSnapshot?) -> some View {
@@ -175,7 +186,8 @@ struct PopoverView: View {
         let used = d.map { 1 - $0.freeFraction } ?? 0
         return tile(tr("Ổ đĩa"), symbol: "v.drive", tint: Page.systemJunk.palette.glow,
                     value: d.map { ByteFormat.string($0.availableImportant) + tr(" trống") } ?? "—",
-                    sub: d.flatMap { $0.purgeable > 0 ? "Purgeable " + ByteFormat.string($0.purgeable) : nil}) {
+                    sub: d.flatMap { $0.purgeable > 0 ? "Purgeable " + ByteFormat.string($0.purgeable) : nil},
+                    go: { open(.spaceLens) }) {
             MeterBar(value: used, color: used > 0.9 ? Theme.danger : Color.white.opacity(0.9), height: 6)
         }
     }
@@ -186,13 +198,15 @@ struct PopoverView: View {
         let c: Color = (m?.pressure ?? .normal) == .normal ? Color.white.opacity(0.9) : ((m?.pressure ?? .normal) == .warning ? Theme.Review.base : Theme.danger)
         return tile(tr("Bộ nhớ"), symbol: "v.ram", tint: Page.optimization.palette.glow,
                     value: m.map { ByteFormat.string($0.available) + tr(" khả dụng") } ?? "—",
-                    sub: m.map { trf("Áp lực: %@ · swap %@", $0.pressure.rawValue, ByteFormat.string($0.swapUsed)) }) {
+                    sub: m.map { trf("Áp lực: %@ · swap %@", $0.pressure.rawValue, ByteFormat.string($0.swapUsed)) },
+                    go: { open(.optimization) }) {
             MeterBar(value: used, color: c, height: 6)
         }
     }
 
     func cpuTile(_ s: SystemSnapshot?) -> some View {
-        tile("CPU", symbol: "v.chip", tint: Page.updater.palette.glow, value: "\(Int((s?.cpuLoad ?? 0) * 100))%", sub: cpuThermalText(s)) {
+        tile("CPU", symbol: "v.chip", tint: Page.updater.palette.glow, value: "\(Int((s?.cpuLoad ?? 0) * 100))%", sub: cpuThermalText(s),
+                    go: { open(.optimization) }) {
             Sparkline(values: state.cpuHistory, color: Color.white.opacity(0.9))
         }
     }
@@ -201,7 +215,8 @@ struct PopoverView: View {
         let b = s?.battery
         return tile(tr("Pin"), symbol: "v.bolt", tint: Page.protection.palette.glow,
                     value: b.map { "\($0.percent)%" + ($0.charging ? " ⚡︎" : "") } ?? tr("Không có"),
-                    sub: b.flatMap { x in x.health.map { trf("Sức khỏe %@%%", "\(Int($0 * 100))") + (x.cycleCount.map { trf(" · %@ chu kỳ", "\($0)") } ?? "") } }) {
+                    sub: b.flatMap { x in x.health.map { trf("Sức khỏe %@%%", "\(Int($0 * 100))") + (x.cycleCount.map { trf(" · %@ chu kỳ", "\($0)") } ?? "") } },
+                    go: { open(.optimization) }) {
             if let b { MeterBar(value: Double(b.percent) / 100, color: b.percent < 20 ? Theme.danger : Color.white.opacity(0.9), height: 6) }
             else { Color.clear }
         }
@@ -209,7 +224,8 @@ struct PopoverView: View {
 
     func networkTile(_ s: SystemSnapshot?) -> some View {
         tile(tr("Mạng"), symbol: "v.wifi", tint: Page.cloud.palette.glow, value: "↓ " + rate(s?.network.downBytesPerSec),
-             sub: speed.map { String(format: "%.0f ↓ / %.0f ↑ Mbps", $0.downMbps, $0.upMbps) } ?? ("↑ " + rate(s?.network.upBytesPerSec))) {
+             sub: speed.map { String(format: "%.0f ↓ / %.0f ↑ Mbps", $0.downMbps, $0.upMbps) } ?? ("↑ " + rate(s?.network.upBytesPerSec)),
+             go: { openSystemSettings("x-apple.systempreferences:com.apple.Network-Settings.extension") }) {
             Button {
                 Task { testing = true; if let r = await SpeedTest.run() { speed = r; SpeedTest.append(r) }; testing = false }
             } label: {
@@ -251,6 +267,7 @@ struct PopoverView: View {
         .padding(12)
         .frame(maxWidth: .infinity, minHeight: 128, maxHeight: 128, alignment: .topLeading)
         .glassSurface(radius: 14, strong: false)
+        .clickable { openSystemSettings("x-apple.systempreferences:com.apple.BluetoothSettings") }
     }
 
     func deviceRow(_ d: BluetoothDevice, tint: Color) -> some View {
