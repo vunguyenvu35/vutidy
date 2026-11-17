@@ -8,20 +8,15 @@ struct SmartScanView: View {
     @ViewState private var showDetails = true  // mở sẵn: người dùng luôn thấy sẽ dọn gì trước khi bấm Dọn
 
     var body: some View {
-        let disk = state.snapshot?.disk
         let cleanable = state.smart?.cleanableBytes ?? 0
-        VStack(alignment: .leading, spacing: 16) {
-            hero(disk: disk, cleanable: cleanable).frame(minHeight: 280, maxHeight: .infinity)
-            if cleanable > 0 { detailsPanel }
-            SmartCareCard()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .smooth(showDetails).smooth(state.smartScanning).smooth(state.smart == nil).smooth(state.cleaning.isEmpty)
-        .confirmDialog(isPresented: $confirm, title: trf("Dọn %@?", ByteFormat.string(cleanable)),
-                       message: breakdownLine + "\n\n" + trf("Chỉ các mục an toàn. Bạn có thể khôi phục trong %@ ngày. Thùng rác sẽ được dọn vĩnh viễn và mục dùng lệnh CLI (docker, go, brew) không hoàn tác được.", "\(state.retentionDays)"),
-                       confirmTitle: tr("Chuyển vào Quarantine"), symbol: "v.smartScan") {
-            Task { await state.cleanSmart(mode: .quarantine) }
-        }
+        SmartScanDashboard(onClean: { confirm = true }, details: cleanable > 0 && state.cleaning.isEmpty && !state.smartScanning ? AnyView(detailsPanel) : nil)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .smooth(showDetails).smooth(state.smartScanning).smooth(state.smart == nil).smooth(state.cleaning.isEmpty)
+            .confirmDialog(isPresented: $confirm, title: trf("Dọn %@?", ByteFormat.string(cleanable)),
+                           message: breakdownLine + "\n\n" + trf("Chỉ các mục an toàn. Bạn có thể khôi phục trong %@ ngày. Thùng rác sẽ được dọn vĩnh viễn và mục dùng lệnh CLI (docker, go, brew) không hoàn tác được.", "\(state.retentionDays)"),
+                           confirmTitle: tr("Chuyển vào Quarantine"), symbol: "v.smartScan") {
+                Task { await state.cleanSmart(mode: .quarantine) }
+            }
     }
 
     // MARK: Chi tiết những gì sẽ được dọn
@@ -77,87 +72,8 @@ struct SmartScanView: View {
                 }.buttonStyle(PlainPointerStyle())
             } }
         }
-        .glassSurface(radius: Theme.Radius.card, strong: false)
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.white.opacity(0.05)))
+        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.white.opacity(0.06)))
         .frame(maxWidth: .infinity, alignment: .leading)
     }
-
-    // MARK: Hero
-
-    /// Hero co theo bề ngang: đủ chỗ thì có vòng đo + hình minh họa; hẹp thì bỏ hình, rồi bỏ cả vòng đo.
-    /// (Cửa sổ nhỏ trước đây bị tràn vì hàng ba nút Clean · Preview · Rescan cộng vòng đo và hình cần ~900 pt.)
-    func hero(disk: DiskInfo?, cleanable: Int64) -> some View {
-        ViewThatFits(in: .horizontal) {
-            heroRow(disk: disk, cleanable: cleanable, ring: true, art: true)
-            heroRow(disk: disk, cleanable: cleanable, ring: true, art: false)
-            heroRow(disk: disk, cleanable: cleanable, ring: false, art: false)
-        }
-        .padding(.horizontal, 26).padding(.vertical, 20)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .glassSurface(radius: Theme.Radius.hero, strong: true)
-    }
-
-    func heroRow(disk: DiskInfo?, cleanable: Int64, ring showRing: Bool, art showArt: Bool) -> some View {
-        HStack(spacing: 30) {
-            if showRing { ZStack {
-                Ring(segments: ringSegments(disk), lineWidth: 14)
-                VStack(spacing: 1) {
-                    Text(ByteFormat.string(disk?.availableImportant ?? 0)).font(.vt(size: 26, weight: .bold, design: .rounded)).monospacedDigit().foregroundStyle(.white)
-                        .lineLimit(1).minimumScaleFactor(0.55).multilineTextAlignment(.center)
-                    Text(cleanable > 0 ? trf("→ %@ sau khi dọn", ByteFormat.string((disk?.availableImportant ?? 0) + cleanable)) : tr("trống"))
-                        .font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary).lineLimit(1).minimumScaleFactor(0.7)
-                }.multilineTextAlignment(.center).frame(width: 172 - 14 * 2 - 24)
-            }.frame(width: 172, height: 172) }
-
-            VStack(alignment: .leading, spacing: 10) {
-                Text(state.smart.map { trf("Quét lúc %@", $0.date.formatted(date: .abbreviated, time: .shortened)) } ?? tr("Chưa quét"))
-                    .font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary)
-                Text(state.smart == nil ? tr("Quét Mac của bạn") : (cleanable == 0 ? tr("Mac của bạn đang gọn gàng") : trf("Mac của bạn có thể lấy lại %@", ByteFormat.string(cleanable))))
-                    .font(.vt(size: 28, weight: .semibold)).foregroundStyle(.white).lineLimit(2)
-                if !state.cleaning.isEmpty {
-                    HStack(spacing: 10) { VSpinner(size: 18); Text(tr("Đang dọn…")).font(.vt(size: 14, weight: .semibold)).foregroundStyle(.white) }
-                } else if state.smartScanning {
-                    HStack(spacing: 10) { VSpinner(size: 18); Text(state.status["smart"] ?? tr("Đang quét…")).font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary) }
-                } else if state.smart == nil {
-                    Text(tr("Smart Scan gộp Rác hệ thống, Dev Junk, Thùng rác, persistence và gợi ý tối ưu trong một lần quét."))
-                        .font(Theme.Font.body).foregroundStyle(Theme.Text.secondary).fixedSize(horizontal: false, vertical: true)
-                    if state.autoCleanAfterScan {
-                        Label(tr("Dọn tự động đang bật: quét xong, mục An toàn hoàn tác được sẽ vào Quarantine."), systemImage: "bolt.fill")
-                            .font(Theme.Font.caption).foregroundStyle(Theme.Review.text).fixedSize(horizontal: false, vertical: true)
-                    }
-                } else if cleanable > 0 {
-                    Label(trf("Hoàn tác được trong %@ ngày", "\(state.retentionDays)"), systemImage: "arrow.uturn.backward")
-                        .font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary)
-                }
-                HStack(spacing: 10) {
-                    if !state.smartScanning && state.cleaning.isEmpty {
-                        if state.smart != nil && cleanable > 0 {
-                            Button(trf("Dọn %@", ByteFormat.string(cleanable))) { confirm = true }.buttonStyle(PrimaryButtonStyle())
-                            Button(tr("Xem trước (dry-run)")) { Task { await state.cleanSmart(mode: .dryRun) } }.buttonStyle(SecondaryButtonStyle())
-                        }
-                        if state.smart == nil {
-                            // Bật "Dọn tự động": một nút quét + dọn. Tắt: quét như cũ, và thêm lối tắt "Quét và dọn luôn" cho lần này.
-                            if state.autoCleanAfterScan {
-                                Button(tr("Quét và dọn")) { Task { await state.runSmartScan() } }.buttonStyle(PrimaryButtonStyle())
-                            } else {
-                                Button(tr("Bắt đầu quét")) { Task { await state.runSmartScan() } }.buttonStyle(PrimaryButtonStyle())
-                                Button(tr("Quét và dọn luôn")) { Task { await state.runSmartScan(autoClean: true) } }.buttonStyle(SecondaryButtonStyle())
-                                    .help(tr("Quét xong tự chuyển các mục An toàn, hoàn tác được vào Quarantine. Mục không hoàn tác được vẫn chờ bạn."))
-                            }
-                        }
-                        else { Button { Task { await state.runSmartScan() } } label: { Label(tr("Quét lại"), systemImage: "arrow.clockwise") }.buttonStyle(SecondaryButtonStyle()) }
-                    }
-                }.padding(.top, 2)
-            }
-            Spacer(minLength: 0)
-            if showArt { HeroArt(page: .smartScan, size: 132).frame(width: 150, height: 150).padding(.trailing, 8) }
-        }
-    }
-
-    func ringSegments(_ d: DiskInfo?) -> [Ring.Segment] {
-        guard let d, d.total > 0 else { return [] }
-        let used = Double(d.total - d.availableImportant - d.purgeable)
-        return [.init(value: used, color: Color.white.opacity(0.92)), .init(value: Double(d.purgeable), color: Color.white.opacity(0.5)),
-                .init(value: Double(d.availableImportant), color: Color.white.opacity(0.16))]
-    }
-
 }

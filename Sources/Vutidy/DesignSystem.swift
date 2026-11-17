@@ -267,22 +267,14 @@ extension Theme {
 extension Page {
     /// Mỗi mục có một màu riêng (như CleanMyMac) để người dùng định hướng nhanh.
     var tint: Color {
+        // Màu theo NHÓM như mockup: Dọn dẹp xanh dương · Bảo vệ xanh lá · Tốc độ cam · Ứng dụng hồng · File vàng.
         switch self {
-        case .smartScan: return Theme.Signal.base
-        case .systemJunk: return Theme.Info.base
-        case .devJunk: return Theme.teal
-        case .trash: return Theme.pink
-        case .privacy: return Theme.apps
-        case .protection: return Theme.Signal.base
-        case .malware: return Theme.danger
-        case .optimization: return Theme.orange
-        case .maintenance: return Theme.Info.base
-        case .uninstaller: return Theme.pink
-        case .updater: return Theme.Info.base
-        case .spaceLens: return Theme.teal
-        case .largeFiles: return Theme.Review.base
-        case .duplicates: return Theme.apps
-        case .cloud: return Theme.Info.base
+        case .smartScan: return Color(hex: 0x7C6AF0)
+        case .systemJunk, .devJunk, .trash, .privacy: return Color(hex: 0x0A84FF)
+        case .protection, .malware: return Color(hex: 0x30D158)
+        case .optimization, .maintenance: return Color(hex: 0xFF9F0A)
+        case .uninstaller, .updater: return Color(hex: 0xFF375F)
+        case .spaceLens, .largeFiles, .duplicates, .cloud: return Color(hex: 0xFFB800)
         case .quarantine: return Theme.Signal.base
         }
     }
@@ -293,13 +285,26 @@ struct SolidIcon: View {
     let symbol: String
     var tint: Color
     var size: CGFloat = 26
+    /// Ô phẳng một màu như sidebar trong mockup (không gradient, không bóng).
+    var flat = false
     var body: some View {
-        RoundedRectangle(cornerRadius: size * 0.3, style: .continuous)
-            .fill(LinearGradient(colors: [tint, tint.opacity(0.72)], startPoint: .top, endPoint: .bottom))
+        // Mockup: glyph trắng; riêng nền vàng dùng glyph nâu đậm để đủ tương phản.
+        let glyph = tint.isLight ? Color(hex: 0x3D2C00) : .white
+        RoundedRectangle(cornerRadius: size * (flat ? 0.27 : 0.3), style: .continuous)
+            .fill(flat ? AnyShapeStyle(tint) : AnyShapeStyle(LinearGradient(colors: [tint, tint.opacity(0.72)], startPoint: .top, endPoint: .bottom)))
             .frame(width: size, height: size)
-            .overlay(Glyph(symbol: symbol, size: size * 0.62, stroke: Color(hex: 0x0B1020, opacity: 0.86), fill: .white))
-            .shadow(color: tint.opacity(0.25), radius: size * 0.25, y: size * 0.08)
+            .overlay(Glyph(symbol: symbol, size: size * 0.64, stroke: glyph, fill: glyph, lineWidth: 1.75))
+            .shadow(color: flat ? .clear : tint.opacity(0.25), radius: size * 0.25, y: size * 0.08)
             .accessibilityHidden(true)
+    }
+}
+
+extension Color {
+    /// Độ sáng tương đối (WCAG) > 0.5: nền sáng cần glyph tối.
+    var isLight: Bool {
+        guard let c = NSColor(self).usingColorSpace(.sRGB) else { return false }
+        func lin(_ v: CGFloat) -> CGFloat { v <= 0.03928 ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4) }
+        return 0.2126 * lin(c.redComponent) + 0.7152 * lin(c.greenComponent) + 0.0722 * lin(c.blueComponent) > 0.5
     }
 }
 

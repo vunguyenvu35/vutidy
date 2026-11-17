@@ -168,7 +168,7 @@ struct NavRow: View {
         let active = state.section == section
         Button { state.section = section } label: {
             HStack(spacing: 11) {
-                SolidIcon(symbol: section.icon, tint: section.tint, size: 24)
+                SolidIcon(symbol: section.icon, tint: section.tint, size: 24, flat: true)
                 Text(section.title).font(.vt(size: 13.5, weight: active ? .semibold : .regular)).lineLimit(1)
                 Spacer(minLength: 0)
                 if let cid = section.cleanupID, state.cleaning.contains(cid) || state.scanning.contains(cid) {

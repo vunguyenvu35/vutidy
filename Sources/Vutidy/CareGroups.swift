@@ -3,10 +3,11 @@ import CoreKit
 import Modules
 
 /// Năm nhóm của Smart Care: Dọn dẹp · Bảo vệ · Hiệu năng · Ứng dụng · File lớn & cũ.
-/// Mỗi nhóm một dòng: con số chính, dấu hiệu ổn/cần chú ý và nút **Xem** mở đúng trang. Chỉ nhóm Dọn dẹp có nút Dọn ở phần trên;
-/// các nhóm còn lại chỉ báo cáo, không tự làm gì.
-struct SmartCareCard: View {
-    @EnvironmentObject var state: AppState
+/// Mỗi nhóm có một dòng tóm tắt và trạng thái (chưa quét / ổn / cần chú ý) để dải thẻ ở Smart Scan hiển thị kết quả.
+/// Chỉ nhóm Dọn dẹp có nút Dọn; các nhóm còn lại chỉ báo cáo, không tự làm gì.
+@MainActor
+struct CareGroups {
+    let state: AppState
 
     enum Status { case pending, ok, attention }
     struct Group: Identifiable {
@@ -90,44 +91,5 @@ struct SmartCareCard: View {
         return Group(id: "clutter", page: .largeFiles, title: tr("File lớn & cũ"),
                      summary: trf("%@ file lớn lâu không mở trong Downloads (%@)", "\(c.clutter.count)", ByteFormat.string(c.clutterBytes)),
                      status: .attention, review: .largeFiles)
-    }
-
-    // MARK: Giao diện
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text(tr("Tình trạng Mac của bạn")).font(Theme.Font.heading).foregroundStyle(Theme.Text.primary)
-                Spacer()
-                if state.smartScanning || state.malwareScanning { VSpinner(size: 14, lineWidth: 2) }
-            }.padding(.horizontal, 18).padding(.vertical, 14)
-            ForEach(groups) { g in
-                Divider().overlay(Theme.Border.subtle)
-                row(g)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .glassSurface(radius: Theme.Radius.card, strong: false)
-    }
-
-    func row(_ g: Group) -> some View {
-        Button { state.section = g.review } label: {
-            HStack(spacing: 14) {
-                SolidIcon(symbol: g.page.icon, tint: g.page.tint, size: 34)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(g.title).font(.vt(size: 13.5, weight: .semibold)).foregroundStyle(Theme.Text.primary)
-                    Text(g.summary).font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary).lineLimit(2).fixedSize(horizontal: false, vertical: true)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                switch g.status {
-                case .ok: Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.Signal.base)
-                case .attention: Image(systemName: "exclamationmark.circle.fill").foregroundStyle(Theme.Review.base)
-                case .pending: Image(systemName: "circle.dotted").foregroundStyle(Theme.Text.tertiary)
-                }
-                Text(tr("Xem")).font(.vt(size: 12.5, weight: .semibold)).foregroundStyle(Theme.Signal.text)
-                Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(Theme.Text.tertiary)
-            }
-            .padding(.horizontal, 18).padding(.vertical, 11).contentShape(Rectangle())
-        }.buttonStyle(PlainPointerStyle())
     }
 }

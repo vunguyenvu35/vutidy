@@ -45,73 +45,19 @@ private struct Pen {
 extension VIcon {
     /// (nét, mảng tô) trong hệ tọa độ pixel của khung `size`.
     func paths(size: CGFloat) -> (stroke: Path, fill: Path) {
+        if let p = MockupIcons.path(for: self, size: size) { return (p, Path()) }
         let k = size / 24
         var s = Pen(k), f = Pen(k)
         switch self {
-        case .smartScan:
-            s.M(11, 3.5); s.C(11.6, 8.3, 14.7, 11.4, 19.5, 12); s.C(14.7, 12.6, 11.6, 15.7, 11, 20.5)
-            s.C(10.4, 15.7, 7.3, 12.6, 2.5, 12); s.C(7.3, 11.4, 10.4, 8.3, 11, 3.5); s.Z()
-            f.O(19, 5, 1.7); f.O(5.5, 19, 1.2)
-        case .systemJunk:
-            s.M(3.5, 13.5); s.L(6.3, 5.8); s.C(6.6, 5.1, 7.2, 4.8, 7.9, 4.8); s.L(16.1, 4.8); s.C(16.8, 4.8, 17.4, 5.1, 17.7, 5.8); s.L(20.5, 13.5)
-            s.RR(3.5, 13.5, 17, 6.5, 2.6)
-            s.M(3.8, 13.5); s.L(8.3, 13.5); s.L(9.6, 15.8); s.L(14.4, 15.8); s.L(15.7, 13.5); s.L(20.2, 13.5)
-            f.RR(9.2, 8, 5.6, 2.4, 1.2)
-        case .devJunk, .code:
+        case .cloud, .devJunk, .duplicates, .gear, .largeFiles, .maintenance, .malware, .optimization, .privacy, .protection, .quarantine, .search, .smartScan, .spaceLens, .systemJunk, .trash, .uninstaller, .updater:
+            break   // vẽ bằng MockupIcons (xem đầu hàm)
+        case .code:
             s.M(8, 7); s.L(3, 12); s.L(8, 17); s.M(16, 7); s.L(21, 12); s.L(16, 17)
             f.RR(10.6, 11, 2.8, 2, 1)  // dấu nhấn: con trỏ
             s.M(13.4, 5.2); s.L(10.6, 18.8)
-        case .trash:
-            s.M(4, 7); s.L(20, 7); s.M(9, 7); s.L(9, 4.6); s.L(15, 4.6); s.L(15, 7)
-            s.M(6.2, 7); s.L(7, 19); s.C(7.1, 20.1, 7.9, 21, 9, 21); s.L(15, 21); s.C(16.1, 21, 16.9, 20.1, 17, 19); s.L(17.8, 7)
-            f.RR(9.2, 10.6, 1.8, 6.4, 0.9); f.RR(13, 10.6, 1.8, 6.4, 0.9)
-        case .privacy:
-            s.M(2.5, 12); s.C(5, 7.6, 8.3, 5.5, 12, 5.5); s.C(15.7, 5.5, 19, 7.6, 21.5, 12)
-            s.C(19, 16.4, 15.7, 18.5, 12, 18.5); s.C(8.3, 18.5, 5, 16.4, 2.5, 12); s.Z()
-            s.O(12, 12, 3.4); f.O(12, 12, 1.4)
-        case .protection:
-            s.M(12, 3); s.L(19.5, 6); s.L(19.5, 11.5); s.C(19.5, 16, 16.6, 19.4, 12, 21); s.C(7.4, 19.4, 4.5, 16, 4.5, 11.5); s.L(4.5, 6); s.Z()
-            s.M(8.6, 12.2); s.L(11, 14.6); s.L(15.5, 9.6)
-        case .malware:
-            s.RR(7.6, 8.4, 8.8, 11.6, 4.4); s.O(12, 6.2, 2.3)
-            s.M(10.6, 4.3); s.L(9, 2.7); s.M(13.4, 4.3); s.L(15, 2.7)
-            s.M(7.8, 11); s.L(4.2, 9.4); s.M(7.6, 14.4); s.L(3.6, 14.4); s.M(7.8, 17.6); s.L(4.4, 19.6)
-            s.M(16.2, 11); s.L(19.8, 9.4); s.M(16.4, 14.4); s.L(20.4, 14.4); s.M(16.2, 17.6); s.L(19.6, 19.6)
-            f.RR(11.2, 10.6, 1.6, 7.8, 0.8)
-        case .optimization:
-            s.arc(12, 14, 8.5, 150, 390)
-            s.M(12, 14); s.L(16.2, 9.2)
-            f.O(12, 14, 1.9)
-            f.RR(5.2, 9.2, 1.6, 1.6, 0.8); f.RR(11.2, 4.6, 1.6, 1.6, 0.8); f.RR(17.2, 9.2, 1.6, 1.6, 0.8)
-        case .maintenance, .sliders:
+        case .sliders:
             s.M(3.5, 8); s.L(20.5, 8); s.M(3.5, 16); s.L(20.5, 16)
             f.O(9, 8, 2.7); f.O(15, 16, 2.7)
-        case .uninstaller:
-            s.RR(3.5, 4.5, 17, 15, 3.6); s.M(3.5, 9.2); s.L(20.5, 9.2)
-            s.M(9.6, 12.6); s.L(14.4, 17.2); s.M(14.4, 12.6); s.L(9.6, 17.2)
-            f.O(6.4, 6.9, 0.9); f.O(9, 6.9, 0.9)
-        case .updater:
-            s.O(12, 12, 8.5); s.M(12, 7.6); s.L(12, 15.4); s.M(8.6, 12.4); s.L(12, 15.8); s.L(15.4, 12.4)
-            f.RR(9.6, 17.4, 4.8, 1.6, 0.8)
-        case .spaceLens:
-            s.O(12, 12, 8.5); s.M(12, 12); s.L(12, 3.5); s.M(12, 12); s.L(19.36, 16.25)
-            f.M(12, 12); f.arc(12, 12, 8.5, 270, 390, move: false); f.Z()
-        case .largeFiles:
-            s.M(6.5, 3.5); s.L(13.6, 3.5); s.L(18.5, 8.4); s.L(18.5, 19); s.C(18.5, 19.9, 17.9, 20.5, 17, 20.5); s.L(6.5, 20.5)
-            s.C(5.6, 20.5, 5, 19.9, 5, 19); s.L(5, 5); s.C(5, 4.1, 5.6, 3.5, 6.5, 3.5); s.Z()
-            s.M(13.6, 3.5); s.L(13.6, 8.4); s.L(18.5, 8.4)
-            s.O(11.5, 14.8, 3); s.M(11.5, 13.1); s.L(11.5, 14.8); s.L(12.8, 15.6)
-        case .duplicates:
-            s.RR(8.5, 3.5, 12, 12, 3); s.RR(3.5, 8.5, 12, 12, 3)
-            f.RR(7, 13.4, 5, 2.2, 1.1)
-        case .cloud:
-            s.M(7.5, 19); s.C(4.8, 19, 3, 17.1, 3, 14.7); s.C(3, 12.5, 4.6, 10.8, 6.8, 10.5); s.C(7.4, 7.3, 9.7, 5.5, 12.5, 5.5)
-            s.C(15.5, 5.5, 17.7, 7.6, 18.1, 10.4); s.C(20.1, 10.7, 21.5, 12.3, 21.5, 14.4); s.C(21.5, 16.9, 19.6, 19, 17.1, 19); s.Z()
-            f.RR(10.9, 11.4, 2.2, 5.6, 1.1)
-        case .quarantine:
-            s.RR(3.5, 4.5, 17, 5, 2); s.M(5.5, 9.5); s.L(5.5, 17.5); s.C(5.5, 18.7, 6.3, 19.5, 7.5, 19.5); s.L(16.5, 19.5)
-            s.C(17.7, 19.5, 18.5, 18.7, 18.5, 17.5); s.L(18.5, 9.5)
-            f.RR(9.4, 12.6, 5.2, 2.4, 1.2)
         case .box:
             s.M(12, 3); s.L(19.8, 7.4); s.L(19.8, 16.6); s.L(12, 21); s.L(4.2, 16.6); s.L(4.2, 7.4); s.Z()
             s.M(4.2, 7.4); s.L(12, 12); s.L(19.8, 7.4); s.M(12, 12); s.L(12, 21)
@@ -170,24 +116,10 @@ extension VIcon {
             s.M(12, 19.6); s.C(6, 15.4, 3.5, 12.3, 3.5, 9); s.C(3.5, 6.5, 5.4, 4.6, 7.7, 4.6); s.C(9.5, 4.6, 11.1, 5.6, 12, 7.2)
             s.C(12.9, 5.6, 14.5, 4.6, 16.3, 4.6); s.C(18.6, 4.6, 20.5, 6.5, 20.5, 9); s.C(20.5, 12.3, 18, 15.4, 12, 19.6); s.Z()
             f.O(8, 8.8, 1.1)
-        case .gear:
-            for kIdx in 0..<8 {
-                let a = Double(kIdx) * 45
-                let pts: [(Double, CGFloat)] = [(a - 11, 6.8), (a - 7, 9.2), (a + 7, 9.2), (a + 11, 6.8)]
-                for (j, q) in pts.enumerated() {
-                    let rad = q.0 * .pi / 180
-                    let x = 12 + q.1 * CGFloat(cos(rad)), y = 12 + q.1 * CGFloat(sin(rad))
-                    if kIdx == 0 && j == 0 { s.M(x, y) } else { s.L(x, y) }
-                }
-            }
-            s.Z(); f.O(12, 12, 2.1)
         case .command:
             s.M(9, 9); s.L(15, 9); s.L(15, 15); s.L(9, 15); s.Z()
             for (cx, cy) in [(6.6, 6.6), (17.4, 6.6), (6.6, 17.4), (17.4, 17.4)] as [(CGFloat, CGFloat)] { s.O(cx, cy, 2.4) }
             f.O(12, 12, 1)
-        case .search:
-            s.O(10.5, 10.5, 6.3); s.M(15.2, 15.2); s.L(20.2, 20.2)
-            f.O(10.5, 10.5, 1.4)
         case .power:
             s.arc(12, 13, 7.6, 305, 595); s.M(12, 3.8); s.L(12, 11.4)
             f.O(12, 13.4, 1.2)
@@ -258,9 +190,10 @@ struct Glyph: View {
     var size: CGFloat
     var stroke: Color
     var fill: Color
+    var lineWidth: CGFloat = 1.8
     var body: some View {
         if let i = IconAlias.icon(for: symbol) {
-            VIconView(icon: i, stroke: stroke, fill: fill).frame(width: size, height: size)
+            VIconView(icon: i, stroke: stroke, fill: fill, lineWidth: lineWidth).frame(width: size, height: size)
         } else {
             Image(systemName: symbol).font(.system(size: size * 0.85, weight: .semibold)).foregroundStyle(stroke).frame(width: size, height: size)
         }
