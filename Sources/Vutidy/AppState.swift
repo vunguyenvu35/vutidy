@@ -320,6 +320,7 @@ final class AppState: ObservableObject {
                 w.contentView = host; w.isOpaque = false; w.backgroundColor = .clear; w.level = .floating
                 w.setContentSize(host.fittingSize); w.makeKeyAndOrderFront(nil)
                 Self.docPopoverWindow = w
+                if ProcessInfo.processInfo.environment["VUTIDY_SCROLL_BOTTOM"] != nil { Self.devScrollToBottom(after: 3) }
             }
         }
     }

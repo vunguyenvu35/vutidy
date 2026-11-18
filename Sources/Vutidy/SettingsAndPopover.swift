@@ -455,13 +455,20 @@ struct PopoverView: View {
 
     @ViewBuilder var primaryButton: some View {
         if let r = cleanSuggestion {
-            Button { state.perform(r.action); activate() } label: { Text(footerTitle(for: r)).lineLimit(1) }
+            Button { state.perform(r.action); activate() } label: { footerLabel(footerTitle(for: r), icon: "sparkles") }
                 .buttonStyle(FooterLinkStyle()).help(r.title)
         } else if junkBytes > 0 {
-            Button { state.section = .systemJunk; activate() } label: { Text(trf("Dọn tới %@ rác", ByteFormat.string(junkBytes))).lineLimit(1) }
+            Button { state.section = .systemJunk; activate() } label: { footerLabel(trf("Dọn tới %@ rác", ByteFormat.string(junkBytes)), icon: "sparkles") }
                 .buttonStyle(FooterLinkStyle())
         } else {
-            Button { state.section = .smartScan; activate() } label: { Text(tr("Mở Vutidy")) }.buttonStyle(FooterLinkStyle())
+            Button { state.section = .smartScan; activate() } label: { footerLabel(tr("Mở Vutidy"), icon: "arrow.up.forward.app") }.buttonStyle(FooterLinkStyle())
+        }
+    }
+
+    func footerLabel(_ title: String, icon: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon).font(.system(size: 13, weight: .semibold))
+            Text(title).lineLimit(1)
         }
     }
 
@@ -504,7 +511,7 @@ extension PopoverView {
     }
 }
 
-/// Dòng hành động ở chân popover: nút phẳng, nền mờ hiện lên khi rê chuột / nhấn.
+/// Nút hành động chính ở chân popover: capsule gradient tím có ánh sáng và viền, cùng ngôn ngữ với các nút chính của app.
 private struct FooterLinkStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View { FooterLinkBody(configuration: configuration) }
 }
@@ -512,11 +519,21 @@ private struct FooterLinkStyle: ButtonStyle {
 private struct FooterLinkBody: View {
     let configuration: ButtonStyleConfiguration
     @ViewState private var hover = false
+    private let bright = Color(hex: 0x9A8CFF), deep = Color(hex: 0x5A46D8)
     var body: some View {
-        configuration.label.font(.vt(size: 14, weight: .medium)).foregroundStyle(.white)
-            .frame(maxWidth: .infinity, minHeight: 32)
-            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.white.opacity(configuration.isPressed ? 0.16 : (hover ? 0.09 : 0))))
-            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        configuration.label.font(.vt(size: 14, weight: .semibold)).foregroundStyle(.white)
+            .shadow(color: .black.opacity(0.25), radius: 1, y: 1)
+            .frame(maxWidth: .infinity, minHeight: 36)
+            .background(
+                ZStack {
+                    Capsule().fill(LinearGradient(colors: [bright, deep], startPoint: .top, endPoint: .bottom))
+                    Capsule().fill(LinearGradient(colors: [Color.white.opacity(hover ? 0.34 : 0.24), .clear], startPoint: .top, endPoint: UnitPoint(x: 0.5, y: 0.55)))
+                }
+            )
+            .overlay(Capsule().strokeBorder(LinearGradient(colors: [Color.white.opacity(0.7), Color.white.opacity(0.12)], startPoint: .top, endPoint: .bottom), lineWidth: 1))
+            .shadow(color: bright.opacity(hover ? 0.65 : 0.4), radius: hover ? 16 : 11, y: 4)
+            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .contentShape(Capsule())
             .onHover { hover = $0 }
             .pointerCursor()
     }

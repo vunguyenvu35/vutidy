@@ -166,8 +166,12 @@ extension AppState {
         let steps = acts.prefix(4).enumerated().map { AdvisorStep(action: $1, reason: reasons[$0 % reasons.count]) }
         advicePlan = AdvisorPlan(summary: "Free space is getting low. Clean the safe groups first, then review the rest by hand.", steps: Array(steps))
         advice = advicePlan?.summary; adviceSource = "Claude Code"
-        // Cuộn vùng nội dung xuống đáy để chụp được thẻ kế hoạch (chỉ dùng khi VUTIDY_FAKE_ADVICE).
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+        Self.devScrollToBottom(after: 1.5)   // chụp được thẻ kế hoạch
+    }
+
+    /// Chỉ để chụp màn hình/kiểm tra giao diện (VUTIDY_FAKE_ADVICE, VUTIDY_SCROLL_BOTTOM): cuộn vùng cuộn lớn nhất của mỗi cửa sổ xuống đáy.
+    static func devScrollToBottom(after delay: TimeInterval) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
             func scrollViews(_ v: NSView) -> [NSScrollView] { (v as? NSScrollView).map { [$0] } ?? [] + v.subviews.flatMap(scrollViews) }
             for w in NSApp.windows { if let c = w.contentView, let sv = scrollViews(c).max(by: { $0.frame.height < $1.frame.height }), let d = sv.documentView {
                 sv.contentView.scroll(to: NSPoint(x: 0, y: d.isFlipped ? max(0, d.bounds.height - sv.contentView.bounds.height) : 0)); sv.reflectScrolledClipView(sv.contentView)
