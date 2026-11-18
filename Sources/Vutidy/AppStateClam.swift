@@ -7,6 +7,18 @@ import Modules
 extension AppState {
     func refreshClamStatus() async { clamStatus = await ClamAV.status() }
 
+    func clamInstall() async {
+        guard clamBusy == nil else { return }
+        clamBusy = tr("Đang cài ClamAV bằng Homebrew… (có thể mất vài phút)"); clamMessage = nil
+        let r = await ClamAV.install()
+        clamBusy = nil
+        switch r {
+        case .success: clamMessage = tr("Đã cài ClamAV. Giờ hãy tải cơ sở dữ liệu.")
+        case .failure(let e): clamMessage = trf("Không cài được ClamAV: %@", "\(e)")
+        }
+        await refreshClamStatus()
+    }
+
     func clamUpdateDatabase() async {
         guard clamBusy == nil else { return }
         clamBusy = tr("Đang tải cơ sở dữ liệu ClamAV…"); clamMessage = nil

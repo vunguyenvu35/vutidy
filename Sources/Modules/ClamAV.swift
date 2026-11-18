@@ -17,6 +17,7 @@ public enum ClamAV {
     public static var dataDir: URL { AppPaths.default.base.appendingPathComponent("clamav", isDirectory: true) }
     static var configFile: URL { dataDir.appendingPathComponent("freshclam.conf") }
     public static let installCommand = "brew install clamav"
+    public static var hasHomebrew: Bool { ProcessRunner.which("brew") != nil }
     /// Nơi quét: các chỗ malware hay xuất hiện (tải về, cài đặt, persistence). Không quét Documents (riêng tư, cần cấp quyền thêm).
     public static let scanTargets = ["~/Downloads", "~/Desktop", "/Applications", "~/Applications",
                                      "~/Library/LaunchAgents", "/Library/LaunchAgents", "/Library/LaunchDaemons"]
@@ -73,7 +74,14 @@ public enum ClamAV {
                       databaseAgeDays: newest.map { max(0, Int(now.timeIntervalSince($0) / 86_400)) })
     }
 
-    public enum Failure: Error, Equatable { case notInstalled, noDatabase, failed(String) }
+    public enum Failure: Error, Equatable { case notInstalled, noDatabase, noHomebrew, failed(String) }
+
+    /// Cài ClamAV bằng Homebrew (`brew install clamav`). Cần mạng; không cần quyền admin vì Homebrew cài vào thư mục của người dùng.
+    public static func install() async -> Result<Void, Failure> {
+        guard hasHomebrew else { return .failure(.noHomebrew) }
+        let r = await ProcessRunner.run(["brew", "install", "clamav"], timeout: 1_800)
+        return r.ok ? .success(()) : .failure(.failed(String((r.stderr + r.stdout).trimmingCharacters(in: .whitespacesAndNewlines).suffix(300))))
+    }
 
     /// Tải/cập nhật cơ sở dữ liệu bằng freshclam vào thư mục riêng (lần đầu khoảng vài trăm MB).
     public static func updateDatabase() async -> Result<Void, Failure> {

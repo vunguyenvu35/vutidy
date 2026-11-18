@@ -310,7 +310,7 @@ final class AppState: ObservableObject {
         // Chụp tài liệu: VUTIDY_SCAN=smart|<id,id…> tự chạy quét; VUTIDY_OPEN=popover mở popover thanh menu thành cửa sổ rời.
         if let ids = ProcessInfo.processInfo.environment["VUTIDY_SCAN"] {
             for id in ids.split(separator: ",").map(String.init) {
-                Task { @MainActor in if id == "smart" { await self.runSmartScan(autoClean: false) } else { await self.scan(id) } }
+                Task { @MainActor in if id == "smart" { await self.runSmartScan(autoClean: false) } else if id == "malware" { await self.runMalwareCheck() } else { await self.scan(id) } }
             }
         }
         if let sp = ProcessInfo.processInfo.environment["VUTIDY_SETTINGS"], let p = SettingsPage(rawValue: sp) { settingsPage = p; settingsOpen = true }
