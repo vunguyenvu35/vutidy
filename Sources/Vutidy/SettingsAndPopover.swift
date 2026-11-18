@@ -258,37 +258,57 @@ struct PopoverView: View {
         }
     }
 
-    // MARK: Ô số liệu — mọi ô cùng một khung (tiêu đề · giá trị · vùng đồ thị · dòng phụ)
+    // MARK: Ô số liệu — gọn: tiêu đề · giá trị · một thanh/đồ thị nhỏ. Chi tiết và hành động nằm trong panel mở ra khi bấm vào ô.
 
-    /// `go`: bấm vào ô để mở trang tương ứng (nút bên trong ô, như "Đo tốc độ", vẫn nhận click riêng).
-    /// `action`: nút hành động riêng của ô ("Giải phóng"), nằm ở hàng cuối góc phải; ô cao thêm để nút không chen vào thanh đo.
-    func tile<M: View>(_ title: String, symbol: String, tint: Color, value v: String, sub: String? = nil,
-                       action: (title: String, symbol: String, busy: Bool, run: () -> Void)? = nil,
+    /// Chiều cao chung của các ô số liệu.
+    static let tileHeight: CGFloat = 96
+
+    /// Giá trị của ô: số vừa phải (font mặc định) + đơn vị nhỏ và mờ bên cạnh. "248,63 GB free" → "248,63" + "GB free".
+    /// Cỡ chữ co giãn theo cài đặt Text size của người dùng, nên bố cục tự lùi từng bước thay vì bị cắt giữa chừng:
+    /// số + đơn vị đầy đủ → số + đơn vị ngắn ("GB") → chỉ số.
+    @ViewBuilder func tileValue(_ v: String) -> some View {
+        var rest = Substring(v)
+        let lead: String = {
+            if let f = rest.first, !f.isNumber, !f.isLetter { rest = rest.dropFirst().drop(while: { $0 == " " }); return String(f) }
+            return ""
+        }()
+        let parts = rest.split(separator: " ", maxSplits: 1).map(String.init)
+        if let num = parts.first, num.contains(where: \.isNumber) {
+            let unit = parts.count > 1 ? parts[1] : ""
+            let short = unit.split(separator: " ").first.map(String.init) ?? ""
+            ViewThatFits(in: .horizontal) {
+                valueRow(lead, num, unit)
+                if !short.isEmpty && short != unit { valueRow(lead, num, short) }
+                valueRow(lead, num, "")
+            }
+        } else {
+            Text(v).font(.vt(size: 17, weight: .semibold)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.75)
+        }
+    }
+
+    func valueRow(_ lead: String, _ num: String, _ unit: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            if !lead.isEmpty { Text(lead).font(.vt(size: 13, weight: .semibold)).foregroundStyle(Theme.Text.secondary) }
+            Text(num).font(.vt(size: 19, weight: .semibold)).tracking(-0.3).monospacedDigit().foregroundStyle(.white)
+            if !unit.isEmpty { Text(unit).font(.vt(size: 11.5, weight: .medium)).foregroundStyle(Theme.Text.secondary) }
+        }.lineLimit(1).fixedSize(horizontal: true, vertical: false)
+    }
+
+    /// `go`: bấm vào ô để mở panel chi tiết hoặc trang tương ứng.
+    func tile<M: View>(_ title: String, symbol: String, tint: Color, value v: String,
                        go: (() -> Void)? = nil, @ViewBuilder middle: () -> M) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 7) {
                 IconTile(symbol: symbol, tint: tint, size: 22)
                 Text(title).font(.vt(size: 11, weight: .semibold)).foregroundStyle(Theme.Text.secondary).textCase(.uppercase).lineLimit(1)
+                Spacer(minLength: 0)
+                if go != nil { Image(systemName: "chevron.right").font(.system(size: 9, weight: .bold)).foregroundStyle(Theme.Text.tertiary) }
             }.frame(height: 22)
-            Text(v).font(.vt(size: 19, weight: .bold, design: .rounded)).monospacedDigit().foregroundStyle(.white)
-                .lineLimit(1).minimumScaleFactor(0.7).frame(height: 28, alignment: .leading).padding(.top, 6)
-            middle().frame(maxWidth: .infinity, minHeight: 24, maxHeight: 24, alignment: .leading)
-            Text(sub ?? " ").font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary)
-                .lineLimit(1).minimumScaleFactor(0.75).frame(height: 16, alignment: .leading)
-            if let action {
-                HStack {
-                    Spacer(minLength: 0)
-                    Button(action: action.run) {
-                        HStack(spacing: 5) {
-                            if action.busy { VSpinner(size: 11, lineWidth: 1.6) } else { Image(systemName: action.symbol).font(.system(size: 10, weight: .bold)) }
-                            Text(action.title)
-                        }
-                    }.buttonStyle(MiniButtonStyle()).disabled(action.busy)
-                }.padding(.top, 6)
-            }
+            tileValue(v).frame(height: 26, alignment: .bottomLeading).padding(.top, 4)
+            middle().frame(maxWidth: .infinity, minHeight: 14, maxHeight: 14, alignment: .leading).padding(.top, 6)
         }
         .padding(12)
-        .frame(maxWidth: .infinity, minHeight: action == nil ? 128 : nil, maxHeight: action == nil ? 128 : nil, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: Self.tileHeight, maxHeight: Self.tileHeight, alignment: .topLeading)
         .glassSurface(radius: 14, strong: false)
         .clickable(go)
     }
@@ -307,10 +327,8 @@ struct PopoverView: View {
         let used = d.map { 1 - $0.freeFraction } ?? 0
         return tile(tr("Ổ đĩa"), symbol: "v.drive", tint: Page.systemJunk.palette.glow,
                     value: d.map { ByteFormat.string($0.availableImportant) + tr(" trống") } ?? "—",
-                    sub: d.flatMap { $0.purgeable > 0 ? "Purgeable " + ByteFormat.string($0.purgeable) : nil},
-                    action: (tr("Giải phóng"), "sparkles", false, { PopoverDetailPanel.shared.show(.disk, state: state, autoRun: true) }),
                     go: { PopoverDetailPanel.shared.show(.disk, state: state) }) {
-            MeterBar(value: used, color: used > 0.9 ? Theme.danger : Color.white.opacity(0.9), height: 6)
+            MeterBar(value: used, color: used > 0.9 ? Theme.danger : Color.white.opacity(0.9), height: 5)
         }
     }
 
@@ -320,16 +338,14 @@ struct PopoverView: View {
         let c: Color = (m?.pressure ?? .normal) == .normal ? Color.white.opacity(0.9) : ((m?.pressure ?? .normal) == .warning ? Theme.Review.base : Theme.danger)
         return tile(tr("Bộ nhớ"), symbol: "v.ram", tint: Page.optimization.palette.glow,
                     value: m.map { ByteFormat.string($0.available) + tr(" khả dụng") } ?? "—",
-                    sub: m.map { trf("Áp lực: %@ · swap %@", $0.pressure.rawValue, ByteFormat.string($0.swapUsed)) },
-                    action: (tr("Giải phóng"), "sparkles", false, { PopoverDetailPanel.shared.show(.memory, state: state, autoRun: true) }),
                     go: { PopoverDetailPanel.shared.show(.memory, state: state) }) {
-            MeterBar(value: used, color: c, height: 6)
+            MeterBar(value: used, color: c, height: 5)
         }
     }
 
     func cpuTile(_ s: SystemSnapshot?) -> some View {
-        tile("CPU", symbol: "v.chip", tint: Page.updater.palette.glow, value: "\(Int((s?.cpuLoad ?? 0) * 100))%", sub: cpuThermalText(s),
-                    go: { PopoverDetailPanel.shared.show(.cpu, state: state) }) {
+        tile("CPU", symbol: "v.chip", tint: Page.updater.palette.glow, value: "\(Int((s?.cpuLoad ?? 0) * 100))%",
+             go: { PopoverDetailPanel.shared.show(.cpu, state: state) }) {
             Sparkline(values: state.cpuHistory, color: Color.white.opacity(0.9))
         }
     }
@@ -338,25 +354,21 @@ struct PopoverView: View {
         let b = s?.battery
         return tile(tr("Pin"), symbol: "v.bolt", tint: Page.protection.palette.glow,
                     value: b.map { "\($0.percent)%" + ($0.charging ? " ⚡︎" : "") } ?? tr("Không có"),
-                    sub: b.flatMap { x in x.health.map { trf("Sức khỏe %@%%", "\(Int($0 * 100))") + (x.cycleCount.map { trf(" · %@ chu kỳ", "\($0)") } ?? "") } },
                     go: b == nil ? nil : { PopoverDetailPanel.shared.show(.battery, state: state) }) {
-            if let b { MeterBar(value: Double(b.percent) / 100, color: b.percent < 20 ? Theme.danger : Color.white.opacity(0.9), height: 6) }
+            if let b { MeterBar(value: Double(b.percent) / 100, color: b.percent < 20 ? Theme.danger : Color.white.opacity(0.9), height: 5) }
             else { Color.clear }
         }
     }
 
     func networkTile(_ s: SystemSnapshot?) -> some View {
         tile(tr("Mạng"), symbol: "v.wifi", tint: Page.cloud.palette.glow, value: "↓ " + rate(s?.network.downBytesPerSec),
-             sub: speed.map { String(format: "%.0f ↓ / %.0f ↑ Mbps", $0.downMbps, $0.upMbps) },
-             action: (tr("Đo tốc độ"), "speedometer", false, { PopoverDetailPanel.shared.show(.network, state: state, autoRun: true) }),
              go: { PopoverDetailPanel.shared.show(.network, state: state) }) {
-            Text("↑ " + rate(s?.network.upBytesPerSec)).font(.vt(size: 13, weight: .medium)).monospacedDigit().foregroundStyle(Theme.Text.primary)
+            Text("↑ " + rate(s?.network.upBytesPerSec)).font(.vt(size: 12.5, weight: .medium)).monospacedDigit().foregroundStyle(Theme.Text.secondary)
         }
     }
-
     /// Ô thiết bị: mỗi thiết bị Bluetooth đang kết nối một hàng (biểu tượng theo loại · tên · loại/trạng thái · pin). Tối đa 2 hàng, huy hiệu ở tiêu đề cho biết tổng.
     var devicesTile: some View {
-        let shown = Array(devices.prefix(3))
+        let shown = Array(devices.prefix(2))
         let tint = Page.privacy.palette.glow
         return VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 7) {
@@ -364,7 +376,7 @@ struct PopoverView: View {
                 Text(tr("Thiết bị")).font(.vt(size: 11, weight: .semibold)).foregroundStyle(Theme.Text.secondary).textCase(.uppercase).lineLimit(1)
                 Spacer(minLength: 0)
                 if devices.count > 0 {
-                    Text(devices.count > 3 ? "+\(devices.count - 3)" : "\(devices.count)")
+                    Text(devices.count > 2 ? "+\(devices.count - 2)" : "\(devices.count)")
                         .font(.vt(size: 11, weight: .bold, design: .rounded)).monospacedDigit().foregroundStyle(Theme.Text.primary)
                         .padding(.horizontal, 7).frame(minWidth: 20, minHeight: 18)
                         .background(Capsule().fill(Color.white.opacity(0.16)))
@@ -373,15 +385,14 @@ struct PopoverView: View {
             if devices.isEmpty {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(devicesLoaded ? tr("Không có") : tr("Đang kiểm tra…")).font(.vt(size: 19, weight: .bold, design: .rounded)).foregroundStyle(.white).lineLimit(1)
-                    if devicesLoaded { Text("Bluetooth").font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary) }
-                }.padding(.top, 14)
+                }.padding(.top, 4)
             } else {
-                VStack(alignment: .leading, spacing: 4) { ForEach(shown) { deviceRow($0, tint: tint) } }.padding(.top, 10)
+                VStack(alignment: .leading, spacing: 2) { ForEach(shown) { deviceRow($0, tint: tint) } }.padding(.top, 4)
             }
             Spacer(minLength: 0)
         }
         .padding(12)
-        .frame(maxWidth: .infinity, minHeight: 128, maxHeight: .infinity, alignment: .topLeading)   // giãn theo ô Mạng cùng hàng
+        .frame(maxWidth: .infinity, minHeight: Self.tileHeight, maxHeight: .infinity, alignment: .topLeading)   // giãn theo ô cùng hàng
         .glassSurface(radius: 14, strong: false)
         .clickable { PopoverDetailPanel.shared.show(.devices, state: state, devices: devices) }
     }
@@ -398,7 +409,7 @@ struct PopoverView: View {
                     .foregroundStyle(b <= 20 ? Theme.danger : Theme.Text.primary)
             }
         }
-        .frame(height: 24)
+        .frame(height: 22)
         .help(d.kind.isEmpty ? tr("Đã kết nối") : d.kind)
     }
 
