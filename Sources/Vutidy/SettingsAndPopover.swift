@@ -240,7 +240,10 @@ struct PopoverView: View {
             }
         }
         .padding(14).frame(maxWidth: .infinity, alignment: .leading).glassSurface(radius: 14, strong: false)
-        .clickable { state.section = review > 0 ? .malware : .protection; activate() }
+        .clickable {
+            // Cảnh báo real-time chỉ hiện (và dọn được) ở trang Bảo vệ; kết quả quét malware nằm ở trang Malware.
+            state.section = (state.malwareReport?.highCount ?? 0) > 0 ? .malware : .protection; activate()
+        }
     }
 
     /// Hai công tắc nhanh cạnh nhau: Real-time và (chỉ Mac Intel) Turbo Boost. Mỗi ô: biểu tượng + công tắc ở trên, tên + trạng thái ở dưới.

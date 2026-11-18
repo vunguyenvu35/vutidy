@@ -481,7 +481,19 @@ struct ProtectionView: View {
                     ForEach(Array(state.alerts.prefix(20).enumerated()), id: \.element.id) { idx, a in
                         ListRow(title: a.reason, subtitle: a.path, monoSubtitle: true, showDivider: idx < min(20, state.alerts.count) - 1, leading: {
                             IconTile(symbol: "exclamationmark", tint: Theme.Review.base, size: 34)
-                        }, trailing: { EmptyView() })
+                        }, trailing: {
+                            HStack(spacing: 12) {
+                                if FileManager.default.fileExists(atPath: a.path) {
+                                    Button(tr("Cách ly")) { Task { await state.quarantineAlert(a) } }.buttonStyle(TextActionStyle())
+                                        .help(tr("Chuyển vào Quarantine, khôi phục được"))
+                                    Button { NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: a.path)]) } label: {
+                                        Image(systemName: "folder").font(.system(size: 13))
+                                    }.buttonStyle(PlainPointerStyle()).foregroundStyle(Theme.Text.secondary).help(tr("Hiện trong Finder"))
+                                }
+                                Button { state.alerts.removeAll { $0.id == a.id } } label: { Image(systemName: "eye.slash").font(.system(size: 13)) }
+                                    .buttonStyle(PlainPointerStyle()).foregroundStyle(Theme.Text.secondary).help(tr("Bỏ qua cảnh báo này"))
+                            }
+                        })
                     }
                 }
             }
@@ -507,6 +519,7 @@ struct ProtectionView: View {
 
     func scan() async {
         scanning = true
+        state.pruneAlerts()
         items = await Task.detached { PersistenceScanner.scan() }.value
         state.lastDeepScan = Date(); UserDefaults.standard.set(state.lastDeepScan, forKey: "lastDeepScan")
         scanning = false; scanned = true

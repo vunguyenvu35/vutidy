@@ -351,7 +351,16 @@ final class AppState: ObservableObject {
         pollSystem()
     }
 
+    /// Bỏ cảnh báo real-time của file đã bị xoá/di chuyển (người dùng tự dọn ngoài app) và các cảnh báo trùng đường dẫn.
+    func pruneAlerts() {
+        guard !alerts.isEmpty else { return }
+        var seen = Set<String>()
+        let kept = alerts.filter { FileManager.default.fileExists(atPath: $0.path) && seen.insert($0.path).inserted }
+        if kept.count != alerts.count { alerts = kept }
+    }
+
     func pollSystem() {
+        pruneAlerts()
         let s = sysmon.sample()
         if let prev = snapshot {
             let dt = min(10, max(0, s.date.timeIntervalSince(prev.date)))
@@ -392,6 +401,7 @@ final class AppState: ObservableObject {
 
     func runMalwareCheck() async {
         guard !malwareScanning else { return }
+        pruneAlerts()
         malwareScanning = true; malwareStatus = tr("Đang kiểm tra…")
         malwareVerdicts = [:]; malwareAIError = nil; malwareAISource = nil; malwareAIPayload = nil
         malwareReport = await MalwareCheck.run(progress: { [weak self] s in Task { @MainActor in self?.malwareStatus = s } })
@@ -423,6 +433,33 @@ final class AppState: ObservableObject {
         } catch {
             notify(trf("Không thể cách ly: %@", error.localizedDescription), .error)
         }
+    }
+
+    /// Cách ly file mà Real-time Monitor vừa báo. Vào Quarantine nên khôi phục được.
+    func quarantineAlert(_ a: FileAlert) async {
+        let url = URL(fileURLWithPath: a.path)
+        if let why = executor.blocklist.reason(for: url) { notify(trf("Không thể cách ly: %@", "\(why)"), .error); return }
+        let bytes = FileWalker.allocatedSize(of: url)
+        do {
+            try await executor.quarantine.add(url, ruleID: "realtime", bytes: bytes)
+            executor.audit.append(AuditRecord(date: Date(), action: "quarantine", path: a.path, bytes: bytes, ruleID: "realtime", mode: "realtime", result: "done"))
+            alerts.removeAll { $0.path == a.path }
+            await refreshQuarantine()
+            notify(trf("Đã chuyển %@ vào Quarantine.", url.lastPathComponent))
+        } catch {
+            notify(trf("Không thể cách ly: %@", error.localizedDescription), .error)
+        }
+    }
+
+    /// Thu hồi quyền nhạy cảm (TCC) của một app, rồi bỏ nó khỏi danh sách.
+    func revokePermissions(_ g: PermissionGrant) async {
+        if let err = await TCCAudit.revoke(g) {
+            notify(trf("Không thể thu hồi quyền: %@", err), .error); return
+        }
+        executor.audit.append(AuditRecord(date: Date(), action: "command", path: "tccutil reset \(g.rawServices.joined(separator: ",")) \(g.client)", bytes: 0,
+                                          ruleID: "tcc-revoke", mode: "run", result: "done"))
+        malwareReport?.permissions.removeAll { $0.id == g.id }
+        notify(trf("Đã thu hồi quyền của %@", g.name))
     }
 
     func malwareDisable(_ f: SecurityFinding) async {
