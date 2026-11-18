@@ -11,7 +11,12 @@ final class PopoverDetailPanel {
 
     private var panel: NSPanel?
     private var observer: NSObjectProtocol?
+    /// Theo dõi popover chính: panel phụ chỉ có nghĩa khi popover còn hiện, nên đóng ngay khi nó biến mất (bấm ra ngoài, sang cửa sổ khác, đổi app…).
+    private var watchdog: Timer?
     static let width: CGFloat = 372
+
+    /// Khung của panel phụ khi đang hiện (để biết một cú bấm nằm trong hay ngoài).
+    var panelFrame: NSRect? { panel.flatMap { $0.isVisible ? $0.frame : nil } }
 
     static var popoverWindow: NSWindow? {
         NSApp.windows.first { $0.isVisible && !$0.canBecomeMain && String(describing: type(of: $0)).contains("MenuBarExtra") }
@@ -32,17 +37,29 @@ final class PopoverDetailPanel {
         p.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         p.orderFrontRegardless()
         panel = p
-        // Đóng cùng popover: khi popover mất phím và đã ẩn thì đóng panel.
+        // Đóng cùng popover. Thông báo "mất phím" cho phản ứng nhanh; bộ theo dõi định kỳ là lưới an toàn, vì popover có thể ẩn
+        // chậm hơn mốc kiểm tra của thông báo hoặc không phát thông báo (khi chuyển sang cửa sổ chính của app), để lại panel mồ côi.
         observer = NotificationCenter.default.addObserver(forName: NSWindow.didResignKeyNotification, object: pop, queue: .main) { [weak self, weak pop] _ in
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 MainActor.assumeIsolated { if pop?.isVisible != true { self?.close() } }
             }
         }
+        // Hai nhịp liên tiếp không thấy popover mới đóng: popover có thể bị ẩn thoáng qua rồi được hiện lại.
+        var misses = 0
+        let t = Timer(timeInterval: 0.3, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated {
+                misses = Self.popoverWindow == nil ? misses + 1 : 0
+                if misses >= 2 { self?.close() }
+            }
+        }
+        RunLoop.main.add(t, forMode: .common)
+        watchdog = t
     }
 
     /// Đóng panel: mặc định bay sang phải (về phía popover) và mờ dần rồi mới ẩn.
     func close(animated: Bool = true) {
         if let o = observer { NotificationCenter.default.removeObserver(o); observer = nil }
+        watchdog?.invalidate(); watchdog = nil
         guard let p = panel else { return }
         panel = nil
         guard animated, p.isVisible else { p.orderOut(nil); return }

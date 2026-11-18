@@ -23,12 +23,46 @@ struct PopoverTopPin: NSViewRepresentable {
         var height: CGFloat = 0
         private var top: CGFloat?
         private var observers: [NSObjectProtocol] = []
+        private var monitors: [Any] = []
+        /// Lần bấm chuột gần nhất nằm NGOÀI popover và panel phụ (thời điểm máy chạy, giây).
+        private var lastOutsideClick: TimeInterval = 0
+
+        /// Popover chỉ được tắt khi người dùng bấm ra ngoài (hoặc app chủ động đóng). macOS/SwiftUI còn tự ẩn nó khi mất focus vì
+        /// lý do khác (hộp thoại hệ thống, một app thoát làm đổi app đang chạy…): trường hợp đó hiện lại.
+        private func guardStayOpen(_ w: NSWindow) {
+            monitors.forEach(NSEvent.removeMonitor); monitors = []
+            let mark: (NSEvent) -> Void = { [weak self, weak w] _ in
+                let p = NSEvent.mouseLocation
+                let inside = (w?.frame.contains(p) ?? false) || (PopoverDetailPanel.shared.panelFrame?.contains(p) ?? false)
+                if !inside { self?.lastOutsideClick = ProcessInfo.processInfo.systemUptime }
+            }
+            let down: NSEvent.EventTypeMask = [.leftMouseDown, .rightMouseDown, .otherMouseDown]
+            if let m = NSEvent.addGlobalMonitorForEvents(matching: down, handler: { mark($0) }) { monitors.append(m) }
+            if let m = NSEvent.addLocalMonitorForEvents(matching: down, handler: { mark($0); return $0 }) { monitors.append(m) }
+            // Esc là cách đóng có chủ ý.
+            if let m = NSEvent.addLocalMonitorForEvents(matching: .keyDown, handler: { e in
+                if e.keyCode == 53 { AppDelegate.noteIntentionalPopoverClose() }
+                return e
+            }) { monitors.append(m) }
+            observers.append(NotificationCenter.default.addObserver(forName: NSWindow.didResignKeyNotification, object: w, queue: .main) { [weak self, weak w] _ in
+                for delay in [0.08, 0.25, 0.5] {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                        guard let self, let w, !w.isVisible else { return }
+                        let now = ProcessInfo.processInfo.systemUptime
+                        let clickedOutside = now - self.lastOutsideClick < 0.8
+                        let appClosed = now - AppDelegate.lastIntentionalPopoverClose < 1.0
+                        if !clickedOutside && !appClosed { w.orderFront(nil) }
+                    }
+                }
+            })
+        }
 
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
             observers.forEach(NotificationCenter.default.removeObserver); observers = []
             guard let w = window else { return }
             top = w.frame.maxY
+            guardStayOpen(w)
             let nc = NotificationCenter.default
             observers.append(nc.addObserver(forName: NSWindow.didBecomeKeyNotification, object: w, queue: .main) { [weak self, weak w] _ in
                 self?.top = w?.frame.maxY
@@ -46,7 +80,7 @@ struct PopoverTopPin: NSViewRepresentable {
             guard abs(w.frame.height - target) > 0.5 || abs(w.frame.maxY - top) > 0.5 else { return }
             w.setFrame(NSRect(x: w.frame.minX, y: top - target, width: w.frame.width, height: target), display: true)
         }
-        deinit { observers.forEach(NotificationCenter.default.removeObserver) }
+        deinit { observers.forEach(NotificationCenter.default.removeObserver); monitors.forEach(NSEvent.removeMonitor) }
     }
 }
 
