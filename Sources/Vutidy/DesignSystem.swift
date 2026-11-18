@@ -273,7 +273,7 @@ extension Page {
         case .systemJunk, .devJunk, .trash, .privacy, .mail, .photoJunk: return Color(hex: 0x0A84FF)
         case .protection, .malware: return Color(hex: 0x30D158)
         case .optimization, .maintenance: return Color(hex: 0xFF9F0A)
-        case .uninstaller, .updater: return Color(hex: 0xFF375F)
+        case .uninstaller, .extensions, .updater: return Color(hex: 0xFF375F)
         case .spaceLens, .largeFiles, .duplicates, .cloud: return Color(hex: 0xFFB800)
         case .quarantine: return Theme.Signal.base
         }
@@ -375,6 +375,7 @@ extension Page {
         case .maintenance:  return (Color(hex: 0x0A2036), Color(hex: 0x2A64A8), Color(hex: 0x7CC0FF))
         case .uninstaller:  return (Color(hex: 0x3A0830), Color(hex: 0xA3168F), Color(hex: 0xFF7ACB))
         case .updater:      return (Color(hex: 0x06284A), Color(hex: 0x1B79C9), Color(hex: 0x62CCFF))
+        case .extensions:   return (Color(hex: 0x2A0A3A), Color(hex: 0x8A2BC4), Color(hex: 0xD79BFF))
         case .spaceLens:    return (Color(hex: 0x042838), Color(hex: 0x0B86A0), Color(hex: 0x3FE0E8))
         case .largeFiles:   return (Color(hex: 0x3A2706), Color(hex: 0xB07A0C), Color(hex: 0xFFD470))
         case .duplicates:   return (Color(hex: 0x1B0F4F), Color(hex: 0x5A2BC4), Color(hex: 0xA68BFF))

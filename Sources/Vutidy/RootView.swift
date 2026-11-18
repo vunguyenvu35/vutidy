@@ -5,7 +5,7 @@ struct RootView: View {
     @EnvironmentObject var state: AppState
 
     /// Các trang tự quản lý cuộn để ghim thanh hành động ở đáy cửa sổ.
-    var ownsScroll: Bool { [.systemJunk, .devJunk, .trash, .privacy, .mail, .photoJunk, .spaceLens, .uninstaller].contains(state.section) }
+    var ownsScroll: Bool { [.systemJunk, .devJunk, .trash, .privacy, .mail, .photoJunk, .spaceLens, .uninstaller, .extensions].contains(state.section) }
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -67,6 +67,7 @@ struct RootView: View {
         case .optimization: OptimizationView()
         case .maintenance: MaintenanceView()
         case .uninstaller: UninstallerView()
+        case .extensions: ExtensionsView()
         case .updater: UpdaterView()
         case .spaceLens: SpaceLensView()
         case .largeFiles: LargeFilesView()

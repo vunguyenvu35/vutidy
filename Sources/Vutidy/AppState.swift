@@ -9,7 +9,7 @@ import Modules
 enum Page: String, CaseIterable, Identifiable {
     case smartScan, systemJunk, devJunk, trash, privacy, mail, photoJunk
     case protection, malware, optimization, maintenance
-    case uninstaller, updater
+    case uninstaller, extensions, updater
     case spaceLens, largeFiles, duplicates, cloud
     case quarantine
     var id: String { rawValue }
@@ -17,7 +17,7 @@ enum Page: String, CaseIterable, Identifiable {
         switch self {
         case .smartScan: "Smart Scan"; case .systemJunk: tr("Rác hệ thống"); case .devJunk: "Dev Junk"; case .trash: tr("Dọn thùng rác")
         case .mail: tr("Mail đính kèm"); case .photoJunk: tr("Rác ảnh"); case .privacy: tr("Quyền riêng tư"); case .protection: tr("Bảo vệ"); case .malware: tr("Gỡ malware"); case .optimization: tr("Tối ưu"); case .maintenance: tr("Bảo trì")
-        case .uninstaller: tr("Gỡ ứng dụng"); case .updater: tr("Trình cập nhật"); case .spaceLens: "Space Lens"
+        case .uninstaller: tr("Gỡ ứng dụng"); case .extensions: tr("Tiện ích mở rộng"); case .updater: tr("Trình cập nhật"); case .spaceLens: "Space Lens"
         case .largeFiles: tr("File lớn & cũ"); case .duplicates: tr("File trùng lặp"); case .cloud: "Cloud Cleanup"; case .quarantine: tr("Quarantine")
         }
     }
@@ -25,7 +25,7 @@ enum Page: String, CaseIterable, Identifiable {
         switch self {
         case .smartScan: "sparkles"; case .systemJunk: "tray.full"; case .devJunk: "hammer"; case .trash: "trash"
         case .mail: "envelope"; case .photoJunk: "photo"; case .privacy: "hand.raised"; case .protection: "shield"; case .malware: "v.malware"; case .optimization: "bolt"; case .maintenance: "wrench.and.screwdriver"
-        case .uninstaller: "xmark.app"; case .updater: "arrow.down.circle"; case .spaceLens: "chart.pie"
+        case .uninstaller: "xmark.app"; case .extensions: "puzzlepiece.extension"; case .updater: "arrow.down.circle"; case .spaceLens: "chart.pie"
         case .largeFiles: "doc.badge.clock"; case .duplicates: "square.on.square"; case .cloud: "icloud"; case .quarantine: "archivebox"
         }
     }
@@ -34,7 +34,7 @@ enum Page: String, CaseIterable, Identifiable {
         (tr("Dọn dẹp"), [.systemJunk, .mail, .photoJunk, .devJunk, .trash, .privacy]),
         (tr("Bảo vệ"), [.protection, .malware]),
         (tr("Tốc độ"), [.optimization, .maintenance]),
-        (tr("Ứng dụng"), [.uninstaller, .updater]),
+        (tr("Ứng dụng"), [.uninstaller, .extensions, .updater]),
         (tr("File"), [.spaceLens, .largeFiles, .duplicates, .cloud]),
     ] }
     /// Module dọn dẹp tương ứng, nếu có.
