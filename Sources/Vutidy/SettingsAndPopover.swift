@@ -296,7 +296,7 @@ struct PopoverView: View {
 
     /// `go`: bấm vào ô để mở panel chi tiết hoặc trang tương ứng.
     func tile<M: View>(_ title: String, symbol: String, tint: Color, value v: String,
-                       go: (() -> Void)? = nil, @ViewBuilder middle: () -> M) -> some View {
+                       middleHeight: CGFloat = 14, go: (() -> Void)? = nil, @ViewBuilder middle: () -> M) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 7) {
                 IconTile(symbol: symbol, tint: tint, size: 22)
@@ -305,10 +305,10 @@ struct PopoverView: View {
                 if go != nil { Image(systemName: "chevron.right").font(.system(size: 9, weight: .bold)).foregroundStyle(Theme.Text.tertiary) }
             }.frame(height: 22)
             tileValue(v).frame(height: 26, alignment: .bottomLeading).padding(.top, 4)
-            middle().frame(maxWidth: .infinity, minHeight: 14, maxHeight: 14, alignment: .leading).padding(.top, 6)
+            middle().frame(maxWidth: .infinity, minHeight: middleHeight, maxHeight: middleHeight, alignment: .leading).padding(.top, 6)
         }
         .padding(12)
-        .frame(maxWidth: .infinity, minHeight: Self.tileHeight, maxHeight: Self.tileHeight, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: Self.tileHeight + middleHeight - 14, maxHeight: Self.tileHeight + middleHeight - 14, alignment: .topLeading)
         .glassSurface(radius: 14, strong: false)
         .clickable(go)
     }
@@ -327,8 +327,8 @@ struct PopoverView: View {
         let used = d.map { 1 - $0.freeFraction } ?? 0
         return tile(tr("Ổ đĩa"), symbol: "v.drive", tint: Page.systemJunk.palette.glow,
                     value: d.map { ByteFormat.string($0.availableImportant) + tr(" trống") } ?? "—",
-                    go: { PopoverDetailPanel.shared.show(.disk, state: state) }) {
-            MeterBar(value: used, color: used > 0.9 ? Theme.danger : Color.white.opacity(0.9), height: 5)
+                    middleHeight: 24, go: { PopoverDetailPanel.shared.show(.disk, state: state) }) {
+            meterWithFreeUp(MeterBar(value: used, color: used > 0.9 ? Theme.danger : Color.white.opacity(0.9), height: 5), kind: .disk)
         }
     }
 
@@ -338,8 +338,8 @@ struct PopoverView: View {
         let c: Color = (m?.pressure ?? .normal) == .normal ? Color.white.opacity(0.9) : ((m?.pressure ?? .normal) == .warning ? Theme.Review.base : Theme.danger)
         return tile(tr("Bộ nhớ"), symbol: "v.ram", tint: Page.optimization.palette.glow,
                     value: m.map { ByteFormat.string($0.available) + tr(" khả dụng") } ?? "—",
-                    go: { PopoverDetailPanel.shared.show(.memory, state: state) }) {
-            MeterBar(value: used, color: c, height: 5)
+                    middleHeight: 24, go: { PopoverDetailPanel.shared.show(.memory, state: state) }) {
+            meterWithFreeUp(MeterBar(value: used, color: c, height: 5), kind: .memory)
         }
     }
 
@@ -362,9 +362,46 @@ struct PopoverView: View {
 
     func networkTile(_ s: SystemSnapshot?) -> some View {
         tile(tr("Mạng"), symbol: "v.wifi", tint: Page.cloud.palette.glow, value: "↓ " + rate(s?.network.downBytesPerSec),
-             go: { PopoverDetailPanel.shared.show(.network, state: state) }) {
-            Text("↑ " + rate(s?.network.upBytesPerSec)).font(.vt(size: 12.5, weight: .medium)).monospacedDigit().foregroundStyle(Theme.Text.secondary)
+             middleHeight: 24, go: { PopoverDetailPanel.shared.show(.network, state: state) }) {
+            // Hàng upload + nút Đo tốc độ. Cỡ chữ co giãn nên lùi từng bước: nút có chữ → chỉ biểu tượng.
+            let up = Text("↑ " + rate(s?.network.upBytesPerSec)).font(.vt(size: 12.5, weight: .medium)).monospacedDigit().foregroundStyle(Theme.Text.secondary)
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 6) { up; Spacer(minLength: 4); speedTestButton(label: tr("Đo tốc độ")) }
+                HStack(spacing: 6) { up; Spacer(minLength: 4); speedTestButton(label: tr("Đo thử")) }
+                HStack(spacing: 6) { up; Spacer(minLength: 4); speedTestButton(label: nil) }
+            }
         }
+    }
+
+    /// Thanh đo + nút "Giải phóng" cùng hàng (ô Ổ đĩa, Bộ nhớ). Hết chỗ thì nút chỉ còn biểu tượng.
+    func meterWithFreeUp(_ meter: MeterBar, kind: PopoverDetailPanel.Kind) -> some View {
+        let bar = meter.frame(minWidth: 56)
+        return ViewThatFits(in: .horizontal) {
+            HStack(spacing: 8) { bar; freeUpButton(kind, labelled: true) }
+            HStack(spacing: 8) { bar; freeUpButton(kind, labelled: false) }
+        }
+    }
+
+    /// Mở panel chi tiết và chạy luôn: Bộ nhớ → giải phóng RAM; Ổ đĩa → quét rác (không tự xóa).
+    func freeUpButton(_ kind: PopoverDetailPanel.Kind, labelled: Bool) -> some View {
+        Button { PopoverDetailPanel.shared.show(kind, state: state, autoRun: true) } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "sparkles").font(.system(size: 10, weight: .bold))
+                if labelled { Text(tr("Giải phóng")).lineLimit(1) }
+            }
+        }
+        .buttonStyle(MiniButtonStyle()).fixedSize().help(tr("Giải phóng"))
+    }
+
+    /// Mở panel Mạng và chạy đo tốc độ ngay.
+    func speedTestButton(label: String?) -> some View {
+        Button { PopoverDetailPanel.shared.show(.network, state: state, autoRun: true) } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "speedometer").font(.system(size: 10, weight: .bold))
+                if let label { Text(label).lineLimit(1) }
+            }
+        }
+        .buttonStyle(MiniButtonStyle()).fixedSize().help(tr("Đo tốc độ"))
     }
     /// Ô thiết bị: mỗi thiết bị Bluetooth đang kết nối một hàng (biểu tượng theo loại · tên · loại/trạng thái · pin). Tối đa 2 hàng, huy hiệu ở tiêu đề cho biết tổng.
     var devicesTile: some View {

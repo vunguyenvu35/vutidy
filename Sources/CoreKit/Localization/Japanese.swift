@@ -985,5 +985,6 @@ enum Japanese {
         "AI chỉ xem số liệu của lần quét, không bao giờ đọc nội dung file của bạn. Nó chọn việc đáng làm nhất, bạn bấm một lần để thực hiện.": "AI が見るのはスキャン結果だけで、ファイルの内容は決して読みません。やる価値のあることを選び、ワンクリックで実行できます。",
         "Gửi số liệu tổng hợp; nếu AI xin xem sâu thì thêm tên mục, dung lượng, tuổi (đã ẩn tên người dùng và project). Không gửi nội dung file. AI chỉ khuyên, mọi thay đổi do bạn bấm.": "集計値を送信します。AI が詳しく見ることを求めた場合は、項目名、サイズ、経過日数も送ります (ユーザー名とプロジェクト名は隠します)。ファイルの内容は送りません。AI は助言するだけで、変更はすべてあなたの操作で行います。",
         "Tắt mặc định. Khi bật và bạn bấm Lấy kế hoạch AI, số liệu tổng hợp của lần quét (nhóm rác, dung lượng, số tiến trình AI agent) được gửi tới dịch vụ AI của nguồn bạn chọn. Không gửi nội dung file, tên người dùng hay dòng lệnh. AI chỉ đưa lời khuyên, mọi thay đổi do bạn bấm.": "デフォルトはオフです。オンにして「AI プランを取得」を押すと、スキャンの集計値(ゴミのグループ、サイズ、AI エージェントのプロセス数)が、選択した提供元の AI サービスに送信されます。ファイルの内容、ユーザー名、コマンドラインは送信されません。AI は助言するだけで、変更はすべてあなたの操作で行います。",
+        "Đo thử": "測定",
     ]
 }

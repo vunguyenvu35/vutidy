@@ -986,5 +986,6 @@ enum Chinese {
         "AI chỉ xem số liệu của lần quét, không bao giờ đọc nội dung file của bạn. Nó chọn việc đáng làm nhất, bạn bấm một lần để thực hiện.": "AI 只看扫描结果,绝不会读取你的文件内容。它挑出最值得做的事,你一键即可执行。",
         "Gửi số liệu tổng hợp; nếu AI xin xem sâu thì thêm tên mục, dung lượng, tuổi (đã ẩn tên người dùng và project). Không gửi nội dung file. AI chỉ khuyên, mọi thay đổi do bạn bấm.": "发送汇总数据;如果 AI 要求深入查看,还会发送项目名称、大小和时间(已隐藏用户名和项目名)。绝不发送文件内容。AI 只提供建议,所有更改都由你点击执行。",
         "Tắt mặc định. Khi bật và bạn bấm Lấy kế hoạch AI, số liệu tổng hợp của lần quét (nhóm rác, dung lượng, số tiến trình AI agent) được gửi tới dịch vụ AI của nguồn bạn chọn. Không gửi nội dung file, tên người dùng hay dòng lệnh. AI chỉ đưa lời khuyên, mọi thay đổi do bạn bấm.": "默认关闭。开启后点击「获取 AI 方案」,扫描的汇总数据(垃圾分组、大小、AI 代理进程数量)会发送到你所选来源的 AI 服务。不发送文件内容、用户名或命令行。AI 只提供建议,所有更改都由你点击执行。",
+        "Đo thử": "测速",
     ]
 }

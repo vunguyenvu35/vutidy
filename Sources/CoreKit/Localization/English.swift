@@ -986,5 +986,6 @@ enum English {
         "AI chỉ xem số liệu của lần quét, không bao giờ đọc nội dung file của bạn. Nó chọn việc đáng làm nhất, bạn bấm một lần để thực hiện.": "The AI only sees your scan results and never reads the contents of your files. It picks what is worth doing, and you apply it with one click.",
         "Gửi số liệu tổng hợp; nếu AI xin xem sâu thì thêm tên mục, dung lượng, tuổi (đã ẩn tên người dùng và project). Không gửi nội dung file. AI chỉ khuyên, mọi thay đổi do bạn bấm.": "Sends aggregated totals; if the AI asks to look deeper, also item names, sizes and ages (user and project names hidden). File contents are never sent. The AI only advises; every change is yours to click.",
         "Tắt mặc định. Khi bật và bạn bấm Lấy kế hoạch AI, số liệu tổng hợp của lần quét (nhóm rác, dung lượng, số tiến trình AI agent) được gửi tới dịch vụ AI của nguồn bạn chọn. Không gửi nội dung file, tên người dùng hay dòng lệnh. AI chỉ đưa lời khuyên, mọi thay đổi do bạn bấm.": "Off by default. When on and you press Get AI plan, aggregated totals from the scan (junk groups, sizes, number of AI agent processes) are sent to the AI service of the source you choose. File contents, your user name and command lines are never sent. The AI only gives advice; every change is yours to click.",
+        "Đo thử": "Test",
     ]
 }
