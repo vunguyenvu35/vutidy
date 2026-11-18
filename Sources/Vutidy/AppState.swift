@@ -233,6 +233,10 @@ final class AppState: ObservableObject {
     @Published var advice: String?
     @Published var adviceError: String?
     @Published var adviceLoading = false
+    /// ClamAV tùy chọn (trang Malware): trạng thái cài đặt/cơ sở dữ liệu, việc đang chạy và thông báo kết quả.
+    @Published var clamStatus: ClamAV.Status?
+    @Published var clamBusy: String?
+    @Published var clamMessage: String?
     /// Cho AI xin xem sâu một số nhóm khi cần (chi tiết chỉ-đọc, ẩn danh). Mặc định bật vì nó quyết định độ chính xác.
     @Published var aiDeepDive: Bool = (UserDefaults.standard.object(forKey: "aiDeepDive") as? Bool) ?? true {
         didSet { UserDefaults.standard.set(aiDeepDive, forKey: "aiDeepDive") }
@@ -320,6 +324,7 @@ final class AppState: ObservableObject {
                 w.contentView = host; w.isOpaque = false; w.backgroundColor = .clear; w.level = .floating
                 w.setContentSize(host.fittingSize); w.makeKeyAndOrderFront(nil)
                 Self.docPopoverWindow = w
+                if ProcessInfo.processInfo.environment["VUTIDY_SCROLL_BOTTOM"] != nil { Self.devScrollToBottom(after: 3) }
             }
         }
     }
@@ -382,6 +387,7 @@ final class AppState: ObservableObject {
         malwareVerdicts = [:]; malwareAIError = nil; malwareAISource = nil; malwareAIPayload = nil
         malwareReport = await MalwareCheck.run(progress: { [weak self] s in Task { @MainActor in self?.malwareStatus = s } })
         malwareScanning = false; malwareStatus = ""
+        if ProcessInfo.processInfo.environment["VUTIDY_SCROLL_BOTTOM"] != nil { Self.devScrollToBottom(after: 1.5) }   // chỉ để chụp màn hình
     }
 
     // MARK: Xử lý phát hiện malware

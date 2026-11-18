@@ -85,7 +85,7 @@ The [user guide](docs/user-guide/README.md) walks through every screen with scre
 | **Where it lives** | `~/Library/Application Support/Vutidy/` (the Quarantine, the audit log, your own rules and the speed-test history) |
 | **Undo** | Cleaned items wait in the Quarantine for 7 days (configurable) and restore to their exact original path. |
 | **Never touched** | `~/Documents`, `~/Desktop`, keychains, `~/.ssh`, system folders and apps that are running. No cleaning rule can override this. |
-| **What leaves your Mac** | Nothing, except the optional update check (a request to GitHub for the newest version number) and what you start yourself: the speed test, a Homebrew update, opening a link in your browser, and the **AI Advisor** if you turn it on (scan totals and, if the AI asks, anonymized item details, sent to the source you chose). |
+| **What leaves your Mac** | Nothing, except the optional update check (a request to GitHub for the newest version number) and what you start yourself: the speed test, a Homebrew update, opening a link in your browser, the optional ClamAV signature download (download only), and the **AI Advisor** if you turn it on (scan totals and, if the AI asks, anonymized item details, sent to the source you chose). |
 | **No telemetry** | No analytics, no account, no crash reporter. |
 | **Record** | Every delete, move and command is written to an audit log you can read. |
 

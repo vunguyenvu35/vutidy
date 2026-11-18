@@ -65,9 +65,19 @@ The **Malware** page in the sidebar runs a deeper check of app signatures, notar
 
 *The Malware page before the first check.*
 
+### Apple's own scan results (XProtect)
+
+The page reads what macOS itself recorded, and nothing leaves your Mac. It shows the XProtect database version and how old it is, whether *scan on open* and *background scan* are on, and the last run of Apple's **XProtect Remediator** modules (each one targets a malware family such as Adload or Trovi). A module that reports anything other than "no threat detected" appears under **Findings**, with its raw status and the evidence it gives. Only each module's latest run counts, so a threat that was removed and then scanned clean is not reported again. The system log keeps only a few days, so the list can be empty on a Mac that was off. A database older than 45 days is flagged.
+
+Not verified: how a *real* detection is worded. The Mac this was built on had none, so Vutidy shows any unfamiliar status as it is.
+
+### ClamAV (optional)
+
+If you install ClamAV yourself (`brew install clamav`), the page offers **Scan with ClamAV**. It downloads ClamAV's public signature database once (a few hundred MB from `database.clamav.net`; this is the only network use, and no file is sent anywhere) into Vutidy's own folder, then scans Downloads, Desktop, Applications and the LaunchAgents/Daemons folders on your Mac. Files over 100 MB are skipped. Matches appear under **Findings** and can be quarantined or ignored like any other finding. A signature match can be a false positive, so check before deleting.
+
 ## Limits
 
 - **Detection comes after the fact.** FSEvents tells Vutidy a file was written; it cannot block the file from being opened. Blocking would need Apple's Endpoint Security entitlement, which is planned for a later version.
-- No signature scanning (YARA) yet.
+- Vutidy has no signature database of its own. The optional ClamAV scan and Apple's XProtect results are the only signature-based checks, and a clean result still does not prove a Mac is safe.
 - Persistence checks cover launch agents and daemons only. Login items, cron, configuration profiles and browser extensions are not inspected yet.
 - A valid signature does not mean a program is harmless, and an unsigned one is not necessarily bad (many developer tools are unsigned).

@@ -174,7 +174,8 @@ extension AppState {
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
             func scrollViews(_ v: NSView) -> [NSScrollView] { (v as? NSScrollView).map { [$0] } ?? [] + v.subviews.flatMap(scrollViews) }
             for w in NSApp.windows { if let c = w.contentView, let sv = scrollViews(c).max(by: { $0.frame.height < $1.frame.height }), let d = sv.documentView {
-                sv.contentView.scroll(to: NSPoint(x: 0, y: d.isFlipped ? max(0, d.bounds.height - sv.contentView.bounds.height) : 0)); sv.reflectScrolledClipView(sv.contentView)
+                let target = ProcessInfo.processInfo.environment["VUTIDY_SCROLL_Y"].flatMap(Double.init).map { CGFloat($0) }   // độ cuộn cụ thể (từ trên xuống), mặc định là đáy
+                sv.contentView.scroll(to: NSPoint(x: 0, y: d.isFlipped ? (target ?? max(0, d.bounds.height - sv.contentView.bounds.height)) : 0)); sv.reflectScrolledClipView(sv.contentView)
             } }
         }
     }
