@@ -181,6 +181,8 @@ enum English {
         "Không tìm thấy mục trong Quarantine": "Item not found in Quarantine",
         "Kiểm tra": "Check",
         "Kiểm tra lại": "Check again",
+        "Tự kiểm tra cập nhật ứng dụng": "Check app updates automatically",
+        "Mỗi 24 giờ, kiểm tra cask Homebrew ở nền và báo khi có bản mới. Không tự cài.": "Every 24 hours, checks Homebrew casks in the background and notifies you when updates appear. Never installs automatically.",
         "Kiểm tra ổ đĩa (chỉ verify)": "Verify disk (verify only)",
         "LLM": "LLM",
         "Launch agents/daemons và tiến trình ngốn tài nguyên": "Launch agents/daemons and resource-hungry processes",

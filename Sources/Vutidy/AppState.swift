@@ -44,7 +44,7 @@ enum Page: String, CaseIterable, Identifiable {
 }
 
 /// Nút hành động tuỳ chọn của thông báo (ngoài "Hoàn tác").
-enum ToastAction: Equatable { case openUpdate }
+enum ToastAction: Equatable { case openUpdate, openApps }
 
 struct AppToast: Identifiable, Equatable {
     let id = UUID()
@@ -146,6 +146,13 @@ final class AppState: ObservableObject {
     @Published var autoCheckUpdates: Bool = UserDefaults.standard.object(forKey: "autoCheckUpdates") as? Bool ?? true {
         didSet { UserDefaults.standard.set(autoCheckUpdates, forKey: "autoCheckUpdates") }
     }
+    @Published var autoCheckApps: Bool = UserDefaults.standard.object(forKey: "autoCheckApps") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(autoCheckApps, forKey: "autoCheckApps"); if autoCheckApps { startAppUpdateSchedule() } }
+    }
+    @Published var outdatedApps: [OutdatedApp] = []
+    @Published var outdatedLoading = false
+    @Published var lastAppsCheck: Date? = UserDefaults.standard.object(forKey: "lastAppsCheck") as? Date
+    var appsCheckTask: Task<Void, Never>?
     @Published var lastUpdateCheck: Date? = UserDefaults.standard.object(forKey: "lastUpdateCheck") as? Date
     /// Mặc định BẬT: giám sát file mới chạy ngay khi mở app, trừ khi bạn đã tắt trong Cài đặt (lựa chọn đó được giữ).
     @Published var realtimeAtLaunch: Bool = (UserDefaults.standard.object(forKey: "realtimeAtLaunch") as? Bool) ?? true {
@@ -289,6 +296,7 @@ final class AppState: ObservableObject {
            Date().timeIntervalSince(lastUpdateCheck ?? .distantPast) > 24 * 3600 {
             Task { @MainActor in try? await Task.sleep(nanoseconds: 4_000_000_000); await self.checkForUpdates(silent: true) }
         }
+        if ProcessInfo.processInfo.environment["VUTIDY_PAGE"] == nil { startAppUpdateSchedule() }
         // Thử luồng cập nhật: VUTIDY_UPDATE_FEED=file://… (xem UpdateChecker) + VUTIDY_UPDATE_AUTOINSTALL=1 tự cài khi có bản mới.
         if ProcessInfo.processInfo.environment["VUTIDY_UPDATE_FEED"] != nil {
             Task { @MainActor in

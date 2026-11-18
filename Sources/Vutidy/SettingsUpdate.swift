@@ -27,8 +27,12 @@ struct UpdateSettingsGroup: View {
             SettingRow(title: trf("Vutidy %@", current), desc: status.text, showDivider: true) { action }
             if case .available(let r) = state.appUpdate { notes(r) }
             SettingRow(title: tr("Tự kiểm tra bản mới"),
-                       desc: tr("Mỗi 24 giờ khi mở app. Chỉ tải số phiên bản mới nhất từ GitHub, không gửi gì về máy bạn."), showDivider: false) {
+                       desc: tr("Mỗi 24 giờ khi mở app. Chỉ tải số phiên bản mới nhất từ GitHub, không gửi gì về máy bạn."), showDivider: true) {
                 SwitchRow(isOn: $state.autoCheckUpdates, label: tr("Tự kiểm tra bản mới"))
+            }
+            SettingRow(title: tr("Tự kiểm tra cập nhật ứng dụng"),
+                       desc: tr("Mỗi 24 giờ, kiểm tra cask Homebrew ở nền và báo khi có bản mới. Không tự cài."), showDivider: false) {
+                SwitchRow(isOn: $state.autoCheckApps, label: tr("Tự kiểm tra cập nhật ứng dụng"))
             }
         }
     }

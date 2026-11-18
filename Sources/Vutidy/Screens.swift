@@ -517,16 +517,16 @@ struct ProtectionView: View {
 
 struct UpdaterView: View {
     @EnvironmentObject var state: AppState
-    @ViewState private var outdated: [OutdatedApp] = []
-    @ViewState private var loading = false
-    @ViewState private var checked = false
+    private var outdated: [OutdatedApp] { state.outdatedApps }
+    private var loading: Bool { state.outdatedLoading }
+    private var checked: Bool { state.lastAppsCheck != nil }
     @ViewState private var updating: Set<String> = []
     @ViewState private var errors: [String: String] = [:]
     @ViewState private var confirmAll = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
-            PageHeader(caption: tr("Cập nhật ứng dụng cài qua Homebrew chỉ với một cú bấm."), title: tr("Cập nhật ứng dụng"),
+            PageHeader(caption: state.lastAppsCheck.map { trf("Kiểm tra lần cuối: %@", $0.formatted(date: .abbreviated, time: .shortened)) } ?? tr("Cập nhật ứng dụng cài qua Homebrew chỉ với một cú bấm."), title: tr("Cập nhật ứng dụng"),
                        trailing: AnyView(HStack(spacing: 10) {
                            if !outdated.isEmpty {
                                Button { confirmAll = true } label: { IconLabel(title: tr("Cập nhật tất cả"), symbol: "v.updater") }
@@ -571,6 +571,7 @@ struct UpdaterView: View {
             }
         }
         .smooth(checked).smooth(outdated.count).smooth(loading)
+        .task { if state.autoCheckApps, Date().timeIntervalSince(state.lastAppsCheck ?? .distantPast) > 3600 { await state.checkAppUpdates() } }
         .confirmDialog(isPresented: $confirmAll, title: trf("Cập nhật tất cả %@ ứng dụng?", "\(outdated.count)"),
                        message: tr("Vutidy sẽ chạy `brew upgrade --cask` cho từng ứng dụng. Ứng dụng đang mở có thể bị đóng và một số bản cần mật khẩu quản trị."),
                        confirmTitle: tr("Cập nhật tất cả"), symbol: "v.updater") {
@@ -578,7 +579,7 @@ struct UpdaterView: View {
         }
     }
 
-    func check() async { loading = true; outdated = await Updater.brewOutdated(); loading = false; checked = true; errors = [:] }
+    func check() async { errors = [:]; await state.checkAppUpdates() }
 
     func upgrade(_ a: OutdatedApp) async {
         updating.insert(a.id); errors[a.id] = nil
@@ -587,7 +588,7 @@ struct UpdaterView: View {
                                                 ruleID: "updater", mode: "run", result: r.ok ? "done" : "failed: \(r.stderr.prefix(200))"))
         updating.remove(a.id)
         if r.ok {
-            outdated.removeAll { $0.id == a.id }
+            state.outdatedApps.removeAll { $0.id == a.id }
             state.toast = trf("Đã cập nhật %@", a.name)
         } else {
             let line = r.stderr.split(separator: "\n").map(String.init).last(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty }) ?? "exit \(r.status)"
