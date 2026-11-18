@@ -19,6 +19,9 @@ public struct MemoryBreakdown: Sendable {
 }
 public struct BatteryInfo: Sendable {
     public var percent: Int, charging: Bool, cycleCount: Int?, health: Double?
+    public var pluggedIn = false
+    public var tempC: Double? = nil            // °C, nil nếu không đọc được
+    public var minutesRemaining: Int? = nil    // còn lại tới hết pin / đầy pin
 }
 public struct NetworkRate: Sendable { public var downBytesPerSec: Double, upBytesPerSec: Double }
 
@@ -26,6 +29,7 @@ public struct SystemSnapshot: Sendable {
     public var disk: DiskInfo
     public var memory: MemoryInfo
     public var cpuLoad: Double
+    public var cpuUser: Double = 0, cpuSystem: Double = 0   // phần user / system của cpuLoad (0…1)
     public var cpuTemp: Double? = nil           // °C, nil nếu không đọc được
     public var thermal: ProcessInfo.ThermalState = .nominal
     public var battery: BatteryInfo?
@@ -43,7 +47,8 @@ public final class SystemMonitor: @unchecked Sendable {
 
     public func sample() -> SystemSnapshot {
         lock.lock(); defer { lock.unlock() }
-        return SystemSnapshot(disk: Self.disk(), memory: Self.memory(), cpuLoad: cpu(), cpuTemp: CPUTemperature.celsius(), thermal: ProcessInfo.processInfo.thermalState,
+        let c = cpu()
+        return SystemSnapshot(disk: Self.disk(), memory: Self.memory(), cpuLoad: c.user + c.system, cpuUser: c.user, cpuSystem: c.system, cpuTemp: CPUTemperature.celsius(), thermal: ProcessInfo.processInfo.thermalState,
                               battery: Self.battery(), network: network())
     }
 
@@ -85,21 +90,32 @@ public final class SystemMonitor: @unchecked Sendable {
         return MemoryInfo(total: Int64(ProcessInfo.processInfo.physicalMemory), available: free, swapUsed: Int64(swap.xsu_used), pressure: p)
     }
 
-    private func cpu() -> Double {
+    private func cpu() -> (user: Double, system: Double) {
         var info = host_cpu_load_info()
         var count = mach_msg_type_number_t(MemoryLayout<host_cpu_load_info>.size / MemoryLayout<integer_t>.size)
         let kr = withUnsafeMutablePointer(to: &info) {
             $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) { host_statistics(mach_host_self(), HOST_CPU_LOAD_INFO, $0, &count) }
         }
-        guard kr == KERN_SUCCESS else { return 0 }
+        guard kr == KERN_SUCCESS else { return (0, 0) }
         defer { lastCPU = info }
-        guard let l = lastCPU else { return 0 }
+        guard let l = lastCPU else { return (0, 0) }
         func d(_ a: UInt32, _ b: UInt32) -> Double { Double(a &- b) }
         let user = d(info.cpu_ticks.0, l.cpu_ticks.0), sys = d(info.cpu_ticks.1, l.cpu_ticks.1)
         let idle = d(info.cpu_ticks.2, l.cpu_ticks.2), nice = d(info.cpu_ticks.3, l.cpu_ticks.3)
         let total = user + sys + idle + nice
-        return total > 0 ? (user + sys + nice) / total : 0
+        return total > 0 ? ((user + nice) / total, sys / total) : (0, 0)
     }
+
+    /// Tên chip, ví dụ "Intel(R) Core(TM) i9-9880H CPU @ 2.30GHz" hoặc "Apple M2 Pro".
+    public static var cpuBrand: String {
+        var size = 0
+        guard sysctlbyname("machdep.cpu.brand_string", nil, &size, nil, 0) == 0, size > 0 else { return "CPU" }
+        var buf = [CChar](repeating: 0, count: size)
+        guard sysctlbyname("machdep.cpu.brand_string", &buf, &size, nil, 0) == 0 else { return "CPU" }
+        return String(cString: buf).replacingOccurrences(of: "(R)", with: "").replacingOccurrences(of: "(TM)", with: "")
+            .replacingOccurrences(of: " CPU", with: "").split(separator: " ").joined(separator: " ")
+    }
+
 
     public static func battery() -> BatteryInfo? {
         guard let blob = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
@@ -108,7 +124,8 @@ public final class SystemMonitor: @unchecked Sendable {
               let desc = IOPSGetPowerSourceDescription(blob, src)?.takeUnretainedValue() as? [String: Any],
               let cur = desc[kIOPSCurrentCapacityKey] as? Int else { return nil }
         let charging = (desc[kIOPSIsChargingKey] as? Bool) ?? false
-        var cycles: Int?, health: Double?
+        var cycles: Int?, health: Double?, tempC: Double?, minutes: Int?
+        let plugged = (desc[kIOPSPowerSourceStateKey] as? String) == kIOPSACPowerValue
         let svc = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("AppleSmartBattery"))
         if svc != 0 {
             defer { IOObjectRelease(svc) }
@@ -116,11 +133,14 @@ public final class SystemMonitor: @unchecked Sendable {
             if IORegistryEntryCreateCFProperties(svc, &props, kCFAllocatorDefault, 0) == KERN_SUCCESS,
                let d = props?.takeRetainedValue() as? [String: Any] {
                 cycles = d["CycleCount"] as? Int
+                if let t = d["Temperature"] as? Int, t > 0 { tempC = Double(t) / 100 }
+                if let m = d["TimeRemaining"] as? Int, m > 0, m < 6000 { minutes = m }
                 if let mx = (d["AppleRawMaxCapacity"] as? Int) ?? (d["MaxCapacity"] as? Int),
                    let design = d["DesignCapacity"] as? Int, design > 0, mx > 100 { health = Double(mx) / Double(design) }
             }
         }
-        return BatteryInfo(percent: cur, charging: charging, cycleCount: cycles, health: health)
+        return BatteryInfo(percent: cur, charging: charging, cycleCount: cycles, health: health,
+                           pluggedIn: plugged, tempC: tempC, minutesRemaining: minutes)
     }
 
     private func network() -> NetworkRate {
@@ -142,6 +162,21 @@ public final class SystemMonitor: @unchecked Sendable {
         // ifi_*bytes là 32-bit nên có thể tràn; trừ có wrap.
         func delta(_ a: UInt64, _ b: UInt64) -> Double { a >= b ? Double(a - b) : Double((a &+ (1 << 32)) &- b) }
         return NetworkRate(downBytesPerSec: delta(rx, l.rx) / dt, upBytesPerSec: delta(tx, l.tx) / dt)
+    }
+
+    /// IPv4 cục bộ của cổng mạng đang dùng (en0, rồi en1…), nil nếu chưa kết nối.
+    public static func localIP() -> String? {
+        var ifaddr: UnsafeMutablePointer<ifaddrs>?
+        guard getifaddrs(&ifaddr) == 0, let first = ifaddr else { return nil }
+        defer { freeifaddrs(ifaddr) }
+        var found: [String: String] = [:]
+        for p in sequence(first: first, next: { $0.pointee.ifa_next }) {
+            let name = String(cString: p.pointee.ifa_name)
+            guard name.hasPrefix("en"), let a = p.pointee.ifa_addr, a.pointee.sa_family == UInt8(AF_INET) else { continue }
+            var host = [CChar](repeating: 0, count: Int(NI_MAXHOST))
+            if getnameinfo(a, socklen_t(a.pointee.sa_len), &host, socklen_t(host.count), nil, 0, NI_NUMERICHOST) == 0 { found[name] = String(cString: host) }
+        }
+        return found["en0"] ?? found.sorted { $0.key < $1.key }.first?.value
     }
 
     /// Wi-Fi SSID cần quyền Location; giữ ở đây dạng best-effort qua networksetup.

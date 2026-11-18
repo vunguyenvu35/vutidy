@@ -108,6 +108,13 @@ final class AppState: ObservableObject {
     @Published var pinnedBarVisible = false
     @Published var snapshot: SystemSnapshot?
     @Published var cpuHistory: [Double] = []
+    @Published var netDownHistory: [Double] = []
+    @Published var netUpHistory: [Double] = []
+    /// Tổng dữ liệu đã tải/gửi từ lúc mở Vutidy (cộng dồn từ tốc độ mỗi lần đo).
+    @Published var netDownTotal: Double = 0
+    @Published var netUpTotal: Double = 0
+    @Published var cpuUserHistory: [Double] = []
+    @Published var cpuSystemHistory: [Double] = []
     @Published var recommendations: [Recommendation] = []
     @Published var alerts: [FileAlert] = []
     @Published var lastScanned: String?
@@ -332,8 +339,16 @@ final class AppState: ObservableObject {
 
     func pollSystem() {
         let s = sysmon.sample()
+        if let prev = snapshot {
+            let dt = min(10, max(0, s.date.timeIntervalSince(prev.date)))
+            netDownTotal += s.network.downBytesPerSec * dt; netUpTotal += s.network.upBytesPerSec * dt
+        }
         snapshot = s
+        netDownHistory = Array((netDownHistory + [s.network.downBytesPerSec]).suffix(40))
+        netUpHistory = Array((netUpHistory + [s.network.upBytesPerSec]).suffix(40))
         cpuHistory = Array((cpuHistory + [s.cpuLoad]).suffix(40))
+        cpuUserHistory = Array((cpuUserHistory + [s.cpuUser]).suffix(40))
+        cpuSystemHistory = Array((cpuSystemHistory + [s.cpuSystem]).suffix(40))
         var ctx = SystemContext(disk: s.disk, battery: s.battery)
         ctx.memory = s.memory
         ctx.devJunkSafeBytes = (results["dev-junk"] ?? []).filter { $0.safety == .safe }.reduce(0) { $0 + $1.allocatedSize }

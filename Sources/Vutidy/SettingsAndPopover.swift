@@ -70,7 +70,6 @@ struct PopoverView: View {
         // Nền gắn vào chính nội dung; PopoverTopPin giữ cạnh trên của cửa sổ khi nó co/giãn theo nội dung.
         ScrollView(.vertical, showsIndicators: false) {
         VStack(alignment: .leading, spacing: 12) {
-                header
                 recommendations
                 togglesRow
                 protectionCard
@@ -92,21 +91,12 @@ struct PopoverView: View {
         .background(PopoverTopPin(height: contentHeight))
         .task { devices = await ConnectedDevices.bluetooth(); devicesLoaded = true }
         .task { turbo = await TurboBoost.status() }
-        .onDisappear { PopoverDetailPanel.shared.close() }
+        .onAppear { PopoverGhost.watch() }
+        .onDisappear { PopoverDetailPanel.shared.close(); PopoverGhost.unwatch() }
         .onAppear { state.openMainWindow = { openWindow(id: "main") } }
     }
 
     // MARK: Khối chính
-
-    var header: some View {
-        HStack(spacing: 8) {
-            LogoMark(size: 24)
-            Text("Vutidy").font(.vt(size: 15, weight: .bold, design: .rounded)).foregroundStyle(.white)
-            Spacer()
-            Button { state.openSettings(.general); activate() } label: { Image(systemName: "gearshape").font(.system(size: 13)) }
-                .buttonStyle(PlainPointerStyle()).foregroundStyle(Theme.Text.secondary).help(tr("Mở Cài đặt"))
-        }
-    }
 
     /// Băng chuyền "Gợi ý": mỗi thẻ một việc đáng làm (biểu tượng, lời gợi ý, nút), vuốt ngang để xem tiếp; thẻ thứ ba ló ra một phần.
     /// Việc gấp (ưu tiên ≥ 80) có nút nổi bật; bấm ✕ để ẩn thẻ 7 ngày (hiện lại nếu tình trạng xấu đi nhiều).
@@ -319,8 +309,8 @@ struct PopoverView: View {
         return tile(tr("Ổ đĩa"), symbol: "v.drive", tint: Page.systemJunk.palette.glow,
                     value: d.map { ByteFormat.string($0.availableImportant) + tr(" trống") } ?? "—",
                     sub: d.flatMap { $0.purgeable > 0 ? "Purgeable " + ByteFormat.string($0.purgeable) : nil},
-                    action: (tr("Giải phóng"), "sparkles", false, { PopoverDetailPanel.shared.show(.disk, state: state) }),
-                    go: { open(.spaceLens) }) {
+                    action: (tr("Giải phóng"), "sparkles", false, { PopoverDetailPanel.shared.show(.disk, state: state, autoRun: true) }),
+                    go: { PopoverDetailPanel.shared.show(.disk, state: state) }) {
             MeterBar(value: used, color: used > 0.9 ? Theme.danger : Color.white.opacity(0.9), height: 6)
         }
     }
@@ -332,15 +322,15 @@ struct PopoverView: View {
         return tile(tr("Bộ nhớ"), symbol: "v.ram", tint: Page.optimization.palette.glow,
                     value: m.map { ByteFormat.string($0.available) + tr(" khả dụng") } ?? "—",
                     sub: m.map { trf("Áp lực: %@ · swap %@", $0.pressure.rawValue, ByteFormat.string($0.swapUsed)) },
-                    action: (tr("Giải phóng"), "sparkles", false, { PopoverDetailPanel.shared.show(.memory, state: state) }),
-                    go: { open(.optimization) }) {
+                    action: (tr("Giải phóng"), "sparkles", false, { PopoverDetailPanel.shared.show(.memory, state: state, autoRun: true) }),
+                    go: { PopoverDetailPanel.shared.show(.memory, state: state) }) {
             MeterBar(value: used, color: c, height: 6)
         }
     }
 
     func cpuTile(_ s: SystemSnapshot?) -> some View {
         tile("CPU", symbol: "v.chip", tint: Page.updater.palette.glow, value: "\(Int((s?.cpuLoad ?? 0) * 100))%", sub: cpuThermalText(s),
-                    go: { open(.optimization) }) {
+                    go: { PopoverDetailPanel.shared.show(.cpu, state: state) }) {
             Sparkline(values: state.cpuHistory, color: Color.white.opacity(0.9))
         }
     }
@@ -350,7 +340,7 @@ struct PopoverView: View {
         return tile(tr("Pin"), symbol: "v.bolt", tint: Page.protection.palette.glow,
                     value: b.map { "\($0.percent)%" + ($0.charging ? " ⚡︎" : "") } ?? tr("Không có"),
                     sub: b.flatMap { x in x.health.map { trf("Sức khỏe %@%%", "\(Int($0 * 100))") + (x.cycleCount.map { trf(" · %@ chu kỳ", "\($0)") } ?? "") } },
-                    go: { open(.optimization) }) {
+                    go: b == nil ? nil : { PopoverDetailPanel.shared.show(.battery, state: state) }) {
             if let b { MeterBar(value: Double(b.percent) / 100, color: b.percent < 20 ? Theme.danger : Color.white.opacity(0.9), height: 6) }
             else { Color.clear }
         }
@@ -359,10 +349,8 @@ struct PopoverView: View {
     func networkTile(_ s: SystemSnapshot?) -> some View {
         tile(tr("Mạng"), symbol: "v.wifi", tint: Page.cloud.palette.glow, value: "↓ " + rate(s?.network.downBytesPerSec),
              sub: speed.map { String(format: "%.0f ↓ / %.0f ↑ Mbps", $0.downMbps, $0.upMbps) },
-             action: (testing ? tr("Đang đo…") : tr("Đo tốc độ"), "speedometer", testing, {
-                 Task { testing = true; if let r = await SpeedTest.run() { speed = r; SpeedTest.append(r) }; testing = false }
-             }),
-             go: { openSystemSettings("x-apple.systempreferences:com.apple.Network-Settings.extension") }) {
+             action: (tr("Đo tốc độ"), "speedometer", false, { PopoverDetailPanel.shared.show(.network, state: state, autoRun: true) }),
+             go: { PopoverDetailPanel.shared.show(.network, state: state) }) {
             Text("↑ " + rate(s?.network.upBytesPerSec)).font(.vt(size: 13, weight: .medium)).monospacedDigit().foregroundStyle(Theme.Text.primary)
         }
     }
@@ -396,7 +384,7 @@ struct PopoverView: View {
         .padding(12)
         .frame(maxWidth: .infinity, minHeight: 128, maxHeight: .infinity, alignment: .topLeading)   // giãn theo ô Mạng cùng hàng
         .glassSurface(radius: 14, strong: false)
-        .clickable { openSystemSettings("x-apple.systempreferences:com.apple.BluetoothSettings") }
+        .clickable { PopoverDetailPanel.shared.show(.devices, state: state, devices: devices) }
     }
 
     /// Một dòng gọn: biểu tượng · tên · pin (nếu thiết bị báo được). Loại thiết bị hiện ở tooltip.
@@ -430,16 +418,36 @@ struct PopoverView: View {
         }
     }
 
+    /// Chân popover: đường kẻ · biểu tượng app · dòng hành động chính ở giữa · nút bánh răng mở menu (Giới thiệu, Góp ý, Cài đặt, Thoát).
     var footer: some View {
-        HStack {
-            primaryButton
-            Spacer()
-            Button { AppDelegate.quitCompletely() } label: { Image(systemName: "power") }
-                .buttonStyle(GlassIconButtonStyle(diameter: 28))
-                .help(tr("Thoát hẳn Vutidy"))
-                .accessibilityLabel(tr("Thoát hẳn"))
+        VStack(spacing: 10) {
+            Divider().overlay(Color.white.opacity(0.1))
+            HStack(spacing: 8) {
+                Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 24, height: 24)
+                primaryButton.frame(maxWidth: .infinity)
+                Menu {
+                    Button { AboutPanel.show(); AppDelegate.closeMenuBarPopover() } label: { Label(tr("Giới thiệu Vutidy"), systemImage: "info.circle") }
+                    Button(tr("Góp ý…")) {
+                        if let u = URL(string: "https://github.com/vunguyenvu35/vutidy/issues") { NSWorkspace.shared.open(u) }
+                        AppDelegate.closeMenuBarPopover()
+                    }
+                    Divider()
+                    Button(tr("Cài đặt…")) { state.openSettings(.general); AppDelegate.closeMenuBarPopover() }.keyboardShortcut(",")
+                    Divider()
+                    Button(tr("Thoát hẳn Vutidy")) { AppDelegate.quitCompletely() }
+                } label: {
+                    Image(systemName: "gearshape.fill").font(.system(size: 15)).foregroundStyle(Theme.Text.primary)
+                        .frame(width: 30, height: 28)
+                }
+                .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+                .help(tr("Tùy chọn"))
+            }
         }
+        .padding(.top, 2)
     }
+
+    /// Số byte rác an toàn đã biết từ lần quét gần nhất (0 nếu chưa quét).
+    var junkBytes: Int64 { state.smart?.cleanableBytes ?? 0 }
 
     /// Nút chính đổi theo tình trạng máy: có gợi ý cần dọn (RAM áp lực, purgeable, ổ đầy, dev junk…) thì hiện hành động đó.
     var cleanSuggestion: Recommendation? {
@@ -448,15 +456,13 @@ struct PopoverView: View {
 
     @ViewBuilder var primaryButton: some View {
         if let r = cleanSuggestion {
-            Button { state.perform(r.action); activate() } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "sparkles").font(.system(size: 12, weight: .bold))
-                    Text(footerTitle(for: r))
-                }
-            }
-            .buttonStyle(PrimaryButtonStyle()).controlSize(.small).help(r.title)
+            Button { state.perform(r.action); activate() } label: { Text(footerTitle(for: r)).lineLimit(1) }
+                .buttonStyle(FooterLinkStyle()).help(r.title)
+        } else if junkBytes > 0 {
+            Button { state.section = .systemJunk; activate() } label: { Text(trf("Dọn tới %@ rác", ByteFormat.string(junkBytes))).lineLimit(1) }
+                .buttonStyle(FooterLinkStyle())
         } else {
-            Button(tr("Mở Vutidy")) { state.section = .smartScan; activate() }.buttonStyle(PrimaryButtonStyle()).controlSize(.small)
+            Button { state.section = .smartScan; activate() } label: { Text(tr("Mở Vutidy")) }.buttonStyle(FooterLinkStyle())
         }
     }
 
@@ -496,5 +502,13 @@ extension PopoverView {
         }
         if let t = s.cpuTemp { return String(format: "%.0f°C · %@", t, label) }
         return tr("Nhiệt: ") + label
+    }
+}
+
+/// Dòng hành động ở chân popover: chữ thường, sáng lên khi rê chuột.
+private struct FooterLinkStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.font(.vt(size: 14, weight: .medium)).foregroundStyle(.white.opacity(configuration.isPressed ? 0.6 : 0.92))
+            .frame(maxWidth: .infinity, minHeight: 28).contentShape(Rectangle()).pointerCursor()
     }
 }

@@ -158,6 +158,11 @@ extension Optimization {
         }.sorted { $0.footprint > $1.footprint }.prefix(limit).map { $0 }
     }
 
+    /// Gộp theo app chịu trách nhiệm, xếp theo CPU giảm dần (helper của Brave/Chrome… tính vào app chủ).
+    public static func cpuByApp(limit: Int = 30) async -> [AppMemory] {
+        await memoryByApp(limit: .max).sorted { $0.cpu > $1.cpu }.prefix(limit).map { $0 }
+    }
+
     /// Xóa cache file inactive của macOS (cần quyền admin). Hiệu quả ngắn hạn; macOS tự nạp lại cache khi cần.
     public static func purgeMemory() async -> ProcessResult {
         await ProcessRunner.runPrivileged(shell: "/usr/sbin/purge")
