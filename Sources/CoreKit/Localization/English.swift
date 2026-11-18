@@ -1048,5 +1048,7 @@ enum English {
         "Đang quét bằng ClamAV… (có thể mất vài phút)": "Scanning with ClamAV… (this can take a few minutes)",
         "Đang tải cơ sở dữ liệu ClamAV…": "Downloading the ClamAV database…",
         "Đã cập nhật cơ sở dữ liệu ClamAV.": "ClamAV database updated.",
+        "Đang cập nhật cơ sở dữ liệu trước khi quét…": "Updating the database before scanning…",
+        "Không cập nhật được cơ sở dữ liệu, đã quét bằng bản cũ.": "Could not update the database; scanned with the older one.",
     ]
 }

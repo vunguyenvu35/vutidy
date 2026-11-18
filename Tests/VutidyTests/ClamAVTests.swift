@@ -44,3 +44,17 @@ import Foundation
         #expect(ClamAV.scanTargets.contains("~/Downloads") && ClamAV.scanTargets.contains("/Library/LaunchDaemons"))
     }
 }
+
+@Suite struct ClamAVRefreshTests {
+    func status(installed: Bool = true, db: Bool = true, age: Int? = 0) -> ClamAV.Status {
+        .init(installed: installed, version: "1.5.4", hasDatabase: db, databaseAgeDays: age)
+    }
+
+    @Test func refreshesBeforeScanWhenDatabaseIsOldOrMissing() {
+        #expect(!ClamAV.needsRefresh(status(age: 0)), "vừa tải trong ngày thì không tải lại")
+        #expect(ClamAV.needsRefresh(status(age: 1)))
+        #expect(ClamAV.needsRefresh(status(age: 30)))
+        #expect(ClamAV.needsRefresh(status(db: false, age: nil)))
+        #expect(!ClamAV.needsRefresh(.missing), "chưa cài ClamAV thì không có gì để cập nhật")
+    }
+}

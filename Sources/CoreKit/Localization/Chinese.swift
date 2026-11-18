@@ -1048,5 +1048,7 @@ enum Chinese {
         "Đang quét bằng ClamAV… (có thể mất vài phút)": "正在用 ClamAV 扫描…(可能需要几分钟)",
         "Đang tải cơ sở dữ liệu ClamAV…": "正在下载 ClamAV 数据库…",
         "Đã cập nhật cơ sở dữ liệu ClamAV.": "ClamAV 数据库已更新。",
+        "Đang cập nhật cơ sở dữ liệu trước khi quét…": "扫描前正在更新数据库…",
+        "Không cập nhật được cơ sở dữ liệu, đã quét bằng bản cũ.": "无法更新数据库,已使用旧版本扫描。",
     ]
 }

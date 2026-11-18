@@ -23,6 +23,8 @@ public enum ClamAV {
                                      "~/Library/LaunchAgents", "/Library/LaunchAgents", "/Library/LaunchDaemons"]
     /// Cơ sở dữ liệu cũ hơn mức này thì nên cập nhật trước khi quét.
     public static let staleAfterDays = 7
+    /// Trước khi quét, tự cập nhật cơ sở dữ liệu nếu đã cũ từ ngần này ngày (chữ ký mới ra hằng ngày).
+    public static let refreshBeforeScanDays = 1
 
     // MARK: Phân tích (thuần hàm)
 
@@ -63,6 +65,11 @@ public enum ClamAV {
     static func databaseFiles() -> [URL] {
         ((try? FileManager.default.contentsOfDirectory(at: dataDir, includingPropertiesForKeys: [.contentModificationDateKey])) ?? [])
             .filter { ["cvd", "cld"].contains($0.pathExtension) }
+    }
+
+    /// Có nên cập nhật cơ sở dữ liệu trước khi quét không: chưa có, hoặc đã từ `refreshBeforeScanDays` ngày trở lên.
+    public static func needsRefresh(_ s: Status) -> Bool {
+        s.installed && (!s.hasDatabase || (s.databaseAgeDays ?? 0) >= refreshBeforeScanDays)
     }
 
     public static func status(now: Date = Date()) async -> Status {

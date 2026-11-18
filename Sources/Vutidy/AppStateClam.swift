@@ -34,9 +34,21 @@ extension AppState {
 
     func clamScan() async {
         guard clamBusy == nil else { return }
-        clamBusy = tr("Đang quét bằng ClamAV… (có thể mất vài phút)"); clamMessage = nil
+        clamMessage = nil
+        // Chữ ký cũ thì bỏ sót mối đe dọa mới: cập nhật trước khi quét. Lỗi mạng không chặn quét nếu đã có bản cũ.
+        var updateNote: String?
+        let before = await ClamAV.status()
+        if ClamAV.needsRefresh(before) {
+            clamBusy = tr("Đang cập nhật cơ sở dữ liệu trước khi quét…")
+            if case .failure = await ClamAV.updateDatabase() {
+                updateNote = before.hasDatabase ? tr("Không cập nhật được cơ sở dữ liệu, đã quét bằng bản cũ.") : nil
+            }
+            await refreshClamStatus()
+        }
+        clamBusy = tr("Đang quét bằng ClamAV… (có thể mất vài phút)")
         let r = await ClamAV.scan()
         clamBusy = nil
+        defer { if let n = updateNote, let m = clamMessage { clamMessage = n + " " + m } }
         switch r {
         case .success(let found):
             if found.isEmpty { clamMessage = tr("ClamAV không thấy mối đe dọa trong các thư mục đã quét.") }

@@ -1047,5 +1047,7 @@ enum Japanese {
         "Đang quét bằng ClamAV… (có thể mất vài phút)": "ClamAV でスキャン中… (数分かかることがあります)",
         "Đang tải cơ sở dữ liệu ClamAV…": "ClamAV のデータベースをダウンロード中…",
         "Đã cập nhật cơ sở dữ liệu ClamAV.": "ClamAV のデータベースを更新しました。",
+        "Đang cập nhật cơ sở dữ liệu trước khi quét…": "スキャン前にデータベースを更新中…",
+        "Không cập nhật được cơ sở dữ liệu, đã quét bằng bản cũ.": "データベースを更新できなかったため、古いデータベースでスキャンしました。",
     ]
 }
