@@ -91,8 +91,7 @@ struct PopoverView: View {
         .background(PopoverTopPin(height: contentHeight))
         .task { devices = await ConnectedDevices.bluetooth(); devicesLoaded = true }
         .task { turbo = await TurboBoost.status() }
-        .onAppear { PopoverGhost.watch() }
-        .onDisappear { PopoverDetailPanel.shared.close(); PopoverGhost.unwatch() }
+        .onDisappear { PopoverDetailPanel.shared.close() }
         .onAppear { state.openMainWindow = { openWindow(id: "main") } }
     }
 
@@ -505,10 +504,20 @@ extension PopoverView {
     }
 }
 
-/// Dòng hành động ở chân popover: chữ thường, sáng lên khi rê chuột.
+/// Dòng hành động ở chân popover: nút phẳng, nền mờ hiện lên khi rê chuột / nhấn.
 private struct FooterLinkStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label.font(.vt(size: 14, weight: .medium)).foregroundStyle(.white.opacity(configuration.isPressed ? 0.6 : 0.92))
-            .frame(maxWidth: .infinity, minHeight: 28).contentShape(Rectangle()).pointerCursor()
+    func makeBody(configuration: Configuration) -> some View { FooterLinkBody(configuration: configuration) }
+}
+
+private struct FooterLinkBody: View {
+    let configuration: ButtonStyleConfiguration
+    @State private var hover = false
+    var body: some View {
+        configuration.label.font(.vt(size: 14, weight: .medium)).foregroundStyle(.white)
+            .frame(maxWidth: .infinity, minHeight: 32)
+            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.white.opacity(configuration.isPressed ? 0.16 : (hover ? 0.09 : 0))))
+            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .onHover { hover = $0 }
+            .pointerCursor()
     }
 }
