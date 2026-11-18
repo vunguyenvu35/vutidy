@@ -511,7 +511,7 @@ private struct FooterLinkStyle: ButtonStyle {
 
 private struct FooterLinkBody: View {
     let configuration: ButtonStyleConfiguration
-    @State private var hover = false
+    @ViewState private var hover = false
     var body: some View {
         configuration.label.font(.vt(size: 14, weight: .medium)).foregroundStyle(.white)
             .frame(maxWidth: .infinity, minHeight: 32)
