@@ -275,6 +275,7 @@ final class AppState: ObservableObject {
         mode = defaultMode
         checkFDA()
         Task { await refreshQuarantine(purgeExpired: true) }
+        Task.detached(priority: .utility) { ProcessRunner.warmUpLoginPath() }   // PATH của login shell: để thấy claude/agy/nvm… khi mở app từ Finder
         startPolling()
         installKeyMonitor()
         renderPopoverSnapshotIfRequested()

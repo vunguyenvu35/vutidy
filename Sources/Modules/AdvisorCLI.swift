@@ -28,8 +28,28 @@ public enum AdvisorProvider: String, CaseIterable, Sendable, Identifiable {
         }
     }
     public static let cliOrder: [AdvisorProvider] = [.claudeCode, .codex, .antigravity, .gemini]
-    public var isInstalled: Bool { executable.map { ProcessRunner.which($0) != nil } ?? true }
-    /// CLI đã cài trên máy, theo thứ tự ưu tiên.
+    /// Đường dẫn tuyệt đối của CLI. Ngoài PATH còn thử bản `claude` đi kèm extension VS Code/Cursor/Windsurf: nhiều người dùng Claude Code
+    /// chỉ qua extension nên không có lệnh `claude` riêng trên máy.
+    public var resolvedExecutable: String? {
+        guard let name = executable else { return nil }
+        if let p = ProcessRunner.which(name) { return p }
+        return self == .claudeCode ? Self.extensionClaudeBinary() : nil
+    }
+
+    static func extensionClaudeBinary(home: String = NSHomeDirectory()) -> String? {
+        let fm = FileManager.default
+        for dir in [".vscode", ".vscode-insiders", ".cursor", ".windsurf"] {
+            let ext = "\(home)/\(dir)/extensions"
+            let names = ((try? fm.contentsOfDirectory(atPath: ext)) ?? []).filter { $0.hasPrefix("anthropic.claude-code-") }.sorted { $0.compare($1, options: .numeric) == .orderedDescending }   // bản mới nhất trước (so theo số: 2.1.10 > 2.1.9)
+            for n in names {
+                let p = "\(ext)/\(n)/resources/native-binary/claude"
+                if fm.isExecutableFile(atPath: p) { return p }
+            }
+        }
+        return nil
+    }
+
+    public var isInstalled: Bool { executable == nil ? true : resolvedExecutable != nil }    /// CLI đã cài trên máy, theo thứ tự ưu tiên.
     public static var installedCLIs: [AdvisorProvider] { cliOrder.filter(\.isInstalled) }
 }
 
@@ -108,7 +128,8 @@ enum AdvisorCLI {
                 let scratch = FileManager.default.temporaryDirectory.appendingPathComponent("vutidy-advisor-\(UUID().uuidString)")
                 try? FileManager.default.createDirectory(at: scratch, withIntermediateDirectories: true)
                 defer { try? FileManager.default.removeItem(at: scratch) }
-                guard let inv = invocation(p, prompt: prompt, model: model, scratch: scratch) else { cont.resume(throwing: ScanAdvisor.AdvisorError.noProvider); return }
+                guard var inv = invocation(p, prompt: prompt, model: model, scratch: scratch) else { cont.resume(throwing: ScanAdvisor.AdvisorError.noProvider); return }
+                if let path = p.resolvedExecutable { inv.argv[0] = path }   // dùng đường dẫn đầy đủ (kể cả bản trong extension VS Code)
                 let r = run(inv, timeout: timeout, cwd: scratch)
                 let name = p.displayName
                 if r.timedOut { cont.resume(throwing: ScanAdvisor.AdvisorError.cli(name, "timeout")); return }

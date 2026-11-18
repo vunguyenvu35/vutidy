@@ -38,13 +38,46 @@ public struct ProcessResult: Sendable {
 }
 
 public enum ProcessRunner {
-    /// PATH mở rộng để tìm brew/go/docker khi chạy từ app GUI (PATH của GUI rất hẹp).
+    /// Thư mục người dùng hay cài CLI vào (claude, agy, npm/bun/volta/pnpm global…): không có trong PATH hẹp của app mở từ Finder.
+    static var userBinDirs: [String] {
+        let h = NSHomeDirectory()
+        return ["\(h)/.local/bin", "\(h)/.claude/local", "\(h)/.npm-global/bin", "\(h)/.bun/bin", "\(h)/.volta/bin", "\(h)/.local/share/pnpm"]
+    }
+
+    private static let loginLock = NSLock()
+    private nonisolated(unsafe) static var loginPath: String?
+
+    /// PATH của login shell của người dùng (đã nạp ~/.zshrc, nvm…). App mở từ Finder không thừa hưởng nó nên không thấy các công cụ cài qua đó.
+    /// Chạy một lần ở nền; `searchPath` dùng kết quả khi đã có.
+    public static func warmUpLoginPath() {
+        loginLock.lock(); let done = loginPath != nil; loginLock.unlock()
+        if done { return }
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh")
+        p.arguments = ["-ilc", "printf %s \"$PATH\""]
+        let out = Pipe()
+        p.standardOutput = out; p.standardError = FileHandle.nullDevice; p.standardInput = FileHandle.nullDevice
+        guard (try? p.run()) != nil else { return }
+        let killer = DispatchWorkItem { if p.isRunning { p.terminate() } }
+        DispatchQueue.global().asyncAfter(deadline: .now() + 6, execute: killer)
+        let data = out.fileHandleForReading.readDataToEndOfFile()
+        p.waitUntilExit(); killer.cancel()
+        // Shell tương tác có thể in thêm chữ trước PATH: lấy dòng cuối và chỉ nhận thứ trông như PATH.
+        let text = (String(data: data, encoding: .utf8) ?? "").split(separator: "\n").last.map(String.init) ?? ""
+        guard text.contains("/"), !text.contains(" ") || text.hasPrefix("/") else { return }
+        loginLock.lock(); loginPath = text; loginLock.unlock()
+    }
+
+    /// PATH mở rộng để tìm brew/go/docker/claude… khi chạy từ app GUI (PATH của GUI rất hẹp).
     public static var searchPath: String {
         let extra = ["/opt/homebrew/bin", "/opt/homebrew/sbin", "/usr/local/bin", "/usr/local/go/bin",
                      "\(NSHomeDirectory())/go/bin", "\(NSHomeDirectory())/.cargo/bin",
-                     "/Applications/Docker.app/Contents/Resources/bin"]
+                     "/Applications/Docker.app/Contents/Resources/bin"] + userBinDirs
+        loginLock.lock(); let login = loginPath; loginLock.unlock()
         let current = ProcessInfo.processInfo.environment["PATH"] ?? "/usr/bin:/bin:/usr/sbin:/sbin"
-        return (extra + [current]).joined(separator: ":")
+        var seen = Set<String>()
+        return (extra + (login?.split(separator: ":").map(String.init) ?? []) + [current]).flatMap { $0.split(separator: ":").map(String.init) }
+            .filter { seen.insert($0).inserted }.joined(separator: ":")
     }
 
     /// Tìm đường dẫn tuyệt đối của một lệnh, nil nếu không cài.

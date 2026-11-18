@@ -331,3 +331,32 @@ import CoreKit
         #expect(ScanAdvisor.systemPrompt(language: "English").contains("\"inspect\""))
     }
 }
+
+@Suite struct AdvisorLocateTests {
+    func fakeHome(_ versions: [String], executable: Bool = true) -> String {
+        let home = NSTemporaryDirectory() + "vutidy-home-\(UUID().uuidString)"
+        for v in versions {
+            let dir = "\(home)/.vscode/extensions/anthropic.claude-code-\(v)-darwin-arm64/resources/native-binary"
+            try! FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+            FileManager.default.createFile(atPath: dir + "/claude", contents: Data("#!/bin/sh\n".utf8), attributes: [.posixPermissions: executable ? 0o755 : 0o644])
+        }
+        return home
+    }
+
+    @Test func findsClaudeBundledWithTheVSCodeExtensionAndPrefersTheNewest() {
+        let home = fakeHome(["2.1.9", "2.1.10", "2.1.2"])
+        #expect(AdvisorProvider.extensionClaudeBinary(home: home)?.contains("claude-code-2.1.10-") == true, "so theo số, không theo chữ: 2.1.10 mới hơn 2.1.9")
+    }
+
+    @Test func ignoresMissingOrNonExecutableBinaries() {
+        #expect(AdvisorProvider.extensionClaudeBinary(home: NSTemporaryDirectory() + "no-such-home-\(UUID().uuidString)") == nil)
+        #expect(AdvisorProvider.extensionClaudeBinary(home: fakeHome(["2.1.1"], executable: false)) == nil)
+    }
+
+    @Test func appSearchPathCoversWhereCLIsAreInstalled() {
+        let p = ProcessRunner.searchPath.split(separator: ":").map(String.init)
+        let h = NSHomeDirectory()
+        for d in ["\(h)/.local/bin", "/opt/homebrew/bin", "/usr/local/bin"] { #expect(p.contains(d), "thiếu \(d): CLI cài ở đó sẽ không thấy khi mở app từ Finder") }
+        #expect(Set(p).count == p.count, "không trùng thư mục")
+    }
+}
