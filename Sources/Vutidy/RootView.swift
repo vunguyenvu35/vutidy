@@ -5,7 +5,7 @@ struct RootView: View {
     @EnvironmentObject var state: AppState
 
     /// Các trang tự quản lý cuộn để ghim thanh hành động ở đáy cửa sổ.
-    var ownsScroll: Bool { [.systemJunk, .devJunk, .trash, .privacy, .spaceLens, .uninstaller].contains(state.section) }
+    var ownsScroll: Bool { [.systemJunk, .devJunk, .trash, .privacy, .mail, .photoJunk, .spaceLens, .uninstaller].contains(state.section) }
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -61,7 +61,7 @@ struct RootView: View {
     @ViewBuilder var detail: some View {
         switch state.section {
         case .smartScan: SmartScanView()
-        case .systemJunk, .devJunk, .trash, .privacy: CleanupView(section: state.section)
+        case .systemJunk, .devJunk, .trash, .privacy, .mail, .photoJunk: CleanupView(section: state.section)
         case .protection: ProtectionView()
         case .malware: MalwareView()
         case .optimization: OptimizationView()
@@ -81,7 +81,7 @@ struct RootView: View {
 struct FDABannerIfNeeded: View {
     @EnvironmentObject var state: AppState
     var body: some View {
-        if !state.hasFDA && !state.fdaDismissed && [.smartScan, .systemJunk, .privacy, .cloud, .spaceLens].contains(state.section) {
+        if !state.hasFDA && !state.fdaDismissed && [.smartScan, .systemJunk, .mail, .photoJunk, .privacy, .cloud, .spaceLens].contains(state.section) {
             FDABanner(message: AppDelegate.canRelaunch
                           ? tr("Thiếu Full Disk Access — một số mục (Mail, Photos, Safari) sẽ không quét được.")
                           : AppDelegate.unbundledFDAMessage,

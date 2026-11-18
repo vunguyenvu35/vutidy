@@ -26,7 +26,8 @@ public enum Uninstaller {
     public static let leftoverDirs = [
         "~/Library/Application Support", "~/Library/Caches", "~/Library/Preferences", "~/Library/Containers",
         "~/Library/Group Containers", "~/Library/Saved Application State", "~/Library/HTTPStorages",
-        "~/Library/WebKit", "~/Library/Logs", "~/Library/LaunchAgents", "~/Library/Cookies",
+        "~/Library/Application Scripts", "~/Library/Preferences/ByHost", "~/Library/Services", "~/Library/Internet Plug-Ins",
+        "~/Library/PreferencePanes", "~/Library/WebKit", "~/Library/Logs", "~/Library/LaunchAgents", "~/Library/Cookies",
         "/Library/Application Support", "/Library/LaunchAgents", "/Library/LaunchDaemons",
         "/Library/PrivilegedHelperTools", "/Library/Preferences", "/Library/Caches",
     ]
@@ -51,16 +52,32 @@ public enum Uninstaller {
         return apps.compactMap { $0 }.sorted { $0.size > $1.size }
     }
 
+    /// Bundle ID (chữ thường) của extension/XPC service/login item nằm trong app (PlugIns, XPCServices, LoginItems),
+    /// vì container và script của chúng có thể không mang bundle ID của app chính.
+    public static func extensionBundleIDs(of appURL: URL) -> [String] {
+        let fm = FileManager.default
+        let contents = appURL.appendingPathComponent("Contents")
+        var ids: [String] = []
+        for sub in ["PlugIns", "XPCServices", "Library/LoginItems"] {
+            let dir = contents.appendingPathComponent(sub)
+            for u in (try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)) ?? [] {
+                if let id = Bundle(url: u)?.bundleIdentifier?.lowercased(), !id.isEmpty { ids.append(id) }
+            }
+        }
+        return Array(Set(ids))
+    }
+
     /// Tìm leftovers theo bundle ID (an toàn) và theo tên chính xác (cần xem lại).
     public static func leftovers(for app: AppInfo, dirs: [String] = leftoverDirs) -> [ScanItem] {
         let bid = app.bundleID.lowercased()
+        let ids = [bid] + extensionBundleIDs(of: app.url).filter { !$0.contains(bid) }
         let name = app.name.lowercased()
         var items: [ScanItem] = []
         for d in dirs {
             let dir = URL(fileURLWithPath: expandTilde(d))
             for f in (try? FileManager.default.contentsOfDirectory(atPath: dir.path)) ?? [] {
                 let l = f.lowercased()
-                let byBundle = l.contains(bid)
+                let byBundle = ids.contains { l.contains($0) }
                 let byName = !byBundle && (l == name || l == name + ".plist") && d.contains("Application Support")
                 guard byBundle || byName else { continue }
                 let u = dir.appendingPathComponent(f)

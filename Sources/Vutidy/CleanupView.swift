@@ -126,7 +126,9 @@ struct CleanupView: View {
 
     var subtitle: String {
         switch section {
-        case .systemJunk: return tr("Cache, log, preferences hỏng, file đính kèm Mail")
+        case .systemJunk: return tr("Cache, log, preferences hỏng")
+        case .mail: return tr("Đính kèm, thư rác và thư đã xóa lưu trên máy")
+        case .photoJunk: return tr("Cache của Photos và phân tích ảnh")
         case .devJunk: return tr("Docker, JetBrains, Node, Go, Xcode, Homebrew, model LLM")
         case .trash: return tr("Thùng rác của bạn và ổ ngoài")
         default: return tr("Cache trình duyệt và dấu vết sử dụng")

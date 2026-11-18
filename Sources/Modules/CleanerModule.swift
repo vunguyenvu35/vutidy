@@ -46,6 +46,12 @@ public enum Cleaners {
     public static func privacy(rules: [Rule] = RuleLoader.loadAll()) -> CleanerModule {
         RuleBasedModule(id: "privacy", title: tr("Quyền riêng tư"), rules: rules)
     }
+    public static func mail(rules: [Rule] = RuleLoader.loadAll()) -> CleanerModule {
+        RuleBasedModule(id: "mail", title: "Mail", rules: rules)
+    }
+    public static func photos(rules: [Rule] = RuleLoader.loadAll()) -> CleanerModule {
+        RuleBasedModule(id: "photos", title: tr("Rác ảnh"), rules: rules)
+    }
 }
 
 public struct CompositeModule: CleanerModule {
