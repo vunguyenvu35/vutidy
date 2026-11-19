@@ -12,7 +12,7 @@
 
 <p align="center"><sub>macOS 13 or later · Apple silicon and Intel · free · no account · no telemetry<br>macOS says the app "can't be opened"? Builds are not notarized yet: <a href="docs/getting-started/install-macos.md#open-an-app-that-is-not-notarized"><b>how to open it in four clicks</b></a>.</sub></p>
 
-<p align="center"><img src="docs/assets/screens/smart-scan-result.webp" alt="Vutidy Smart Scan listing what it will clean" width="900"></p>
+<p align="center"><img src="docs/assets/screens/smart-scan-hero.webp" alt="Vutidy Smart Scan, ready to check the whole Mac in one pass" width="900"></p>
 
 ## Why Vutidy
 
