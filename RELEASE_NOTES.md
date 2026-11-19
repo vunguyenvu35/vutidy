@@ -1,7 +1,22 @@
 <p align="center"><img src="docs/assets/brand/logo-mark-256.png" alt="Vutidy" width="88"></p>
 
-# Unreleased
+# Vutidy 0.7.0
 
+Release date: 2026-11-19 · Platform: macOS 13 or later (only tried on Apple Silicon and one Intel Mac) · Status: **pre-release**. The [known issues of 0.1.0](#vutidy-010) still apply.
+
+## What's new in 0.7.0
+
+- **App updates check themselves.** *Updater* looks at your Homebrew casks in the background every 24 hours and tells you when something new shows up, with a button that opens the page. It never installs by itself. Switch it off in *Settings → General*; the page also shows when it last checked.
+- **Real-time alerts can be acted on.** On *Protection*, each alert has **Quarantine**, **Show in Finder** and **Dismiss**. The menu bar card opens the page that actually lists the alerts. Alerts and the "last scanned" line disappear on their own when the file is gone.
+- **Sensitive permissions can be revoked.** *Malware Removal → Sensitive permissions* has a **Revoke** button per app (it runs `tccutil reset`). Apps that are already uninstalled are no longer listed or flagged: macOS keeps their record but shows no way to delete it, and it cannot be used.
+- **Files you pick yourself can leave Desktop and Documents.** In Space Lens, Large & Old Files and Duplicates, the files you tick are moved to the Quarantine (a permanent delete there goes to the Trash instead). Cleanup rules, the two folders themselves and every other protected area stay blocked. The message for a blocked item now says why in plain words.
+- **Malware: Apple XProtect and optional ClamAV.** Vutidy reads what macOS XProtect and its background scan recorded. If you want a second opinion it can install ClamAV with one click (Homebrew), refresh the signature database when it is a day old and scan Downloads, Desktop, Applications and the launch folders.
+- **Applications → Extensions.** A new page to review and remove third-party plug-ins and app extensions. The Uninstaller now also cleans extension data.
+- **Mail Attachments and Photo Junk** are separate cleanup pages.
+- **New sidebar header.** A glass tile with the logo next to the traffic lights replaces the black square.
+- **Menu bar popover.** Compact metric tiles with a clearer number and unit, detail panels for CPU, Battery, Network and Devices, *Free Up* (Disk, Memory) and *Speed test* back on the tiles, a new footer with a settings menu, and the CPU temperature on the value row. The popover now closes only when you click outside it.
+- **AI Advisor finds your tools when the app is opened from Finder** (Claude Code, Codex, Antigravity, Gemini CLI).
+- **Full Disk Access:** Vutidy no longer shows its own restart prompts, macOS already asks to quit and reopen.
 - **Text size is Small by default.** Until you pick another size in *Settings → Appearance → Text size*; a size you already chose is kept. The old *Default* step is now called *Medium*.
 - **Recommendations carousel in the menu bar popover.** Swipe sideways through cards, each with one thing worth doing next and a button: free purgeable space, memory pressure, low disk, Dev Junk, app updates, apps you have not opened for 90 days, a Smart Scan when the last one is over a day old, and a review of which apps can reach sensitive data. Urgent cards get a highlighted button; **✕** hides a card for 7 days (it comes back if things get much worse). On a short screen the popover stops at the screen height and scrolls.
 
