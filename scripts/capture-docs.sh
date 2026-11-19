@@ -22,10 +22,12 @@ S
 swiftc -O $TMP/wid.swift -o $TMP/wid
 
 # Feed giả cho ảnh "có bản cập nhật" (không tải gì; chỉ để màn Cài đặt hiện nút Cập nhật).
+# Bản "mới hơn" bản hiện tại (tăng minor) để ảnh Cài đặt luôn hiện nút Cập nhật dù VERSION đổi.
+NEXT=$(awk -F. '{printf "%d.%d.0", $1, $2+1}' VERSION | tr -d '[:space:]')
 cat > $TMP/feed.json <<J
-[{"tag_name":"v0.2.0","draft":false,"prerelease":true,"html_url":"https://github.com/vunguyenvu35/vutidy/releases/tag/v0.2.0",
-"body":"# Vutidy 0.2.0\n- Check for updates and update from inside the app.\n- Smart Scan now lists what it will clean before you press Clean.\n- Fixes for the Large & Old Files filter menus.",
-"assets":[{"name":"vutidy-0.2.0-macos.zip","browser_download_url":"https://example.invalid/vutidy-0.2.0-macos.zip"}]}]
+[{"tag_name":"v$NEXT","draft":false,"prerelease":true,"html_url":"https://github.com/vunguyenvu35/vutidy/releases/tag/v$NEXT",
+"body":"# Vutidy $NEXT\n- Check for updates and update from inside the app.\n- Smart Scan now lists what it will clean before you press Clean.\n- Fixes for the Large & Old Files filter menus.",
+"assets":[{"name":"vutidy-$NEXT-macos.zip","browser_download_url":"https://example.invalid/vutidy-$NEXT-macos.zip"}]}]
 J
 # name | page | extra env | wait(s)
 SHOTS=(
@@ -71,7 +73,11 @@ for s in $SHOTS; do
   if [[ $id == 0 ]]; then echo "skip $name (no window)"; kill $pid 2>/dev/null; continue; fi
   screencapture -x -o -l $id "$TMP/$name.png"
   sips -Z 1800 "$TMP/$name.png" --out "$TMP/$name.s.png" >/dev/null
-  [[ $name == protection ]] && sips --cropToHeightWidth 660 1800 --cropOffset 0 0 "$TMP/$name.s.png" >/dev/null  # bỏ danh sách launch item (có đường dẫn cá nhân)
+  # Bỏ danh sách launch item (có đường dẫn cá nhân): giữ 600px trên cùng (dừng ngay dưới tiêu đề "Launch items"). `sips --cropOffset` không còn cắt từ góc trên trên macOS mới nên dùng PIL.
+  if [[ $name == protection ]]; then
+    /usr/bin/python3 -c 'import sys; from PIL import Image; p=sys.argv[1]; im=Image.open(p); im.crop((0,0,im.width,min(600,im.height))).save(p)' "$TMP/$name.s.png" \
+      || { echo "skip $name (cần Pillow để cắt bỏ danh sách launch item)"; kill $pid 2>/dev/null; continue; }
+  fi
   cwebp -q 82 -alpha_q 90 -m 6 -quiet "$TMP/$name.s.png" -o "$OUT/$name.webp"
   echo "ok $name"; kill $pid 2>/dev/null || true
 done
