@@ -118,10 +118,6 @@ struct FDABanner: View {
             // Cấp quyền có hướng dẫn: mở System Settings + bảng nổi để kéo/bật Vutidy, tự nhận khi đã cấp.
             Button { state.grantFullDiskAccess() } label: { Label(tr("Cấp quyền…"), systemImage: "lock.open") }
                 .buttonStyle(PrimaryButtonStyle()).controlSize(.small)
-            if Bundle.main.bundleURL.pathExtension == "app" {
-                Button(tr("Khởi động lại Vutidy")) { AppDelegate.relaunch() }
-                    .buttonStyle(SecondaryButtonStyle()).controlSize(.small).help(tr("Sau khi bật quyền trong System Settings, hãy khởi động lại Vutidy để macOS áp dụng."))
-            }
             if let onDismiss {
                 Button(action: onDismiss) { Image(systemName: "xmark") }.buttonStyle(PlainPointerStyle())
                     .foregroundStyle(Theme.Text.secondary).help(tr("Ẩn thông báo"))

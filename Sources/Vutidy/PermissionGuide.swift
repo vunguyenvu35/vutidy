@@ -37,7 +37,8 @@ final class PermissionGuide {
             // macOS cập nhật quyền ngay khi bạn bật công tắc; hỏi lại mỗi giây cho đến khi thấy.
             while !Task.isCancelled {
                 state.checkFDA()
-                if state.hasFDA { return }
+                // Đã cấp: macOS tự hỏi thoát và mở lại app, nên không hiện thêm bảng nào của Vutidy.
+                if state.hasFDA { self?.close(); return }
                 try? await Task.sleep(nanoseconds: 1_000_000_000)
                 if self?.panel == nil { return }
             }
@@ -64,23 +65,16 @@ struct PermissionGuideView: View {
     var body: some View {
         VStack(spacing: 14) {
             HStack(spacing: 10) {
-                Image(systemName: state.hasFDA ? "checkmark.shield.fill" : "lock.shield.fill")
-                    .font(.system(size: 18)).foregroundStyle(state.hasFDA ? Theme.Signal.base : Theme.Review.base)
-                Text(state.hasFDA ? tr("Đã cấp quyền!") : tr("Cho phép Full Disk Access"))
+                Image(systemName: "lock.shield.fill")
+                    .font(.system(size: 18)).foregroundStyle(Theme.Review.base)
+                Text(tr("Cho phép Full Disk Access"))
                     .font(.vt(size: 16, weight: .bold)).foregroundStyle(.white)
                 Spacer()
                 Button { close() } label: { Image(systemName: "xmark").font(.system(size: 11, weight: .bold)) }
                     .buttonStyle(PlainPointerStyle()).foregroundStyle(Theme.Text.secondary)
             }
 
-            if state.hasFDA {
-                Text(tr("Khởi động lại Vutidy để macOS áp dụng hoàn toàn quyền mới."))
-                    .font(Theme.Font.body).foregroundStyle(Theme.Text.secondary).frame(maxWidth: .infinity, alignment: .leading)
-                HStack(spacing: 10) {
-                    Button(tr("Khởi động lại Vutidy")) { AppDelegate.relaunch() }.buttonStyle(PrimaryButtonStyle()).controlSize(.small)
-                    Button(tr("Xong")) { close() }.buttonStyle(SecondaryButtonStyle()).controlSize(.small)
-                }
-            } else {
+            Group {
                 HStack(alignment: .top, spacing: 14) {
                     VStack(alignment: .leading, spacing: 6) {
                         step("1", tr("Trong danh sách của System Settings, bật công tắc Vutidy."))
@@ -102,7 +96,6 @@ struct PermissionGuideView: View {
                     Spacer()
                     Button(tr("Đặt lại quyền")) { reset() }.buttonStyle(TextActionStyle(color: Theme.Text.secondary)).disabled(resetting)
                         .help(tr("Dùng khi Vutidy đã bật nhưng vẫn báo thiếu quyền, hoặc có nhiều dòng Vutidy trong danh sách."))
-                    Button(tr("Khởi động lại Vutidy")) { AppDelegate.relaunch() }.buttonStyle(TextActionStyle(color: Theme.Text.secondary))
                 }
             }
         }
