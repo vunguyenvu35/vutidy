@@ -176,13 +176,21 @@ struct LanguageMenu: View {
 /// Logo Vutidy vẽ bằng SwiftUI, khớp `docs/assets/brand/logo-mark.svg` (lưới 1024).
 struct LogoMark: View {
     var size: CGFloat = 28
+    /// false: chỉ vẽ ký hiệu chữ V (không có ô nền tối), phóng lớn cho vừa khung. Dùng trên nền sidebar trong mờ.
+    var tile = true
     var body: some View {
         Canvas { ctx, sz in
             let k = sz.width / 1024
             func P(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: x * k, y: (y + 65) * k) }
-            ctx.fill(Path(roundedRect: CGRect(origin: .zero, size: sz), cornerRadius: 228 * k),
-                     with: .linearGradient(Gradient(colors: [Color(hex: 0x171C25), Color(hex: 0x0A0C10)]),
-                                           startPoint: .zero, endPoint: CGPoint(x: 0, y: sz.height)))
+            var ctx = ctx
+            if tile {
+                ctx.fill(Path(roundedRect: CGRect(origin: .zero, size: sz), cornerRadius: 228 * k),
+                         with: .linearGradient(Gradient(colors: [Color(hex: 0x171C25), Color(hex: 0x0A0C10)]),
+                                               startPoint: .zero, endPoint: CGPoint(x: 0, y: sz.height)))
+            } else {
+                let s: CGFloat = 1.7                                     // ký hiệu chỉ chiếm ~52% ô → phóng lên cho đầy khung
+                ctx.translateBy(x: sz.width / 2, y: sz.height / 2); ctx.scaleBy(x: s, y: s); ctx.translateBy(x: -sz.width / 2, y: -sz.height / 2)
+            }
             var v = Path(); v.move(to: P(292, 282)); v.addLine(to: P(512, 612)); v.addLine(to: P(732, 282))
             let style = StrokeStyle(lineWidth: 92 * k, lineCap: .round, lineJoin: .round)
             var left = ctx; left.clip(to: Path(CGRect(x: 0, y: 0, width: 512 * k, height: sz.height)))

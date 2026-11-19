@@ -94,17 +94,30 @@ struct FDABannerIfNeeded: View {
 struct Sidebar: View {
     @EnvironmentObject var state: AppState
 
+    private var lightsGap: CGFloat { state.isFullScreen ? 0 : 86 }   // full screen không có 3 nút đèn giao thông
+
+    /// Logo nằm cùng hàng với 3 nút đèn giao thông → không tốn thêm chiều cao.
+    /// Ô kính trong với viền sáng mảnh, ăn khớp với các thẻ kính của app; không dùng ô nền đen.
+    private var brandHeader: some View {
+        HStack(spacing: 9) {
+            Spacer().frame(width: lightsGap)
+            ZStack {
+                RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.white.opacity(0.10))
+                RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Color.white.opacity(0.22), lineWidth: 0.75)
+                LogoMark(size: 24, tile: false)
+            }.frame(width: 28, height: 28)
+            Text("Vutidy").font(.vt(size: 14.5, weight: .semibold, design: .rounded)).tracking(0.2)
+                .foregroundStyle(Theme.Text.primary.opacity(0.92))
+            Spacer(minLength: 0)
+        }
+        .frame(height: state.titleBarCenter * 2)                 // tâm hàng = tâm 3 nút đèn giao thông
+        .background(TitleBarArea())
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Logo nằm cùng hàng với 3 nút đèn giao thông → không tốn thêm chiều cao.
-            HStack(spacing: 8) {
-                Spacer().frame(width: state.isFullScreen ? 0 : 82)   // full screen không có 3 nút đèn giao thông
-                LogoMark(size: 22)
-                Text("Vutidy").font(.vt(size: 15, weight: .bold, design: .rounded)).foregroundStyle(Theme.Text.primary)
-                Spacer(minLength: 0)
-            }
-            .frame(height: state.titleBarCenter * 2)                 // tâm hàng = tâm 3 nút đèn giao thông
-            .background(TitleBarArea())
+            brandHeader
 
             Button { state.paletteOpen = true } label: {
                 HStack(spacing: 8) {
