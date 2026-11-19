@@ -5,6 +5,8 @@ import CoreKit
 public struct Blocklist: Sendable {
     public let home: String
     private let protected: [String]
+    /// Hai thư mục người dùng tự quản lý: file bên trong chỉ được chuyển vào Quarantine/Thùng rác khi chính người dùng chọn (không bao giờ do rule).
+    private let userFolders: Set<String>
 
     public init(home: String = NSHomeDirectory()) {
         let h = Blocklist.normalize(home)
@@ -22,6 +24,7 @@ public struct Blocklist: Sendable {
             "Pictures/Photos Library.photoslibrary/database",
         ].map { h + "/" + $0 }
         self.protected = p.map(Blocklist.normalize)
+        self.userFolders = Set(["Documents", "Desktop"].map { Blocklist.normalize(h + "/" + $0) })
     }
 
     static func normalize(_ path: String) -> String {
@@ -31,6 +34,15 @@ public struct Blocklist: Sendable {
     }
 
     public func isBlocked(_ url: URL) -> Bool { reason(for: url) != nil }
+
+    /// Như `reason(for:)` nhưng nới cho file người dùng tự chọn: bên trong `~/Documents` và `~/Desktop` được phép
+    /// (chính hai thư mục đó và mọi vùng khác vẫn bị chặn).
+    public func reason(for url: URL, userSelected: Bool) -> String? {
+        guard userSelected else { return reason(for: url) }
+        let path = Blocklist.normalize(url.path)
+        if userFolders.contains(where: { path.hasPrefix($0 + "/") }) { return nil }
+        return reason(for: url)
+    }
 
     /// Trả về lý do bị chặn, nil nếu được phép.
     public func reason(for url: URL) -> String? {

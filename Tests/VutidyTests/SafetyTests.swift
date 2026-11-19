@@ -120,6 +120,33 @@ import Foundation
         #expect(FileManager.default.fileExists(atPath: docs.path))
         #expect(r.skipped.count == 1)
     }
+    @Test func userSelectedFileInDesktopGoesToQuarantine() async {
+        let f = Fixture(); defer { f.cleanup() }
+        let u = f.file("home/Desktop/shot.png")
+        let ex = make(f)
+        let r = await ex.execute([item(u)], mode: .quarantine, userSelected: true)
+        #expect(!FileManager.default.fileExists(atPath: u.path))
+        #expect(r.doneCount == 1)
+        #expect(await ex.quarantine.entries().count == 1)
+    }
+    @Test func userSelectedStillCannotDeletePermanentlyOrTouchFolderItself() async {
+        let f = Fixture(); defer { f.cleanup() }
+        let u = f.file("home/Documents/keep.txt")
+        let r = await make(f).execute([item(u)], mode: .permanent, userSelected: true)
+        #expect(FileManager.default.fileExists(atPath: u.path))
+        #expect(r.skipped.count == 1)
+        let b = Blocklist(home: "/Users/tester")
+        #expect(b.reason(for: URL(fileURLWithPath: "/Users/tester/Desktop"), userSelected: true) != nil)
+        #expect(b.reason(for: URL(fileURLWithPath: "/Users/tester/.ssh/id_rsa"), userSelected: true) != nil)
+        #expect(b.reason(for: URL(fileURLWithPath: "/Users/tester/Desktop/a.png"), userSelected: true) == nil)
+    }
+    @Test func ruleItemsInDesktopStayBlocked() async {
+        let f = Fixture(); defer { f.cleanup() }
+        let u = f.file("home/Desktop/a.png")
+        let r = await make(f).execute([item(u)], mode: .quarantine)
+        #expect(FileManager.default.fileExists(atPath: u.path))
+        #expect(r.skipped.count == 1)
+    }
     @Test func missingFileIsSkipped() async {
         let f = Fixture(); defer { f.cleanup() }
         let r = await make(f).execute([item(f.root.appendingPathComponent("nope"))], mode: .quarantine)

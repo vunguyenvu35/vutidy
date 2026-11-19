@@ -134,5 +134,5 @@ Rules are data, not code. Bundled rules are in `Sources/RuleEngine/Resources/rul
 ## Limits
 
 - Sizes are allocated sizes and are estimates (see [Smart Scan](02-smart-scan.md#limits)).
-- The blocklist (see [Quarantine and safety](08-quarantine-and-safety.md#the-blocklist)) always wins: a rule cannot make Vutidy touch `~/Documents`, `~/Desktop`, keychains, `.ssh` and so on.
+- The blocklist (see [Quarantine and safety](08-quarantine-and-safety.md#the-blocklist)) always wins: a rule cannot make Vutidy touch `~/Documents`, `~/Desktop`, keychains, `.ssh` and so on. Only files you pick yourself in Space Lens, Large & Old Files or Duplicate Files may be moved to the Quarantine from `~/Documents` and `~/Desktop`.
 - Items inside system locations that need administrator rights are listed but may be skipped; there is no privileged helper yet.

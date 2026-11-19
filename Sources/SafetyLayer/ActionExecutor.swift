@@ -18,18 +18,20 @@ public final class ActionExecutor: @unchecked Sendable {
                   audit: AuditLog(url: paths.auditLog))
     }
 
-    public func execute(_ items: [ScanItem], mode: CleanMode,
+    /// `userSelected`: người dùng tự chọn từng mục (Space Lens, File lớn, Trùng lặp). Khi đó file trong ~/Documents và ~/Desktop
+    /// được chuyển vào Quarantine/Thùng rác, nhưng KHÔNG bao giờ xóa vĩnh viễn.
+    public func execute(_ items: [ScanItem], mode: CleanMode, userSelected: Bool = false,
                         progress: (@Sendable (Int, Int) -> Void)? = nil) async -> CleanReport {
         var outcomes: [CleanOutcome] = []
         for (i, item) in items.enumerated() {
             if Task.isCancelled { break }
-            outcomes.append(await executeOne(item, mode: mode))
+            outcomes.append(await executeOne(item, mode: mode, userSelected: userSelected))
             progress?(i + 1, items.count)
         }
         return CleanReport(outcomes: outcomes, mode: mode)
     }
 
-    func executeOne(_ item: ScanItem, mode: CleanMode) async -> CleanOutcome {
+    func executeOne(_ item: ScanItem, mode: CleanMode, userSelected: Bool = false) async -> CleanOutcome {
         func out(_ s: OutcomeStatus, _ note: String? = nil) -> CleanOutcome {
             log(item, mode: mode, result: s)
             return CleanOutcome(itemID: item.id, path: item.url.path, bytes: item.allocatedSize, status: s, note: note)
@@ -44,7 +46,7 @@ public final class ActionExecutor: @unchecked Sendable {
                         : out(.failed(r.stderr.trimmingCharacters(in: .whitespacesAndNewlines)), line)
         }
 
-        if let why = blocklist.reason(for: item.url) { return out(.skipped(trf("bị chặn: %@", "\(why)"))) }
+        if let why = blocklist.reason(for: item.url, userSelected: userSelected && mode != .permanent) { return out(.skipped(trf("bị chặn: %@", "\(why)"))) }
         let fm = FileManager.default
         guard fm.fileExists(atPath: item.url.path) || (try? item.url.checkResourceIsReachable()) == true
                 || (try? fm.destinationOfSymbolicLink(atPath: item.url.path)) != nil else {

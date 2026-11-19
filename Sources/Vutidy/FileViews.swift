@@ -60,7 +60,7 @@ struct ItemsPanel: View {
 extension AppState {
     /// Dọn một danh sách mục tùy ý (không thuộc module quét cố định).
     func cleanLocal(_ items: [ScanItem], mode: CleanMode) async {
-        let report = await executor.execute(items, mode: mode)
+        let report = await executor.execute(items, mode: mode, userSelected: true)
         lastReport = report
         notify(trf("Đã chuyển %@ vào Quarantine", "\(ByteFormat.string(report.reclaimedBytes))") + (report.failures.isEmpty ? "" : trf(" · %@ lỗi", "\(report.failures.count)")),
                report.failures.isEmpty ? .success : .warning, undo: true)

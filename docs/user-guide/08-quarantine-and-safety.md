@@ -33,7 +33,7 @@ A hard list of paths Vutidy refuses to remove, whatever a rule or you select. It
 
 Paths are normalized first, so `..` tricks and **symbolic links that point into a protected area** are caught. Relative paths are refused.
 
-Because `~/Documents` and `~/Desktop` are protected, Vutidy will not delete a `node_modules` or a large file inside them; move such projects elsewhere or remove the folder yourself.
+`~/Documents` and `~/Desktop` have one exception. Cleanup rules never touch them, but when **you** pick files yourself in Space Lens, Large & Old Files or Duplicate Files, Vutidy moves them to the Quarantine (restorable for 7 days). It still refuses to delete them permanently, and the two folders themselves stay protected.
 
 ## Quarantine
 

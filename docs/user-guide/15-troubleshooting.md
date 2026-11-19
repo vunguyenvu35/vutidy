@@ -32,7 +32,7 @@ A rule only appears when its tool is installed and reachable. Vutidy adds `/opt/
 
 ## An item was skipped as blocked
 
-It is on the [blocklist](08-quarantine-and-safety.md#the-blocklist) (for example anything inside `~/Documents` or `~/Desktop`). This cannot be overridden on purpose.
+It is on the [blocklist](08-quarantine-and-safety.md#the-blocklist) (for example keychains, `.ssh`, or a rule's item inside `~/Documents` or `~/Desktop`). This cannot be overridden on purpose. Files you pick yourself in Space Lens, Large & Old Files or Duplicate Files can go to the Quarantine from `~/Documents` and `~/Desktop`, but never be deleted permanently.
 
 ## Restore says the path already exists
 

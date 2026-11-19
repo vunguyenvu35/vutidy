@@ -389,13 +389,15 @@ struct SpaceLensView: View {
         let nodes = targets
         guard !nodes.isEmpty else { return }
         let items = nodes.map { ScanItem(url: SpacePaths.logicalURL($0.url), title: $0.name, allocatedSize: $0.size, category: "Space Lens", ruleID: "space-lens", safety: .review, selected: true) }
-        let r = await state.executor.execute(items, mode: mode)
+        let r = await state.executor.execute(items, mode: mode, userSelected: true)
         state.lastReport = r
         if r.doneCount > 0 {
             var msg = mode == .permanent ? trf("Đã xóa %@", ByteFormat.string(r.reclaimedBytes)) : trf("Đã chuyển %@ vào Quarantine", ByteFormat.string(r.reclaimedBytes))
             if !r.failures.isEmpty { msg += trf(" · %@ lỗi", "\(r.failures.count)") }
             state.notify(msg, r.failures.isEmpty ? .success : .warning, undo: mode != .permanent)
-        } else { state.notify(trf("Không thực hiện được: %@", r.outcomes.first.map { "\($0.status)" } ?? ""), .error) }
+        } else { state.notify(trf("Không thực hiện được: %@", r.outcomes.first.map { o -> String in
+            switch o.status { case .skipped(let s), .failed(let s): return s; default: return "" }
+        } ?? ""), .error) }
         await state.refreshQuarantine()
         selection = nil; checked = []; anchor = nil
         if let c = current { runScan(c.url, push: false, title: c.name) }
