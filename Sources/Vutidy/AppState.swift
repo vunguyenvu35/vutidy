@@ -351,8 +351,10 @@ final class AppState: ObservableObject {
         pollSystem()
     }
 
-    /// Bỏ cảnh báo real-time của file đã bị xoá/di chuyển (người dùng tự dọn ngoài app) và các cảnh báo trùng đường dẫn.
+    /// Bỏ cảnh báo real-time của file đã bị xoá/di chuyển (người dùng tự dọn ngoài app), các cảnh báo trùng đường dẫn,
+    /// và dòng "file vừa quét" nếu file đó không còn.
     func pruneAlerts() {
+        if let p = lastScanned, !FileManager.default.fileExists(atPath: p) { lastScanned = nil }
         guard !alerts.isEmpty else { return }
         var seen = Set<String>()
         let kept = alerts.filter { FileManager.default.fileExists(atPath: $0.path) && seen.insert($0.path).inserted }
