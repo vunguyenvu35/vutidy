@@ -129,12 +129,15 @@ import Foundation
         #expect(r.doneCount == 1)
         #expect(await ex.quarantine.entries().count == 1)
     }
-    @Test func userSelectedStillCannotDeletePermanentlyOrTouchFolderItself() async {
+    @Test func userSelectedPermanentDeleteInDocumentsGoesToTrashInstead() async {
         let f = Fixture(); defer { f.cleanup() }
         let u = f.file("home/Documents/keep.txt")
         let r = await make(f).execute([item(u)], mode: .permanent, userSelected: true)
-        #expect(FileManager.default.fileExists(atPath: u.path))
-        #expect(r.skipped.count == 1)
+        #expect(!FileManager.default.fileExists(atPath: u.path))   // không còn ở chỗ cũ…
+        #expect(r.doneCount == 1)                                    // …nhưng đi vào Thùng rác, không bị xóa hẳn
+        #expect(r.outcomes.first?.note?.contains("keep.txt") == true)
+    }
+    @Test func userSelectedStillCannotTouchFolderItselfOrOtherAreas() {
         let b = Blocklist(home: "/Users/tester")
         #expect(b.reason(for: URL(fileURLWithPath: "/Users/tester/Desktop"), userSelected: true) != nil)
         #expect(b.reason(for: URL(fileURLWithPath: "/Users/tester/.ssh/id_rsa"), userSelected: true) != nil)

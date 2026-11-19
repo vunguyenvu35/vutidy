@@ -33,7 +33,7 @@ A hard list of paths Vutidy refuses to remove, whatever a rule or you select. It
 
 Paths are normalized first, so `..` tricks and **symbolic links that point into a protected area** are caught. Relative paths are refused.
 
-`~/Documents` and `~/Desktop` have one exception. Cleanup rules never touch them, but when **you** pick files yourself in Space Lens, Large & Old Files or Duplicate Files, Vutidy moves them to the Quarantine (restorable for 7 days). It still refuses to delete them permanently, and the two folders themselves stay protected.
+`~/Documents` and `~/Desktop` have one exception. Cleanup rules never touch them, but when **you** pick files yourself in Space Lens, Large & Old Files or Duplicate Files, Vutidy moves them to the Quarantine (restorable for 7 days). If you press a permanent delete there, the files go to the Trash instead, so you can still get them back. The two folders themselves stay protected.
 
 ## Quarantine
 

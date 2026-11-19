@@ -35,6 +35,12 @@ public struct Blocklist: Sendable {
 
     public func isBlocked(_ url: URL) -> Bool { reason(for: url) != nil }
 
+    /// File nằm trong ~/Documents hoặc ~/Desktop (không tính chính hai thư mục đó).
+    public func isInUserFolder(_ url: URL) -> Bool {
+        let path = Blocklist.normalize(url.path)
+        return userFolders.contains { path.hasPrefix($0 + "/") }
+    }
+
     /// Như `reason(for:)` nhưng nới cho file người dùng tự chọn: bên trong `~/Documents` và `~/Desktop` được phép
     /// (chính hai thư mục đó và mọi vùng khác vẫn bị chặn).
     public func reason(for url: URL, userSelected: Bool) -> String? {

@@ -392,7 +392,9 @@ struct SpaceLensView: View {
         let r = await state.executor.execute(items, mode: mode, userSelected: true)
         state.lastReport = r
         if r.doneCount > 0 {
-            var msg = mode == .permanent ? trf("Đã xóa %@", ByteFormat.string(r.reclaimedBytes)) : trf("Đã chuyển %@ vào Quarantine", ByteFormat.string(r.reclaimedBytes))
+            let toTrash = mode == .permanent && items.allSatisfy { state.executor.blocklist.isInUserFolder($0.url) }
+            var msg = toTrash ? trf("Đã chuyển %@ vào Thùng rác", ByteFormat.string(r.reclaimedBytes))
+                : mode == .permanent ? trf("Đã xóa %@", ByteFormat.string(r.reclaimedBytes)) : trf("Đã chuyển %@ vào Quarantine", ByteFormat.string(r.reclaimedBytes))
             if !r.failures.isEmpty { msg += trf(" · %@ lỗi", "\(r.failures.count)") }
             state.notify(msg, r.failures.isEmpty ? .success : .warning, undo: mode != .permanent)
         } else { state.notify(trf("Không thực hiện được: %@", r.outcomes.first.map { o -> String in

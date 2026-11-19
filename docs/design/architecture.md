@@ -209,7 +209,7 @@ Safety levels:
 
 ## 6. Safety layer (mandatory from Phase 0)
 
-- **Hard blocklist:** `/System`, `/usr` (except `/usr/local` with an explicit rule), `/bin`, `/sbin`, `~/Documents`, `~/Desktop` (files the user picks by hand may go to quarantine or Trash, never permanent delete), the originals of the Photos library, keychains, `.ssh`, `.gnupg`, and everything SIP-protected.
+- **Hard blocklist:** `/System`, `/usr` (except `/usr/local` with an explicit rule), `/bin`, `/sbin`, `~/Documents`, `~/Desktop` (files the user picks by hand may go to quarantine or Trash; a permanent delete there is turned into Trash), the originals of the Photos library, keychains, `.ssh`, `.gnupg`, and everything SIP-protected.
 - **Default:** move to the Trash (`FileManager.trashItem`). System files go to a quarantine folder `~/Library/Application Support/<app>/Quarantine/` with an index.
 - **Quarantine retention:** 7 days (configurable), then deleted automatically.
 - **Undo:** restore from quarantine to the exact original path, keeping permissions and xattrs.

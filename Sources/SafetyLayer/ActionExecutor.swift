@@ -31,7 +31,9 @@ public final class ActionExecutor: @unchecked Sendable {
         return CleanReport(outcomes: outcomes, mode: mode)
     }
 
-    func executeOne(_ item: ScanItem, mode: CleanMode, userSelected: Bool = false) async -> CleanOutcome {
+    func executeOne(_ item: ScanItem, mode requested: CleanMode, userSelected: Bool = false) async -> CleanOutcome {
+        // Xóa vĩnh viễn file trong Desktop/Documents không được phép; file người dùng tự chọn thì đưa vào Thùng rác (lấy lại được).
+        let mode: CleanMode = (userSelected && requested == .permanent && item.command == nil && blocklist.isInUserFolder(item.url)) ? .moveToTrash : requested
         func out(_ s: OutcomeStatus, _ note: String? = nil) -> CleanOutcome {
             log(item, mode: mode, result: s)
             return CleanOutcome(itemID: item.id, path: item.url.path, bytes: item.allocatedSize, status: s, note: note)
@@ -46,7 +48,7 @@ public final class ActionExecutor: @unchecked Sendable {
                         : out(.failed(r.stderr.trimmingCharacters(in: .whitespacesAndNewlines)), line)
         }
 
-        if let why = blocklist.reason(for: item.url, userSelected: userSelected && mode != .permanent) { return out(.skipped(trf("bị chặn: %@", "\(why)"))) }
+        if let why = blocklist.reason(for: item.url, userSelected: userSelected && requested != .permanent || mode == .moveToTrash) { return out(.skipped(trf("bị chặn: %@", "\(why)"))) }
         let fm = FileManager.default
         guard fm.fileExists(atPath: item.url.path) || (try? item.url.checkResourceIsReachable()) == true
                 || (try? fm.destinationOfSymbolicLink(atPath: item.url.path)) != nil else {
