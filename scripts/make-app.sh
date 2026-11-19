@@ -2,7 +2,7 @@
 # Đóng gói dist/Vutidy.app từ mã nguồn.
 #   scripts/make-app.sh [--open]
 #   CONFIG=debug|release     mặc định release (debug build nhanh hơn khi phát triển)
-#   ARCHS=universal          build arm64 + x86_64 (mặc định: kiến trúc của máy build)
+#   ARCHS=arm64|x86_64|universal  build một kiến trúc riêng hoặc cả hai gộp (mặc định: kiến trúc của máy build)
 #   CODESIGN_IDENTITY="…"    chứng chỉ ký (mặc định ad-hoc "-"); chứng chỉ thật sẽ bật hardened runtime
 #   DIST_DIR=…               thư mục đầu ra (mặc định dist)
 #   BUILD_NUMBER=…           số build trong Info.plist (mặc định GITHUB_RUN_NUMBER hoặc 1)
@@ -13,7 +13,10 @@ CONFIG=${CONFIG:-release}
 VERSION=$(tr -d '[:space:]' < VERSION)
 BUILD_NUMBER=${BUILD_NUMBER:-${GITHUB_RUN_NUMBER:-1}}
 ARCH_FLAGS=()
-[[ "${ARCHS:-}" == "universal" ]] && ARCH_FLAGS=(--arch arm64 --arch x86_64)
+case "${ARCHS:-}" in
+  universal) ARCH_FLAGS=(--arch arm64 --arch x86_64) ;;
+  arm64|x86_64) ARCH_FLAGS=(--arch "$ARCHS") ;;
+esac
 
 swift build -c "$CONFIG" --product Vutidy "${ARCH_FLAGS[@]}"
 BIN=$(swift build -c "$CONFIG" "${ARCH_FLAGS[@]}" --show-bin-path)
