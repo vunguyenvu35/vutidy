@@ -333,7 +333,7 @@ struct PopoverView: View {
 
     /// `go`: bấm vào ô để mở panel chi tiết hoặc trang tương ứng.
     func tile<M: View>(_ title: String, symbol: String, tint: Color, value v: String,
-                       middleHeight: CGFloat = 14, go: (() -> Void)? = nil, @ViewBuilder middle: () -> M) -> some View {
+                       middleHeight: CGFloat = 14, trailing: (String, Color)? = nil, go: (() -> Void)? = nil, @ViewBuilder middle: () -> M) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 7) {
                 IconTile(symbol: symbol, tint: tint, size: 22)
@@ -341,7 +341,13 @@ struct PopoverView: View {
                 Spacer(minLength: 0)
                 if go != nil { Image(systemName: "chevron.right").font(.system(size: 9, weight: .bold)).foregroundStyle(Theme.Text.tertiary) }
             }.frame(height: 22)
-            tileValue(v).frame(height: 26, alignment: .bottomLeading).padding(.top, 4)
+            HStack(alignment: .lastTextBaseline, spacing: 6) {
+                tileValue(v)
+                if let trailing {
+                    Spacer(minLength: 4)
+                    Text(trailing.0).font(.vt(size: 12.5, weight: .semibold)).monospacedDigit().foregroundStyle(trailing.1).fixedSize()
+                }
+            }.frame(height: 26, alignment: .bottomLeading).padding(.top, 4)
             middle().frame(maxWidth: .infinity, minHeight: middleHeight, maxHeight: middleHeight, alignment: .leading).padding(.top, 6)
         }
         .padding(12)
@@ -381,9 +387,25 @@ struct PopoverView: View {
     }
 
     func cpuTile(_ s: SystemSnapshot?) -> some View {
-        tile("CPU", symbol: "v.chip", tint: Page.updater.palette.glow, value: "\(Int((s?.cpuLoad ?? 0) * 100))%",
-             go: { PopoverDetailPanel.shared.show(.cpu, state: state) }) {
+        let t = s?.cpuTemp
+        let thermal = s?.thermal ?? .nominal
+        let hot = (t ?? 0) >= 85 || thermal == .serious || thermal == .critical
+        let warm = (t ?? 0) >= 70 || thermal == .fair
+        let tc: Color = hot ? Theme.danger : (warm ? Theme.Review.base : Theme.Text.secondary)
+        // Nhiệt độ cảm biến nằm bên phải hàng số, cùng đường cơ sở; không đọc được thì chỉ hiện khi macOS báo máy nóng.
+        let label: String? = t.map { String(format: "%.0f°C", $0) } ?? ((warm || hot) ? cpuThermalLabel(thermal) : nil)
+        return tile("CPU", symbol: "v.chip", tint: Page.updater.palette.glow, value: "\(Int((s?.cpuLoad ?? 0) * 100))%",
+                    trailing: label.map { ($0, tc) },
+                    go: { PopoverDetailPanel.shared.show(.cpu, state: state) }) {
             Sparkline(values: state.cpuHistory, color: Color.white.opacity(0.9))
+        }
+    }
+
+    func cpuThermalLabel(_ t: ProcessInfo.ThermalState) -> String {
+        switch t {
+        case .nominal: return tr("Bình thường"); case .fair: return tr("Hơi nóng")
+        case .serious: return tr("Nóng"); case .critical: return tr("Quá nóng")
+        @unknown default: return ""
         }
     }
 
@@ -506,8 +528,9 @@ struct PopoverView: View {
     var footer: some View {
         VStack(spacing: 10) {
             Divider().overlay(Color.white.opacity(0.1))
-            HStack(spacing: 8) {
-                Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 24, height: 24)
+            HStack(spacing: 10) {
+                Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 28, height: 28)
+                    .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
                 primaryButton.frame(maxWidth: .infinity)
                 Menu {
                     Button { AboutPanel.show(); AppDelegate.closeMenuBarPopover() } label: { Label(tr("Giới thiệu Vutidy"), systemImage: "info.circle") }
@@ -520,8 +543,7 @@ struct PopoverView: View {
                     Divider()
                     Button(tr("Thoát hẳn Vutidy")) { AppDelegate.quitCompletely() }
                 } label: {
-                    Image(systemName: "gearshape.fill").font(.system(size: 15)).foregroundStyle(Theme.Text.primary)
-                        .frame(width: 30, height: 28)
+                    FooterGearLabel()
                 }
                 .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
                 .help(tr("Tùy chọn"))
@@ -546,14 +568,15 @@ struct PopoverView: View {
             Button { state.section = .systemJunk; activate() } label: { footerLabel(trf("Dọn tới %@ rác", ByteFormat.string(junkBytes)), icon: "sparkles") }
                 .buttonStyle(FooterLinkStyle())
         } else {
-            Button { state.section = .smartScan; activate() } label: { footerLabel(tr("Mở Vutidy"), icon: "arrow.up.forward.app") }.buttonStyle(FooterLinkStyle())
+            Button { state.section = .smartScan; activate() } label: { footerLabel(tr("Mở Vutidy"), icon: "arrow.up.right", trailing: true) }.buttonStyle(FooterLinkStyle())
         }
     }
 
-    func footerLabel(_ title: String, icon: String) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon).font(.system(size: 13, weight: .semibold))
+    func footerLabel(_ title: String, icon: String, trailing: Bool = false) -> some View {
+        HStack(spacing: 6) {
+            if !trailing { Image(systemName: icon).font(.system(size: 12, weight: .bold)) }
             Text(title).lineLimit(1)
+            if trailing { Image(systemName: icon).font(.system(size: 10.5, weight: .bold)).opacity(0.85) }
         }
     }
 
@@ -596,7 +619,7 @@ extension PopoverView {
     }
 }
 
-/// Nút hành động chính ở chân popover: capsule gradient tím có ánh sáng và viền, cùng ngôn ngữ với các nút chính của app.
+/// Nút ở chân popover: phẳng, không nền; rê chuột thì hiện nền trắng mờ, nhấn thì đậm hơn.
 private struct FooterLinkStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View { FooterLinkBody(configuration: configuration) }
 }
@@ -604,22 +627,28 @@ private struct FooterLinkStyle: ButtonStyle {
 private struct FooterLinkBody: View {
     let configuration: ButtonStyleConfiguration
     @ViewState private var hover = false
-    private let bright = Color(hex: 0x9A8CFF), deep = Color(hex: 0x5A46D8)
     var body: some View {
-        configuration.label.font(.vt(size: 14, weight: .semibold)).foregroundStyle(.white)
-            .shadow(color: .black.opacity(0.25), radius: 1, y: 1)
-            .frame(maxWidth: .infinity, minHeight: 36)
-            .background(
-                ZStack {
-                    Capsule().fill(LinearGradient(colors: [bright, deep], startPoint: .top, endPoint: .bottom))
-                    Capsule().fill(LinearGradient(colors: [Color.white.opacity(hover ? 0.34 : 0.24), .clear], startPoint: .top, endPoint: UnitPoint(x: 0.5, y: 0.55)))
-                }
-            )
-            .overlay(Capsule().strokeBorder(LinearGradient(colors: [Color.white.opacity(0.7), Color.white.opacity(0.12)], startPoint: .top, endPoint: .bottom), lineWidth: 1))
-            .shadow(color: bright.opacity(hover ? 0.65 : 0.4), radius: hover ? 16 : 11, y: 4)
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .contentShape(Capsule())
+        let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
+        configuration.label.font(.vt(size: 14, weight: .semibold)).foregroundStyle(.white.opacity(hover || configuration.isPressed ? 1 : 0.9))
+            .frame(maxWidth: .infinity, minHeight: 34)
+            .background(shape.fill(Color.white.opacity(configuration.isPressed ? 0.18 : (hover ? 0.10 : 0))))
+            .animation(.easeOut(duration: 0.12), value: hover)
+            .contentShape(shape)
             .onHover { hover = $0 }
             .pointerCursor()
+    }
+}
+
+/// Biểu tượng bánh răng phẳng; rê chuột thì hiện nền tròn mờ.
+private struct FooterGearLabel: View {
+    @ViewState private var hover = false
+    var body: some View {
+        Image(systemName: "gearshape.fill").font(.system(size: 14, weight: .semibold))
+            .foregroundStyle(.white.opacity(hover ? 1 : 0.8))
+            .frame(width: 34, height: 34)
+            .background(Circle().fill(Color.white.opacity(hover ? 0.12 : 0)))
+            .animation(.easeOut(duration: 0.12), value: hover)
+            .contentShape(Circle())
+            .onHover { hover = $0 }
     }
 }
