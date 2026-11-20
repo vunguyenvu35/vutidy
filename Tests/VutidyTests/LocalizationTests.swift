@@ -16,6 +16,30 @@ import Foundation
         }
     }
 
+    /// Mọi chuỗi tiếng Việt truyền vào tr()/trf() trong mã nguồn phải có bản dịch: thiếu thì người dùng thấy tiếng Việt dù đã chọn English
+    /// (từng xảy ra với hộp Giới thiệu). Chuỗi có nội suy `\(…)` bị bỏ qua vì không phải khóa bảng.
+    @Test func everyTrKeyUsedInSourcesHasATranslation() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("Sources")
+        let pattern = try NSRegularExpression(pattern: #"\btrf?\(\s*"((?:[^"\\]|\\.)*)""#)
+        let accents = try NSRegularExpression(pattern: "[À-ỹ]")
+        let keys = L10n.allKeys
+        var missing: [String] = []
+        let en = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil)
+        while let u = en?.nextObject() as? URL {
+            guard u.pathExtension == "swift", !u.path.contains("/Localization/"), let text = try? String(contentsOf: u, encoding: .utf8) else { continue }
+            let ns = text as NSString
+            for m in pattern.matches(in: text, range: NSRange(location: 0, length: ns.length)) {
+                // Khóa trong bảng là chuỗi đã giải mã; trong mã nguồn còn dạng literal (\n, \", \\).
+                let key = ns.substring(with: m.range(at: 1))
+                    .replacingOccurrences(of: "\\n", with: "\n").replacingOccurrences(of: "\\\"", with: "\"").replacingOccurrences(of: "\\\\", with: "\\")
+                guard !key.contains("\\("), accents.firstMatch(in: key, range: NSRange(location: 0, length: (key as NSString).length)) != nil else { continue }
+                if !keys.contains(key) { missing.append("\(u.lastPathComponent): \(key.prefix(70))") }
+            }
+        }
+        #expect(missing.isEmpty, "thiếu bản dịch: \(missing.prefix(5))")
+    }
+
     @Test func placeholderCountsMatchKey() {
         for lang in [Language.en, .ja, .zh] {
             for (k, v) in L10n.table(lang) {

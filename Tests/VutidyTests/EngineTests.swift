@@ -232,6 +232,27 @@ import Foundation
         #expect(rep.sha256 == "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824")   // SHA-256 của "hello"
         #expect(rep.fromInternet == false && rep.signature == .notApplicable && rep.level == .ok)
     }
+    @Test func pmsetAccessoryOutputIsParsed() {
+        let out = """
+        Now drawing from 'AC Power'
+         -InternalBattery-0 (id=36634723)\t100%; charged; 0:00 remaining present: true
+         -MX Anywhere 3S (id=50336671)\t85%;
+         -Magic Keyboard (id=1234)\t7%; discharging
+        """
+        let b = ConnectedDevices.parseAccps(out)
+        #expect(b == ["MX Anywhere 3S": 85, "Magic Keyboard": 7])
+        #expect(ConnectedDevices.parseAccps("garbage\n -x (id=1) no percent").isEmpty)
+    }
+    @Test func accessoryBatteryFillsOnlyMissingPercentByName() {
+        let devices = [BluetoothDevice(name: "MX Anywhere 3S", batteryPercent: nil, kind: "Mouse"),
+                       BluetoothDevice(name: "AirPods", batteryPercent: 40, kind: "Headphones"),
+                       BluetoothDevice(name: "Other", batteryPercent: nil)]
+        let out = ConnectedDevices.merge(devices, with: ["mx anywhere 3s": 85, "AirPods": 99])
+        #expect(out[0].batteryPercent == 85)     // thiếu → điền từ nguồn điện, không phân biệt hoa thường
+        #expect(out[1].batteryPercent == 40)     // đã có → giữ nguyên
+        #expect(out[2].batteryPercent == nil)    // không có nguồn nào → vẫn trống
+        #expect(out[0].kind == "Mouse")
+    }
     @Test func dismissHidesUntilWorse() {
         let d = UserDefaults(suiteName: "vutidy-test-\(UUID().uuidString)")!
         let store = DismissStore(defaults: d)

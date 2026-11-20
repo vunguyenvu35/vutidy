@@ -180,6 +180,7 @@ enum Japanese {
         "Không tìm thấy mục trong Quarantine": "隔離内に項目が見つかりません",
         "Kiểm tra": "確認",
         "Kiểm tra lại": "再確認",
+        "Dọn dẹp và tối ưu Mac an toàn: mọi thao tác đều có xem trước và hoàn tác được.\nKhông thu thập dữ liệu, mọi xử lý diễn ra trên máy của bạn.": "Macを安全にクリーンアップ・最適化：すべての操作はプレビューでき、元に戻せます。\nデータは収集せず、処理はすべてMac上で行われます。",
         "App lớn có thể mất vài chục giây vì phải kiểm tra chữ ký và quét toàn bộ bên trong.": "大きなアプリは、署名と内部すべてを確認するため数十秒かかることがあります。",
         "Ứng dụng macOS (app bundle)": "macOSアプリ（バンドル）",
         "Thư mục": "フォルダ",

@@ -496,13 +496,14 @@ struct PopoverView: View {
 
     /// Một dòng gọn: biểu tượng · tên · pin (nếu thiết bị báo được). Loại thiết bị hiện ở tooltip.
     func deviceRow(_ d: BluetoothDevice, tint: Color) -> some View {
-        HStack(spacing: 9) {
+        HStack(spacing: 7) {
             Image(systemName: deviceSymbol(d.kind)).font(.system(size: 14, weight: .medium)).foregroundStyle(.white)
-                .frame(width: 22, height: 22)
-            Text(d.name).font(.vt(size: 13, weight: .medium)).foregroundStyle(.white).lineLimit(1).truncationMode(.tail)
-            Spacer(minLength: 4)
+                .frame(width: 20, height: 22)
+            Text(d.name).font(.vt(size: 12.5, weight: .medium)).foregroundStyle(.white).lineLimit(1).truncationMode(.tail)
+                .minimumScaleFactor(0.85)                              // thu nhỏ nhẹ trước khi cắt: ô hẹp mà còn chỗ cho phần trăm pin
+            Spacer(minLength: 2)
             if let b = d.batteryPercent {
-                Text("\(b)%").font(.vt(size: 12.5, weight: .semibold)).monospacedDigit()
+                Text("\(b)%").font(.vt(size: 12, weight: .semibold)).monospacedDigit().fixedSize()
                     .foregroundStyle(b <= 20 ? Theme.danger : Theme.Text.primary)
             }
         }
