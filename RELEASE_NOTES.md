@@ -1,5 +1,13 @@
 <p align="center"><img src="docs/assets/brand/logo-mark-256.png" alt="Vutidy" width="88"></p>
 
+# Vutidy 0.9.1
+
+Release date: 2026-11-20 · Platform: macOS 13 or later (only tried on Apple Silicon and one Intel Mac) · Status: **pre-release**. The [known issues of 0.1.0](#vutidy-010) still apply.
+
+## What's new in 0.9.1
+
+- **No change to the app.** This release only fixes the developer build: `make build` now also copies the app for your Mac to `dist/Vutidy.app` and replaces the old one, so opening that path no longer runs a stale version. The separate `dist/arm64` and `dist/x86_64` apps are still made for packaging.
+
 # Vutidy 0.9.0
 
 Release date: 2026-11-20 · Platform: macOS 13 or later (only tried on Apple Silicon and one Intel Mac) · Status: **pre-release**. The [known issues of 0.1.0](#vutidy-010) still apply.
