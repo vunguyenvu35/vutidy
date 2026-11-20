@@ -1,5 +1,17 @@
 <p align="center"><img src="docs/assets/brand/logo-mark-256.png" alt="Vutidy" width="88"></p>
 
+# Vutidy 0.10.0
+
+Release date: 2026-11-20 · Platform: macOS 13 or later (only tried on Apple Silicon and one Intel Mac) · Status: **pre-release**. The [known issues of 0.1.0](#vutidy-010) still apply.
+
+## What's new in 0.10.0
+
+- **Updates are checked while Vutidy keeps running.** It used to look for a new version only when it opened. Now, once every 24 hours, it also checks while it sits in the menu bar, so a Mac that is never restarted still hears about new versions. Turn it off with *Settings → General → Check for updates automatically*.
+- **Optional automatic install.** *Settings → General → Install updates automatically* (off by default). When a new version is found, Vutidy downloads it, checks the SHA-256 and the signature (the same checks as the **Update and restart** button), installs it and reopens. It only does this when you are not in the app (Vutidy is not the app in front) and nothing is scanning, cleaning or checking a file; otherwise it waits and tries again 10 minutes later. If an automatic install fails it tells you once and does not retry that version by itself, and **Update and restart** stays available.
+- **A note after updating.** The first launch of the new version says *Vutidy updated to <version>*.
+
+It is off by default for a reason: builds that are not signed with a Developer ID get a new signature with every version, so macOS may ask you to grant **Full Disk Access** again after each update. See [Updating Vutidy](docs/user-guide/16-updating-vutidy.md).
+
 # Vutidy 0.9.2
 
 Release date: 2026-11-20 · Platform: macOS 13 or later (only tried on Apple Silicon and one Intel Mac) · Status: **pre-release**. The [known issues of 0.1.0](#vutidy-010) still apply.
