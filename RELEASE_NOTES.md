@@ -1,5 +1,15 @@
 <p align="center"><img src="docs/assets/brand/logo-mark-256.png" alt="Vutidy" width="88"></p>
 
+# Vutidy 0.9.0
+
+Release date: 2026-11-20 · Platform: macOS 13 or later (only tried on Apple Silicon and one Intel Mac) · Status: **pre-release**. The [known issues of 0.1.0](#vutidy-010) still apply.
+
+## What's new in 0.9.0
+
+- **Check a file from the Real-time Monitor.** *Protection → Real-time Monitor → Check a file…* lets you pick any file or app and shows a verdict with the reasons, its code signature (Apple, App Store, notarized, not notarized, unsigned or broken), what Gatekeeper says, where it was downloaded from, its SHA-256 and, if ClamAV is installed, a ClamAV result. From there you can **Quarantine** it (restorable) or **Reveal in Finder**. It only says *Worth a closer look* when an executable, script or installer downloaded from the Internet also has a risk sign (unsigned, not notarized, rejected by Gatekeeper), and *dangerous* for a broken signature or a ClamAV match, so apps you built yourself are not flagged. Everything runs on your Mac; nothing is uploaded. Big apps such as a browser can take half a minute.
+- **Battery of Bluetooth accessories.** The *Devices* tile of the menu bar popover (and its detail panel) now shows the battery of devices that macOS reports as a power source but `system_profiler` does not, for example Logitech mice and keyboards. A device that offers no battery still shows only its name.
+- **The About window follows your language.** Its description had no translation and always appeared in Vietnamese. A new test now fails when any text in the app has no translation.
+
 # Vutidy 0.8.0
 
 Release date: 2026-11-20 · Platform: macOS 13 or later (only tried on Apple Silicon and one Intel Mac) · Status: **pre-release**. The [known issues of 0.1.0](#vutidy-010) still apply.
