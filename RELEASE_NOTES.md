@@ -1,5 +1,13 @@
 <p align="center"><img src="docs/assets/brand/logo-mark-256.png" alt="Vutidy" width="88"></p>
 
+# Vutidy 0.9.2
+
+Release date: 2026-11-20 · Platform: macOS 13 or later (only tried on Apple Silicon and one Intel Mac) · Status: **pre-release**. The [known issues of 0.1.0](#vutidy-010) still apply.
+
+## What's new in 0.9.2
+
+- **The Protection card names the file.** When the real-time monitor flags something, the card in the menu bar popover used to say only "1 item(s) to review". It now says which file ("To review: <name>"), in amber. Open *Protection* to quarantine, reveal or dismiss it. When the file is gone the alert disappears by itself and the card goes back to *Protected*.
+
 # Vutidy 0.9.1
 
 Release date: 2026-11-20 · Platform: macOS 13 or later (only tried on Apple Silicon and one Intel Mac) · Status: **pre-release**. The [known issues of 0.1.0](#vutidy-010) still apply.
