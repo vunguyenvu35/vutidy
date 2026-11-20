@@ -181,6 +181,7 @@ enum English {
         "Không tìm thấy mục trong Quarantine": "Item not found in Quarantine",
         "Kiểm tra": "Check",
         "Kiểm tra lại": "Check again",
+        "Cần xem: %@": "To review: %@",
         "Dọn dẹp và tối ưu Mac an toàn: mọi thao tác đều có xem trước và hoàn tác được.\nKhông thu thập dữ liệu, mọi xử lý diễn ra trên máy của bạn.": "Clean and optimize your Mac safely: every action has a preview and can be undone.\nNo data is collected; everything is processed on your Mac.",
         "App lớn có thể mất vài chục giây vì phải kiểm tra chữ ký và quét toàn bộ bên trong.": "Big apps can take a few dozen seconds because the signature and everything inside are checked.",
         "Ứng dụng macOS (app bundle)": "macOS app (bundle)",

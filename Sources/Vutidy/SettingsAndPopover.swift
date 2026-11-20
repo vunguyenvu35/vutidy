@@ -218,9 +218,15 @@ struct PopoverView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(on ? tr("Giám sát malware thời gian thực đang bật") : tr("Giám sát malware thời gian thực đang tắt"))
                     .font(.vt(size: 13.5, weight: .semibold)).foregroundStyle(.white)
-                Text(on ? (state.lastScanned.map { trf("File vừa quét: %@", URL(fileURLWithPath: $0).lastPathComponent) } ?? tr("Đang chờ file mới"))
-                        : tr("Bật Real-time để theo dõi file mới"))
-                    .font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary).lineLimit(1)
+                // Có cảnh báo thì nói rõ là file nào (nếu chỉ hiện "1 mục cần xem" thì không biết phải xem gì).
+                if let a = state.alerts.first {
+                    Text(trf("Cần xem: %@", URL(fileURLWithPath: a.path).lastPathComponent))
+                        .font(Theme.Font.caption).foregroundStyle(Theme.Review.base).lineLimit(1).truncationMode(.middle)
+                } else {
+                    Text(on ? (state.lastScanned.map { trf("File vừa quét: %@", URL(fileURLWithPath: $0).lastPathComponent) } ?? tr("Đang chờ file mới"))
+                            : tr("Bật Real-time để theo dõi file mới"))
+                        .font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary).lineLimit(1)
+                }
             }
             HStack {
                 // Đếm từng giây: TimelineView vẽ lại mỗi giây nên 15s → 16s → 17s, không nhảy cóc theo lần vẽ lại của popover.

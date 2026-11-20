@@ -181,6 +181,7 @@ enum Chinese {
         "Không tìm thấy mục trong Quarantine": "在隔离区中未找到该项目",
         "Kiểm tra": "检查",
         "Kiểm tra lại": "重新检查",
+        "Cần xem: %@": "需查看：%@",
         "Dọn dẹp và tối ưu Mac an toàn: mọi thao tác đều có xem trước và hoàn tác được.\nKhông thu thập dữ liệu, mọi xử lý diễn ra trên máy của bạn.": "安全地清理并优化你的 Mac：每个操作都可预览，也可撤销。\n不收集任何数据，所有处理都在你的 Mac 上完成。",
         "App lớn có thể mất vài chục giây vì phải kiểm tra chữ ký và quét toàn bộ bên trong.": "大型应用需要检查签名并扫描内部全部内容，可能要几十秒。",
         "Ứng dụng macOS (app bundle)": "macOS 应用（包）",
