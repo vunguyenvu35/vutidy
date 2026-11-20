@@ -149,6 +149,12 @@ final class AppState: ObservableObject {
     @Published var autoCheckApps: Bool = UserDefaults.standard.object(forKey: "autoCheckApps") as? Bool ?? true {
         didSet { UserDefaults.standard.set(autoCheckApps, forKey: "autoCheckApps"); if autoCheckApps { startAppUpdateSchedule() } }
     }
+    /// Tự cài bản mới khi không dùng app (tắt mặc định: bản chưa ký bằng Developer ID có thể mất quyền Full Disk Access sau mỗi lần cập nhật).
+    @Published var autoInstallUpdates: Bool = UserDefaults.standard.bool(forKey: "autoInstallUpdates") {
+        didSet { UserDefaults.standard.set(autoInstallUpdates, forKey: "autoInstallUpdates") }
+    }
+    var selfUpdateTask: Task<Void, Never>?
+    var autoInstallTried: AppVersion?
     @Published var notifyTrash: Bool = UserDefaults.standard.object(forKey: "notifyTrash") as? Bool ?? true {
         didSet { UserDefaults.standard.set(notifyTrash, forKey: "notifyTrash") }
     }
@@ -302,11 +308,9 @@ final class AppState: ObservableObject {
             MainActor.assumeIsolated { self?.checkFDA() }
         }
         if realtimeAtLaunch { setRealtime(true) }
-        // Tự kiểm tra bản mới tối đa mỗi 24 giờ, chỉ khi chạy từ .app (bản swift run không tự cập nhật được).
-        if autoCheckUpdates, AppDelegate.canRelaunch, ProcessInfo.processInfo.environment["VUTIDY_PAGE"] == nil,
-           Date().timeIntervalSince(lastUpdateCheck ?? .distantPast) > 24 * 3600 {
-            Task { @MainActor in try? await Task.sleep(nanoseconds: 4_000_000_000); await self.checkForUpdates(silent: true) }
-        }
+        // Tự kiểm tra bản mới tối đa mỗi 24 giờ (cả khi app chạy lâu) và, nếu bật, tự cài lúc rảnh; chỉ khi chạy từ .app.
+        if ProcessInfo.processInfo.environment["VUTIDY_PAGE"] == nil { startSelfUpdateWatch() }
+        announceUpdateIfAny()
         if ProcessInfo.processInfo.environment["VUTIDY_PAGE"] == nil { startAppUpdateSchedule(); startTrashWatch() }
         // Thử luồng cập nhật: VUTIDY_UPDATE_FEED=file://… (xem UpdateChecker) + VUTIDY_UPDATE_AUTOINSTALL=1 tự cài khi có bản mới.
         if ProcessInfo.processInfo.environment["VUTIDY_UPDATE_FEED"] != nil {

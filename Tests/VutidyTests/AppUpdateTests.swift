@@ -12,6 +12,28 @@ import Foundation
         #expect(AppVersion("1.x.0") == nil)
     }
 
+    private func info(_ tag: String) -> ReleaseInfo {
+        ReleaseInfo(version: AppVersion(tag)!, tag: tag, notes: "", pageURL: URL(string: "https://example.com")!,
+                    zipURL: URL(string: "https://example.com/z.zip")!, zipName: "vutidy-\(tag)-macos.zip", sumsURL: nil, prerelease: false)
+    }
+
+    @Test func autoInstallOnlyWhenEnabledIdleAndNotInFront() {
+        let r = info("0.9.3")
+        func ok(enabled: Bool = true, canRelaunch: Bool = true, available: ReleaseInfo? = r, tried: AppVersion? = nil,
+                busy: Bool = false, active: Bool = false) -> Bool {
+            AutoInstallPolicy.shouldInstall(enabled: enabled, canRelaunch: canRelaunch, available: available, alreadyTried: tried,
+                                            busyWithWork: busy, appIsActive: active)
+        }
+        #expect(ok())
+        #expect(!ok(enabled: false))                     // người dùng chưa bật
+        #expect(!ok(canRelaunch: false))                 // chạy bằng swift run, không phải .app
+        #expect(!ok(available: nil))                     // chưa có bản mới
+        #expect(!ok(busy: true))                         // đang quét/dọn/tải
+        #expect(!ok(active: true))                       // người dùng đang ở trong Vutidy
+        #expect(!ok(tried: AppVersion("0.9.3")))         // bản này đã thử và lỗi: không tự thử lại
+        #expect(ok(tried: AppVersion("0.9.2")))          // bản cũ hơn đã thử không chặn bản mới hơn
+    }
+
     private func release(_ tag: String, draft: Bool = false, assets: [String] = []) -> [String: Any] {
         ["tag_name": tag, "draft": draft, "prerelease": true, "html_url": "https://example.com/\(tag)", "body": "notes \(tag)",
          "assets": assets.map { ["name": $0, "browser_download_url": "https://example.com/dl/\($0)"] }]

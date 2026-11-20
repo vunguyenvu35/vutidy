@@ -267,3 +267,15 @@ public enum AppInstaller {
         try p.run()
     }
 }
+
+/// Khi nào Vutidy được tự cài bản mới (nếu người dùng bật). Tự cài là đóng app rồi mở lại, nên chỉ làm khi không làm phiền ai.
+public enum AutoInstallPolicy {
+    /// - `busyWithWork`: đang quét, dọn, kiểm tra malware/file hay đang tải bản cập nhật.
+    /// - `appIsActive`: Vutidy đang là app phía trước, tức người dùng có thể đang thao tác trong đó.
+    /// - `alreadyTried`: bản đã thử tự cài (thất bại) trong phiên này, không thử lại để khỏi tải đi tải lại.
+    public static func shouldInstall(enabled: Bool, canRelaunch: Bool, available: ReleaseInfo?, alreadyTried: AppVersion?,
+                                     busyWithWork: Bool, appIsActive: Bool) -> Bool {
+        guard enabled, canRelaunch, let r = available, r.version != alreadyTried else { return false }
+        return !busyWithWork && !appIsActive
+    }
+}

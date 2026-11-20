@@ -111,6 +111,5 @@ To try the whole flow without publishing, point it at a local JSON file shaped l
 ## Limits
 
 - The workflow could not be run from the machine where it was written. Its YAML is valid and the packaging scripts were run locally, but the first real run on GitHub may still need a fix. Try it with *Run workflow* before relying on it.
-- There is **no self-update** in the app yet: users install a new version from the release page.
 - The signing and notarization steps are untested until the secrets exist.
 - The universal build needs a recent Xcode on the runner (`macos-latest` has one).

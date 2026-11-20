@@ -43,9 +43,20 @@ You do not need to drag anything into *Applications*. Your settings, shortcuts a
 
 ## Automatic checks
 
-By default Vutidy checks **once every 24 hours**, a few seconds after it opens. If a newer version exists, a notification appears in the bottom-right corner with an **Update now** button that takes you to the card above. If there is nothing new, or the check fails (for example you are offline), it says nothing.
+By default Vutidy checks **once every 24 hours**: a few seconds after it opens, and again while it keeps running in the menu bar (it looks at the clock every 10 minutes). If a newer version exists, a notification appears in the bottom-right corner with an **Update now** button that takes you to the card above. If there is nothing new, or the check fails (for example you are offline), it says nothing.
 
 Turn this off with **Check for updates automatically** in the same card. The **Check** button and the menu item keep working.
+
+### Install updates automatically (off by default)
+
+Turn on **Install updates automatically** in the same card and Vutidy goes one step further: when a newer version is found it downloads it, runs all the checks below, installs it and reopens, with no button to press. It only does this when it will not get in your way:
+
+- Vutidy is **not the app in front** (you are not using it), and
+- nothing is **scanning, cleaning or checking a file**, and no update is already downloading.
+
+Otherwise it waits and tries again 10 minutes later. If an automatic install fails, Vutidy tells you once, does not retry that version on its own, and leaves the **Update and restart** button for you. After an update, the first launch of the new version says *Vutidy updated to <version>*.
+
+It is off by default because of signing: a build that is **not signed with a Developer ID** gets a new signature with every version, and macOS may then ask you to grant **Full Disk Access** again after each update. Once builds are signed and notarized with one Developer ID, that stops being an issue.
 
 Automatic checks only run when Vutidy is started as the real app (`Vutidy.app`). A copy started with `swift run` does not check by itself.
 
