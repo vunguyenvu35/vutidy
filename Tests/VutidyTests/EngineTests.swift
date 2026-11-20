@@ -192,6 +192,15 @@ import Foundation
         var healthy = SystemContext(disk: DiskInfo(total: 1000, available: 600, availableImportant: 600)); healthy.lastDeepScan = Date(); healthy.lastMalwareCheck = Date()
         #expect(RecommendationEngine().cards(for: healthy).isEmpty)
     }
+    @Test func fullTrashGetsACardAboveFiveGB() {
+        var ctx = SystemContext(disk: DiskInfo(total: 1000, available: 600, availableImportant: 600))
+        ctx.lastDeepScan = Date(); ctx.lastMalwareCheck = Date()
+        ctx.trashBytes = 5_000_000_000
+        #expect(!RecommendationEngine().cards(for: ctx).contains { $0.id == "trash-full" })   // đúng 5 GB: chưa báo
+        ctx.trashBytes = 6_000_000_000
+        let card = RecommendationEngine().cards(for: ctx).first { $0.id == "trash-full" }
+        #expect(card?.action == .openTrash)
+    }
     @Test func dismissHidesUntilWorse() {
         let d = UserDefaults(suiteName: "vutidy-test-\(UUID().uuidString)")!
         let store = DismissStore(defaults: d)

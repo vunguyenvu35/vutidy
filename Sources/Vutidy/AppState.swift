@@ -44,7 +44,7 @@ enum Page: String, CaseIterable, Identifiable {
 }
 
 /// Nút hành động tuỳ chọn của thông báo (ngoài "Hoàn tác").
-enum ToastAction: Equatable { case openUpdate, openApps }
+enum ToastAction: Equatable { case openUpdate, openApps, openTrash }
 
 struct AppToast: Identifiable, Equatable {
     let id = UUID()
@@ -149,6 +149,11 @@ final class AppState: ObservableObject {
     @Published var autoCheckApps: Bool = UserDefaults.standard.object(forKey: "autoCheckApps") as? Bool ?? true {
         didSet { UserDefaults.standard.set(autoCheckApps, forKey: "autoCheckApps"); if autoCheckApps { startAppUpdateSchedule() } }
     }
+    @Published var notifyTrash: Bool = UserDefaults.standard.object(forKey: "notifyTrash") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(notifyTrash, forKey: "notifyTrash") }
+    }
+    @Published var trashBytes: Int64 = 0
+    var trashWatchTask: Task<Void, Never>?
     @Published var outdatedApps: [OutdatedApp] = []
     @Published var outdatedLoading = false
     @Published var lastAppsCheck: Date? = UserDefaults.standard.object(forKey: "lastAppsCheck") as? Date
@@ -284,6 +289,10 @@ final class AppState: ObservableObject {
         Task { await refreshQuarantine(purgeExpired: true) }
         Task.detached(priority: .utility) { ProcessRunner.warmUpLoginPath() }   // PATH của login shell: để thấy claude/agy/nvm… khi mở app từ Finder
         startPolling()
+        SystemNotifier.shared.open = { [weak self] raw in
+            guard let self, let page = Page(rawValue: raw) else { return }
+            self.section = page; self.showMainWindow()
+        }
         installKeyMonitor()
         renderPopoverSnapshotIfRequested()
         // Quay lại app từ System Settings → kiểm tra lại quyền để banner tự biến mất khi đã cấp.
@@ -296,7 +305,7 @@ final class AppState: ObservableObject {
            Date().timeIntervalSince(lastUpdateCheck ?? .distantPast) > 24 * 3600 {
             Task { @MainActor in try? await Task.sleep(nanoseconds: 4_000_000_000); await self.checkForUpdates(silent: true) }
         }
-        if ProcessInfo.processInfo.environment["VUTIDY_PAGE"] == nil { startAppUpdateSchedule() }
+        if ProcessInfo.processInfo.environment["VUTIDY_PAGE"] == nil { startAppUpdateSchedule(); startTrashWatch() }
         // Thử luồng cập nhật: VUTIDY_UPDATE_FEED=file://… (xem UpdateChecker) + VUTIDY_UPDATE_AUTOINSTALL=1 tự cài khi có bản mới.
         if ProcessInfo.processInfo.environment["VUTIDY_UPDATE_FEED"] != nil {
             Task { @MainActor in
@@ -379,6 +388,7 @@ final class AppState: ObservableObject {
         ctx.devJunkSafeBytes = (results["dev-junk"] ?? []).filter { $0.safety == .safe }.reduce(0) { $0 + $1.allocatedSize }
         ctx.loginItems = smart?.launchItems.filter { $0.scope == .userAgent }.count ?? 0
         ctx.lastDeepScan = lastDeepScan
+        ctx.trashBytes = trashBytes
         ctx.lastMalwareCheck = malwareReport?.date
         recommendations = RecommendationEngine().cards(for: ctx, dismissed: dismissStore)
     }
@@ -599,6 +609,7 @@ final class AppState: ObservableObject {
         if !report.failures.isEmpty { message += trf(" · %@ lỗi", "\(report.failures.count)") }
         if !skippedForApps.isEmpty { message += " · " + trf("Bỏ qua mục của %@ vì ứng dụng chưa thoát", skippedForApps.map(\.name).joined(separator: ", ")) }
         if !quiet { notify(message, report.failures.isEmpty ? .success : .warning, undo: undo) }
+        if id == "trash" { Task { await refreshTrashSize() } }
         pollSystem()
     }
 
@@ -681,6 +692,7 @@ final class AppState: ObservableObject {
         case .runDeepScan: section = .protection
         case .openSmartScan: section = .smartScan
         case .openMalware: section = .malware
+        case .openTrash: section = .trash
         }
         showMainWindow()
     }

@@ -184,6 +184,7 @@ struct PopoverView: View {
         case .openOptimization, .openBattery: return Page.optimization.palette.glow
         case .runDeepScan, .openMalware: return Page.protection.palette.glow
         case .openSmartScan: return Page.smartScan.palette.glow
+        case .openTrash: return Page.trash.palette.glow
         }
     }
 

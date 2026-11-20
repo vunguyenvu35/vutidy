@@ -314,6 +314,10 @@ private struct ToastCard: View {
                 Button(tr("Cập nhật ngay")) { state.openSettings(.general); state.dismissToast(toast.id) }
                     .buttonStyle(TextActionStyle(color: kind.color))
             }
+            if toast.action == .openTrash {
+                Button(tr("Dọn thùng rác")) { state.section = .trash; state.dismissToast(toast.id) }
+                    .buttonStyle(TextActionStyle(color: kind.color))
+            }
             if toast.action == .openApps {
                 Button(tr("Mở Cập nhật")) { state.section = .updater; state.dismissToast(toast.id) }
                     .buttonStyle(TextActionStyle(color: kind.color))

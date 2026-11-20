@@ -271,8 +271,13 @@ struct SettingsOverlay: View {
                 }
                 SettingRow(title: tr("Gồm cả mục không hoàn tác được"),
                            desc: tr("Dọn luôn Docker, Go, Homebrew (lệnh của công cụ) và Thùng rác khi dọn tự động. Những mục này xóa vĩnh viễn, không khôi phục được. Mục cần xem lại vẫn không bao giờ tự dọn."),
-                           showDivider: false) {
+                           showDivider: true) {
                     SwitchRow(isOn: $state.autoCleanIrreversible, label: tr("Gồm cả mục không hoàn tác được")).disabled(!state.autoCleanAfterScan)
+                }
+                SettingRow(title: tr("Báo khi Thùng rác đầy"),
+                           desc: tr("Khi Thùng rác vượt 5 GB, Vutidy gửi thông báo và gợi ý dọn. Chỉ báo, không tự xóa. Cần Full Disk Access để đo."),
+                           showDivider: false) {
+                    SwitchRow(isOn: $state.notifyTrash, label: tr("Báo khi Thùng rác đầy"))
                 }
             }
             SettingsGroup(title: tr("Tư vấn AI")) {

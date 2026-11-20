@@ -3,7 +3,7 @@ import CoreKit
 
 public enum RecommendationAction: Sendable, Hashable {
     case openCleanup, openSpaceLens, openDevJunk, openUpdater, openUninstaller, openOptimization, openBattery, runDeepScan, thinSnapshots
-    case openSmartScan, openMalware
+    case openSmartScan, openMalware, openTrash
 }
 
 public struct Recommendation: Identifiable, Sendable, Hashable {
@@ -23,6 +23,8 @@ public struct SystemContext: Sendable {
     public var memory: MemoryInfo?
     public var devJunkSafeBytes: Int64 = 0
     public var outdatedApps: Int = 0
+    /// Dung lượng Thùng rác (0 = chưa đo được, ví dụ thiếu Full Disk Access).
+    public var trashBytes: Int64 = 0
     public var unusedApps: Int = 0
     public var loginItems: Int = 0
     public var lastDeepScan: Date?
@@ -36,6 +38,7 @@ public struct RecommendationThresholds: Codable, Sendable {
     public var diskFreeFraction: Double = 0.10
     public var deepScanDays: Int = 7
     public var devJunkBytes: Int64 = 5_000_000_000
+    public var trashBytes: Int64 = 5_000_000_000
     public var loginItems: Int = 15
     public var batteryHealth: Double = 0.80
     public var memoryAvailableFraction: Double = 0.10
@@ -81,6 +84,10 @@ public struct DefaultRecommendations: RecommendationProvider {
         if c.lastMalwareCheck == nil || Date().timeIntervalSince(c.lastMalwareCheck!) > Double(t.deepScanDays * 2) * 86_400 {
             r.append(.init(id: "privacy-review", priority: 35, icon: "hand.raised", title: tr("Xem lại app nào được truy cập dữ liệu nhạy cảm (đĩa, màn hình, bàn phím)."),
                            actionTitle: tr("Xem ngay"), action: .openMalware, severity: 1))
+        }
+        if c.trashBytes > t.trashBytes {
+            r.append(.init(id: "trash-full", priority: 88, icon: "trash", title: trf("Thùng rác đang chiếm %@, nên dọn.", "\(ByteFormat.string(c.trashBytes))"),
+                           actionTitle: tr("Dọn thùng rác"), action: .openTrash, severity: Double(c.trashBytes)))
         }
         if c.devJunkSafeBytes > t.devJunkBytes {
             r.append(.init(id: "dev-junk", priority: 80, icon: "hammer", title: trf("Dev Junk có thể dọn: %@.", "\(ByteFormat.string(c.devJunkSafeBytes))"),
