@@ -1,5 +1,13 @@
 <p align="center"><img src="docs/assets/brand/logo-mark-256.png" alt="Vutidy" width="88"></p>
 
+# Vutidy 0.8.0
+
+Release date: 2026-11-20 · Platform: macOS 13 or later (only tried on Apple Silicon and one Intel Mac) · Status: **pre-release**. The [known issues of 0.1.0](#vutidy-010) still apply.
+
+## What's new in 0.8.0
+
+- **A warning when the Trash gets full.** When the Trash (and the Trash of external drives) goes over 5 GB, Vutidy sends a macOS notification and shows a toast with a button to empty it; the menu bar carousel gets a *Trash* card too. It measures every 10 minutes and warns at most once every 3 days, unless the Trash grew by half since the last warning. It only warns and never deletes by itself. macOS asks once whether Vutidy may send notifications, and measuring the Trash needs Full Disk Access. Switch the warning off in *Settings → Cleanup → Warn when the Trash is full*.
+
 # Vutidy 0.7.0
 
 Release date: 2026-11-19 · Platform: macOS 13 or later (only tried on Apple Silicon and one Intel Mac) · Status: **pre-release**. The [known issues of 0.1.0](#vutidy-010) still apply.
