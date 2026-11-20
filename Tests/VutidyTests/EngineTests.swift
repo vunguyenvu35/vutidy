@@ -201,6 +201,37 @@ import Foundation
         let card = RecommendationEngine().cards(for: ctx).first { $0.id == "trash-full" }
         #expect(card?.action == .openTrash)
     }
+    @Test func fileAssessmentFlagsRiskyDownloadsOnly() {
+        // sạch: app đã công chứng, tải từ Internet
+        var r = FileInspector.assess(signature: .notarized, fromInternet: true, isScript: false, isInstaller: false, gatekeeperRejected: false, clam: .clean)
+        #expect(r.0 == .ok && r.1.isEmpty)
+        // ảnh/tài liệu bình thường (không phải file thực thi) tải từ Internet: không có gì để cảnh báo
+        r = FileInspector.assess(signature: .notApplicable, fromInternet: true, isScript: false, isInstaller: false, gatekeeperRejected: false, clam: .skipped)
+        #expect(r.0 == .ok)
+        // thực thi chưa ký từ Internet: xem lại
+        r = FileInspector.assess(signature: .unsigned, fromInternet: true, isScript: false, isInstaller: false, gatekeeperRejected: false, clam: .clean)
+        #expect(r.0 == .review && r.1.count == 1)
+        // chưa ký nhưng build tại máy (không có dấu Internet): không cảnh báo
+        r = FileInspector.assess(signature: .unsigned, fromInternet: false, isScript: false, isInstaller: false, gatekeeperRejected: true, clam: .clean)
+        #expect(r.0 == .ok)
+        // script từ Internet: xem lại
+        r = FileInspector.assess(signature: .notApplicable, fromInternet: true, isScript: true, isInstaller: false, gatekeeperRejected: false, clam: .skipped)
+        #expect(r.0 == .review)
+        // chữ ký hỏng hoặc ClamAV khớp: nguy hiểm bất kể nguồn
+        r = FileInspector.assess(signature: .tampered, fromInternet: false, isScript: false, isInstaller: false, gatekeeperRejected: false, clam: .clean)
+        #expect(r.0 == .danger)
+        r = FileInspector.assess(signature: .notApplicable, fromInternet: false, isScript: false, isInstaller: false, gatekeeperRejected: false, clam: .found("Eicar"))
+        #expect(r.0 == .danger)
+    }
+    @Test func inspectReadsSizeHashAndMissingDownloadMark() async throws {
+        let f = Fixture(); defer { f.cleanup() }
+        let u = f.file("note.txt")
+        try "hello".write(to: u, atomically: true, encoding: .utf8)
+        let rep = await FileInspector.inspect(u, useClamAV: false)
+        #expect(rep.size == 5 && rep.name == "note.txt")
+        #expect(rep.sha256 == "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824")   // SHA-256 của "hello"
+        #expect(rep.fromInternet == false && rep.signature == .notApplicable && rep.level == .ok)
+    }
     @Test func dismissHidesUntilWorse() {
         let d = UserDefaults(suiteName: "vutidy-test-\(UUID().uuidString)")!
         let store = DismissStore(defaults: d)

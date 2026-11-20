@@ -100,6 +100,18 @@ public enum ClamAV {
         return r.ok ? .success(()) : .failure(.failed(String((r.stderr + r.stdout).trimmingCharacters(in: .whitespacesAndNewlines).suffix(300))))
     }
 
+    /// Quét một file (hoặc app) do người dùng chọn.
+    public static func scan(file path: String) async -> FileReport.Clam {
+        guard ProcessRunner.which("clamscan") != nil else { return .notInstalled }
+        guard !databaseFiles().isEmpty else { return .noDatabase }
+        let r = await ProcessRunner.run(scanArguments(database: dataDir, targets: [path]), timeout: 600)
+        switch r.status {
+        case 0: return .clean
+        case 1: return parseFound(r.stdout).first.map { .found($0.signature) } ?? .clean
+        default: return .skipped
+        }
+    }
+
     /// Quét các thư mục trong `scanTargets`. Mã thoát của clamscan: 0 sạch, 1 có phát hiện, còn lại là lỗi.
     public static func scan() async -> Result<[SecurityFinding], Failure> {
         guard ProcessRunner.which("clamscan") != nil else { return .failure(.notInstalled) }

@@ -466,7 +466,11 @@ struct ProtectionView: View {
             }.padding(14).frame(maxWidth: .infinity, alignment: .leading)
             .background(RoundedRectangle(cornerRadius: 12).fill(Theme.Review.tint))
 
-            SectionCard(title: tr("Real-time Monitor"), symbol: "dot.radiowaves.left.and.right", tint: Theme.Signal.base) {
+            SectionCard(title: tr("Real-time Monitor"), symbol: "dot.radiowaves.left.and.right", tint: Theme.Signal.base, trailing: {
+                Button { state.pickFileToCheck() } label: { IconLabel(title: tr("Kiểm tra file…"), symbol: "magnifyingglass") }
+                    .buttonStyle(SecondaryButtonStyle()).disabled(state.fileChecking)
+                    .help(tr("Chọn một file hoặc app để xem chữ ký, nguồn tải về và mã SHA-256"))
+            }) {
                 ListRow(title: state.realtimeOn ? tr("Real-time bật") : tr("Real-time tắt"),
                         subtitle: state.lastScanned.map { trf("Lần quét gần nhất: %@", $0) } ?? tr("Theo dõi Downloads, Applications, LaunchAgents/Daemons…"),
                         monoSubtitle: state.lastScanned != nil, showDivider: false, leading: {
@@ -475,6 +479,8 @@ struct ProtectionView: View {
                     SwitchRow(isOn: Binding(get: { state.realtimeOn }, set: { state.setRealtime($0) }), label: tr("Real-time Monitor"))
                 })
             }
+
+            if state.fileChecking || state.fileReport != nil { FileReportCard() }
 
             if !state.alerts.isEmpty {
                 SectionCard(title: tr("Cảnh báo real-time"), symbol: "exclamationmark.triangle.fill", tint: Theme.Review.base) {

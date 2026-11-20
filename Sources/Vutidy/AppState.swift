@@ -153,6 +153,8 @@ final class AppState: ObservableObject {
         didSet { UserDefaults.standard.set(notifyTrash, forKey: "notifyTrash") }
     }
     @Published var trashBytes: Int64 = 0
+    @Published var fileReport: FileReport?
+    @Published var fileChecking = false
     var trashWatchTask: Task<Void, Never>?
     @Published var outdatedApps: [OutdatedApp] = []
     @Published var outdatedLoading = false
@@ -330,6 +332,10 @@ final class AppState: ObservableObject {
             for id in ids.split(separator: ",").map(String.init) {
                 Task { @MainActor in if id == "smart" { await self.runSmartScan(autoClean: false) } else if id == "malware" { await self.runMalwareCheck() } else { await self.scan(id) } }
             }
+        }
+        // Kiểm thử/chụp màn hình: VUTIDY_CHECKFILE=<đường dẫn> chạy "Kiểm tra file" ngay (không cần hộp chọn file).
+        if let f = ProcessInfo.processInfo.environment["VUTIDY_CHECKFILE"] {
+            Task { @MainActor in await self.checkFile(URL(fileURLWithPath: f)) }
         }
         if let sp = ProcessInfo.processInfo.environment["VUTIDY_SETTINGS"], let p = SettingsPage(rawValue: sp) { settingsPage = p; settingsOpen = true }
         if ProcessInfo.processInfo.environment["VUTIDY_OPEN"] == "fdaguide" {
