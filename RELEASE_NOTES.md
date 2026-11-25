@@ -1,5 +1,14 @@
 <p align="center"><img src="docs/assets/brand/logo-mark-256.png" alt="Vutidy" width="88"></p>
 
+# Vutidy 0.11.2
+
+Release date: 2026-11-25 · Platform: macOS 13 or later (only tried on Apple Silicon and one Intel Mac) · Status: **pre-release**. The [known issues of 0.1.0](#vutidy-010) still apply.
+
+## What's new in 0.11.2
+
+- **Right-click menu on the menu bar icon.** Right-click (or Control-click) the Vutidy icon to get **About Vutidy**, **Provide Feedback…**, **Settings…** (⌘,) and **Quit Vutidy Completely**, the same items as the gear button at the bottom of the popover. **Settings…** now also has the shortcut ⌘, in the app menu.
+- **A more compact popover.** The *Recommendations* cards are shorter, the **Real-time** switch now sits in the *Protection* card (the separate Real-time tile is gone; Turbo Boost still shows on Intel Macs), and the spacing is tighter, so the popover takes less room on screen.
+
 # Vutidy 0.11.1
 
 Release date: 2026-11-25 · Platform: macOS 13 or later (only tried on Apple Silicon and one Intel Mac) · Status: **pre-release**. The [known issues of 0.1.0](#vutidy-010) still apply.
