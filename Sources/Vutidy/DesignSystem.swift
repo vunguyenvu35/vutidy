@@ -585,11 +585,13 @@ struct PrimaryButtonStyle: ButtonStyle {
 
 /// Hành động phá hủy: Remove, xóa vĩnh viễn.
 struct DangerButtonStyle: ButtonStyle {
+    /// Giãn hết chiều ngang có sẵn (nút chính dưới danh sách trong một panel).
+    var fullWidth = false
     @Environment(\.isEnabled) private var enabled
     @Environment(\.controlSize) private var size
     func makeBody(configuration: Configuration) -> some View {
         GemSkin(label: configuration.label, pressed: configuration.isPressed, enabled: enabled,
-                bright: Color(hex: 0xFF7A8A), deep: Color(hex: 0xD02250), glow: Color(hex: 0xFF4D6D), metrics: ButtonMetrics(size))
+                bright: Color(hex: 0xFF7A8A), deep: Color(hex: 0xD02250), glow: Color(hex: 0xFF4D6D), metrics: ButtonMetrics(size), fullWidth: fullWidth)
     }
 }
 
