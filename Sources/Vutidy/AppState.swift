@@ -280,6 +280,12 @@ final class AppState: ObservableObject {
     @Published var malwareAIError: String?
     @Published var malwareAISource: String?
     @Published var malwareAIPayload: String?
+    // AI Advisor cho trang Protection (khóa kết quả là khóa "đã xác nhận an toàn": launch:<plist> / file:<đường dẫn>).
+    @Published var protectionVerdicts: [String: MalwareVerdict] = [:]
+    @Published var protectionAIBusy = false
+    @Published var protectionAIError: String?
+    @Published var protectionAISource: String?
+    @Published var protectionAIPayload: String?
     @Published var adviceInspected: [String] = []
     @Published var adviceDetails: String?
     /// Khi dọn tự động: gồm cả mục An toàn KHÔNG hoàn tác được (lệnh docker/go/brew prune) và Thùng rác (xóa vĩnh viễn). Mặc định tắt.

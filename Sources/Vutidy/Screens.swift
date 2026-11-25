@@ -423,6 +423,7 @@ struct ProtectionView: View {
     @ViewState private var items: [PersistenceItem] = []
     @ViewState private var scanning = false
     @ViewState private var scanned = false
+    @ViewState private var showPayload = false
 
     var flagged: Int { items.filter { $0.suspicious && !state.isReviewed("launch:" + $0.plist.path) }.count }
 
@@ -436,6 +437,60 @@ struct ProtectionView: View {
         switch f { case .all: return true; case .attention: return i.trust.severity <= 1 && !state.isReviewed("launch:" + i.plist.path); case .signed: return i.trust.severity >= 2 || state.isReviewed("launch:" + i.plist.path) }
     }
     var shownItems: [PersistenceItem] { items.filter { matches($0, launchFilter) } }
+
+    /// AI Advisor cho Protection: bật/hướng dẫn, chạy phân tích, tóm tắt kết quả và đánh dấu an toàn hàng loạt các mục AI cho là lành tính.
+    @ViewBuilder var aiCard: some View {
+        let benign = state.protectionBenignKeys
+        let attention = items.filter { $0.trust.severity <= 1 && !state.isReviewed("launch:" + $0.plist.path) }.count + state.alerts.count
+        if attention > 0 || !state.protectionVerdicts.isEmpty {
+            SectionCard(title: tr("AI Advisor"), subtitle: state.protectionAISource.map { trf("Phân tích bởi %@", $0) }, symbol: "sparkles", tint: Theme.Info.base, trailing: {
+                if state.aiAdvisorEnabled {
+                    Button { Task { await state.analyzeProtectionWithAI(items: items) } } label: {
+                        HStack(spacing: 6) {
+                            if state.protectionAIBusy { VSpinner(size: 12, lineWidth: 2) }
+                            Text(state.protectionAIBusy ? tr("Đang phân tích…") : tr("Phân tích bằng AI"))
+                        }
+                    }.buttonStyle(SecondaryButtonStyle()).controlSize(.small).disabled(state.protectionAIBusy || attention == 0)
+                } else {
+                    Button(tr("Mở Cài đặt")) { state.openSettings(.cleaning) }.buttonStyle(TextActionStyle())
+                }
+            }) {
+                VStack(alignment: .leading, spacing: 8) {
+                    if !state.aiAdvisorEnabled {
+                        Text(tr("Bật AI Advisor để AI xem các mục cần chú ý và gợi ý mục nào an toàn.")).font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary)
+                    } else if let e = state.protectionAIError {
+                        Text(e).font(Theme.Font.caption).foregroundStyle(Theme.danger)
+                    } else if state.protectionVerdicts.isEmpty {
+                        Text(trf("%@ mục cần chú ý. AI sẽ đọc mô tả đã ẩn danh của chúng và gợi ý mục nào có vẻ lành tính.", "\(attention)"))
+                            .font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary)
+                    } else {
+                        HStack(spacing: 10) {
+                            Text(trf("%@ mục có vẻ lành tính", "\(benign.count)")).font(Theme.Font.body).foregroundStyle(Theme.Text.primary)
+                            Spacer()
+                            if !benign.isEmpty {
+                                Button { for k in benign { state.setReviewed(k, true) } } label: { Text(trf("Đánh dấu %@ mục là an toàn", "\(benign.count)")) }
+                                    .buttonStyle(SecondaryButtonStyle()).controlSize(.small)
+                            }
+                        }
+                    }
+                    if state.aiAdvisorEnabled {
+                        HStack {
+                            Text(tr("AI chỉ gợi ý: không có gì bị xoá, tắt hay đánh dấu nếu bạn không bấm.")).font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary)
+                            Spacer()
+                            if state.protectionAIPayload != nil {
+                                Button(showPayload ? tr("Ẩn dữ liệu đã gửi") : tr("Xem dữ liệu đã gửi")) { showPayload.toggle() }
+                                    .buttonStyle(TextActionStyle(color: Theme.Text.secondary))
+                            }
+                        }
+                        if showPayload, let p = state.protectionAIPayload {
+                            ScrollView { Text(p).font(Theme.Font.mono).foregroundStyle(Theme.Text.secondary).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading) }
+                                .frame(maxHeight: 180).padding(10).background(RoundedRectangle(cornerRadius: 10).fill(Color.black.opacity(0.18)))
+                        }
+                    }
+                }.padding(.horizontal, 18).padding(.vertical, 14)
+            }
+        }
+    }
 
     var launchItemsCard: some View {
         SectionCard(title: tr("Launch items"), subtitle: tr("Mục đáng chú ý lên đầu"), symbol: "list.bullet.rectangle.fill", tint: Theme.Info.base,
@@ -485,7 +540,7 @@ struct ProtectionView: View {
             if !state.alerts.isEmpty {
                 SectionCard(title: tr("Cảnh báo real-time"), symbol: "exclamationmark.triangle.fill", tint: Theme.Review.base) {
                     ForEach(Array(state.alerts.prefix(20).enumerated()), id: \.element.id) { idx, a in
-                        ListRow(title: a.reason, subtitle: a.path, monoSubtitle: true, showDivider: idx < min(20, state.alerts.count) - 1, leading: {
+                        ListRow(title: a.reason + (state.protectionVerdicts["file:" + a.path].map { " · AI: " + $0.reason } ?? ""), subtitle: a.path, monoSubtitle: true, showDivider: idx < min(20, state.alerts.count) - 1, leading: {
                             IconTile(symbol: "exclamationmark", tint: Theme.Review.base, size: 34)
                         }, trailing: {
                             HStack(spacing: 12) {
@@ -504,6 +559,7 @@ struct ProtectionView: View {
                 }
             }
 
+            aiCard
             launchItemsCard
         }.smooth(items.count).smooth(scanned).smooth(scanning).task { if items.isEmpty { await scan() } }
     }
@@ -746,6 +802,13 @@ private struct PersistenceRow: View {
                     }
                     Text(item.program ?? item.plist.path).font(Theme.Font.mono.leading(.tight)).foregroundStyle(Theme.Text.secondary)
                         .lineLimit(1).truncationMode(.middle)
+                    if !reviewed, let v = state.protectionVerdicts[key] {
+                        HStack(spacing: 6) {
+                            Pill(text: "AI: " + (v.kind == .malicious ? tr("độc hại") : v.kind == .suspicious ? tr("đáng ngờ") : tr("có vẻ lành tính")),
+                                 color: v.kind == .malicious ? Theme.danger : v.kind == .suspicious ? Theme.Review.text : Theme.Signal.text)
+                            Text(v.reason).font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary).lineLimit(2)
+                        }
+                    }
                     if let note = item.note, item.trust.severity <= 1, !reviewed {
                         Text(note).font(Theme.Font.caption).foregroundStyle(item.suspicious ? Theme.Review.text : Theme.Text.tertiary)
                             .lineLimit(2).fixedSize(horizontal: false, vertical: true)
