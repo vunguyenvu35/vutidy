@@ -12,7 +12,7 @@ A guide to every screen of Vutidy, from your first scan to shortcuts, languages 
 | --- | --- | --- |
 | 1 | [Getting started](01-getting-started.md) | Install, the main window, Full Disk Access, your first scan |
 | 2 | [Smart Scan](02-smart-scan.md) | One scan for junk, protection and speed; cleaning the safe items |
-| 3 | [Cleanup](03-cleanup.md) | System Junk, Dev Junk, Trash, Privacy; safety levels, clean modes, the action bar |
+| 3 | [Cleanup](03-cleanup.md) | System Junk, Dev Junk, AI Tools, Trash, Privacy; safety levels, clean modes, the action bar |
 | 4 | [Protection](04-protection.md) | Persistence scanner, the real-time monitor and its limits |
 | 5 | [Speed](05-speed.md) | Optimization (gauges, heavy processes, startup items) and Maintenance |
 | 6 | [Applications](06-applications.md) | Uninstaller with leftovers, Updates |

@@ -49,6 +49,10 @@ public enum Cleaners {
     public static func mail(rules: [Rule] = RuleLoader.loadAll()) -> CleanerModule {
         RuleBasedModule(id: "mail", title: "Mail", rules: rules)
     }
+    /// Trang AI Tools: cache và dữ liệu tạm của các công cụ AI (Claude, Codex, Cursor, ChatGPT…) cùng model chạy local (Ollama, Hugging Face).
+    public static func ai(rules: [Rule] = RuleLoader.loadAll()) -> CleanerModule {
+        RuleBasedModule(id: "ai", title: "AI Tools", rules: rules)
+    }
     public static func photos(rules: [Rule] = RuleLoader.loadAll()) -> CleanerModule {
         RuleBasedModule(id: "photos", title: tr("Rác ảnh"), rules: rules)
     }

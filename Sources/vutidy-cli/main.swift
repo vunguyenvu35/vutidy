@@ -7,8 +7,8 @@ import Modules
 
 let usage = """
 Vutidy CLI
-  vutidy-cli scan <system|dev|trash|privacy|all> [--projects DIR,DIR]
-  vutidy-cli clean <system|dev|trash|privacy> [--mode dry|trash|quarantine] [--include-review] [--projects DIR]
+  vutidy-cli scan <system|dev|ai|trash|privacy|all> [--projects DIR,DIR]
+  vutidy-cli clean <system|dev|ai|trash|privacy> [--mode dry|trash|quarantine] [--include-review] [--projects DIR]
   vutidy-cli space <path>
   vutidy-cli duplicates <path>
   vutidy-cli large <path> [--min-mb N] [--days N]
@@ -37,6 +37,7 @@ func modules(_ name: String) -> [CleanerModule] {
     case "privacy": return [Cleaners.privacy(rules: rules)]
     case "mail": return [Cleaners.mail(rules: rules)]
     case "photos": return [Cleaners.photos(rules: rules)]
+    case "ai": return [Cleaners.ai(rules: rules)]
     case "all": return [Cleaners.systemJunk(rules: rules), DevJunkModule(rules: rules, projectRoots: projects), TrashModule()]
     default: fail("module không hợp lệ: \(name)\n\(usage)")
     }

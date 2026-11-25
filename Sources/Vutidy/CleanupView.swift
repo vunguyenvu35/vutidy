@@ -129,7 +129,8 @@ struct CleanupView: View {
         case .systemJunk: return tr("Cache, log, preferences hỏng")
         case .mail: return tr("Đính kèm, thư rác và thư đã xóa lưu trên máy")
         case .photoJunk: return tr("Cache của Photos và phân tích ảnh")
-        case .devJunk: return tr("Docker, JetBrains, Node, Go, Xcode, Homebrew, model LLM")
+        case .devJunk: return tr("Docker, JetBrains, Node, Go, Xcode, Homebrew")
+        case .ai: return tr("Cache và dữ liệu tạm của Claude, Codex, Cursor, ChatGPT, Ollama…")
         case .trash: return tr("Thùng rác của bạn và ổ ngoài")
         default: return tr("Cache trình duyệt và dấu vết sử dụng")
         }
@@ -342,6 +343,9 @@ enum CategoryStyle {
             ("xcode", "hammer.fill", Theme.Info.base), ("homebrew", "cup.and.saucer.fill", Theme.orange),
             ("gradle", "cube.fill", Theme.teal), ("cargo", "gearshape.2.fill", Theme.orange), ("cocoapods", "cube.fill", Theme.pink),
             ("ollama", "brain", Theme.apps), ("huggingface", "brain", Theme.apps),
+            ("claude", "sparkle", Theme.orange), ("codex", "terminal.fill", Theme.Info.base), ("chatgpt", "bubble.left.fill", Theme.Signal.base),
+            ("antigravity", "sparkles", Theme.apps), ("gemini", "sparkles", Theme.apps),
+            ("cursor", "cursorarrow", Theme.teal), ("windsurf", "wind", Theme.Info.base),
             ("user-caches", "internaldrive.fill", Theme.Info.base), ("user-logs", "doc.text.fill", Theme.Review.base),
             ("crash", "exclamationmark.triangle.fill", Theme.orange), ("mail", "envelope.fill", Theme.Info.base),
             ("photos", "photo.fill", Theme.pink), ("broken-prefs", "wrench.fill", Theme.Review.base),

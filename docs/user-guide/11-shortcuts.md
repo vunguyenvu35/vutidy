@@ -29,6 +29,7 @@ Every page and a few actions have a key you can change in **Settings → Shortcu
 | ⌘ ⇧ L | Space Lens |
 | ⌘ ⇧ F | Large & Old Files |
 | ⌘ ⇧ D | Duplicates |
+| ⌘ ⇧ A | AI Tools |
 | ⌘ ⇧ C | Cloud Cleanup |
 | ⌘ ⇧ Y | Quarantine |
 

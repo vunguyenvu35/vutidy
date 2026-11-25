@@ -1,6 +1,6 @@
 # Cleanup
 
-Four pages find clutter and move it out of the way: **System Junk** (⌘2), **Dev Junk** (⌘3), **Trash** (⌘4) and **Privacy** (⌘5). They share one layout and one set of rules.
+Five pages find clutter and move it out of the way: **System Junk** (⌘2), **Dev Junk** (⌘3), **AI Tools** (⇧⌘A), **Trash** (⌘4) and **Privacy** (⌘5). They share one layout and one set of rules.
 
 ## Contents
 
@@ -10,6 +10,7 @@ Four pages find clutter and move it out of the way: **System Junk** (⌘2), **De
 - [The action bar](#the-action-bar)
 - [System Junk](#system-junk)
 - [Dev Junk](#dev-junk)
+- [AI Tools](#ai-tools)
 - [Trash](#trash)
 - [Privacy](#privacy)
 - [Your own rules](#your-own-rules)
@@ -100,7 +101,6 @@ The module that sets Vutidy apart.
 | **Xcode** | DerivedData, CoreSimulator caches (safe); Archives, iOS DeviceSupport (review) | mixed | files |
 | **Homebrew** | the download cache | Safe | `brew cleanup -s --prune=all` (**CLI**) |
 | **JVM / Rust** | Gradle caches, Cargo registry cache | Review | files |
-| **LLM** | Ollama models, Hugging Face hub | Review | files; listed only, never preselected |
 | **Projects** | `node_modules`, `vendor`, `target`, `.venv`/`venv`, `Pods` of projects whose manifest has not changed in *N* days | Review | files |
 
 A rule whose tool is not installed (no `go`, no `brew`, no `docker`) simply does not appear.
@@ -108,6 +108,23 @@ A rule whose tool is not installed (no `go`, no `brew`, no `docker`) simply does
 **Project folders.** Vutidy never walks your whole home folder. To find old `node_modules` and friends, add the folders where your projects live in [Settings → Cleaning](10-settings.md#cleaning). A project counts as old when its `package.json` (or `composer.json`, `Cargo.toml`, `pyproject.toml`, `requirements.txt`, `Podfile`) has not changed for the number of days set there (60 by default).
 
 Docker's disk image (`Docker.raw`) is never deleted directly; Space Lens warns about it and sends you here.
+
+## AI Tools
+
+What AI tools leave behind, grouped by tool. It sits next to Dev Junk because many of them are developer tools, but it has its own page so it is easy to find.
+
+| Group | What is found | Safety | How it is cleaned |
+| --- | --- | --- | --- |
+| **Claude** | Claude Desktop browser caches; Claude Code temp files (older than 7 days) | Safe | files; Claude Desktop is asked to quit first |
+| | Cowork virtual disk (`vm_bundles`, often 10 GB or more); Claude Code history older than 90 days (project memory is never touched); file checkpoints older than 30 days | Review | files; the virtual disk is downloaded and rebuilt the next time Cowork starts |
+| **Codex** | Codex Desktop caches; Codex CLI cache and temp (older than 7 days) | Safe | files; Codex Desktop is asked to quit first |
+| | Sessions older than 90 days | Review | files |
+| **Antigravity, Gemini** | Antigravity caches (skipped while it runs); Gemini CLI temp (older than 7 days) | Safe | files |
+| **Cursor, Windsurf** | caches, cached extensions and logs (skipped while the IDE runs) | Safe | files |
+| **ChatGPT** | the app cache; conversations are never touched | Safe | files; ChatGPT is asked to quit first |
+| **Ollama, Hugging Face** | local models | Review | files; listed only, never preselected |
+
+A tool that is not installed simply does not appear. AI Tools is not part of Smart Scan: open the page to clean it. Its shortcut is ⌘ ⇧ A ([Shortcuts](11-shortcuts.md)).
 
 ## Trash
 

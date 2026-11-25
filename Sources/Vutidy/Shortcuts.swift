@@ -71,6 +71,7 @@ struct ShortcutAction: Identifiable, Hashable {
         (.uninstaller, KeyCombo(25)), (.malware, KeyCombo(46, KeyCombo.cmd | KeyCombo.shift)),
         (.updater, KeyCombo(32, KeyCombo.cmd | KeyCombo.shift)), (.spaceLens, KeyCombo(37, KeyCombo.cmd | KeyCombo.shift)),
         (.largeFiles, KeyCombo(3, KeyCombo.cmd | KeyCombo.shift)), (.duplicates, KeyCombo(2, KeyCombo.cmd | KeyCombo.shift)),
+        (.ai, KeyCombo(0, KeyCombo.cmd | KeyCombo.shift)),
         (.cloud, KeyCombo(8, KeyCombo.cmd | KeyCombo.shift)), (.quarantine, KeyCombo(16, KeyCombo.cmd | KeyCombo.shift)),
     ]
 

@@ -293,7 +293,7 @@ extension Page {
         // Màu theo NHÓM như mockup: Dọn dẹp xanh dương · Bảo vệ xanh lá · Tốc độ cam · Ứng dụng hồng · File vàng.
         switch self {
         case .smartScan: return Color(hex: 0x7C6AF0)
-        case .systemJunk, .devJunk, .trash, .privacy, .mail, .photoJunk: return Color(hex: 0x0A84FF)
+        case .systemJunk, .devJunk, .ai, .trash, .privacy, .mail, .photoJunk: return Color(hex: 0x0A84FF)
         case .protection, .malware: return Color(hex: 0x30D158)
         case .optimization, .maintenance: return Color(hex: 0xFF9F0A)
         case .uninstaller, .extensions, .updater: return Color(hex: 0xFF375F)
@@ -388,6 +388,7 @@ extension Page {
         case .smartScan:    return (Color(hex: 0x1A0638), Color(hex: 0x5B1696), Color(hex: 0xD946EF))
         case .systemJunk:   return (Color(hex: 0x071A47), Color(hex: 0x1D55C9), Color(hex: 0x56B0FF))
         case .devJunk:      return (Color(hex: 0x032B30), Color(hex: 0x0B7C80), Color(hex: 0x2DE0C6))
+        case .ai:           return (Color(hex: 0x120B45), Color(hex: 0x4338CA), Color(hex: 0x818CF8))
         case .trash:        return (Color(hex: 0x3A0A24), Color(hex: 0xA8195A), Color(hex: 0xFF72A8))
         case .privacy:      return (Color(hex: 0x170A47), Color(hex: 0x5A38C4), Color(hex: 0xB79BFF))
         case .mail:         return (Color(hex: 0x06284A), Color(hex: 0x1B79C9), Color(hex: 0x62CCFF))

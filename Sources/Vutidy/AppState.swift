@@ -7,7 +7,7 @@ import RuleEngine
 import Modules
 
 enum Page: String, CaseIterable, Identifiable {
-    case smartScan, systemJunk, devJunk, trash, privacy, mail, photoJunk
+    case smartScan, systemJunk, devJunk, ai, trash, privacy, mail, photoJunk
     case protection, malware, optimization, maintenance
     case uninstaller, extensions, updater
     case spaceLens, largeFiles, duplicates, cloud
@@ -15,7 +15,7 @@ enum Page: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .smartScan: "Smart Scan"; case .systemJunk: tr("Rác hệ thống"); case .devJunk: "Dev Junk"; case .trash: tr("Dọn thùng rác")
+        case .smartScan: "Smart Scan"; case .systemJunk: tr("Rác hệ thống"); case .devJunk: "Dev Junk"; case .ai: "AI Tools"; case .trash: tr("Dọn thùng rác")
         case .mail: tr("Mail đính kèm"); case .photoJunk: tr("Rác ảnh"); case .privacy: tr("Quyền riêng tư"); case .protection: tr("Bảo vệ"); case .malware: tr("Gỡ malware"); case .optimization: tr("Tối ưu"); case .maintenance: tr("Bảo trì")
         case .uninstaller: tr("Gỡ ứng dụng"); case .extensions: tr("Tiện ích mở rộng"); case .updater: tr("Trình cập nhật"); case .spaceLens: "Space Lens"
         case .largeFiles: tr("File lớn & cũ"); case .duplicates: tr("File trùng lặp"); case .cloud: "Cloud Cleanup"; case .quarantine: tr("Quarantine")
@@ -23,7 +23,7 @@ enum Page: String, CaseIterable, Identifiable {
     }
     var icon: String {
         switch self {
-        case .smartScan: "sparkles"; case .systemJunk: "tray.full"; case .devJunk: "hammer"; case .trash: "trash"
+        case .smartScan: "sparkles"; case .systemJunk: "tray.full"; case .devJunk: "hammer"; case .ai: "brain"; case .trash: "trash"
         case .mail: "envelope"; case .photoJunk: "photo"; case .privacy: "hand.raised"; case .protection: "shield"; case .malware: "v.malware"; case .optimization: "bolt"; case .maintenance: "wrench.and.screwdriver"
         case .uninstaller: "xmark.app"; case .extensions: "puzzlepiece.extension"; case .updater: "arrow.down.circle"; case .spaceLens: "chart.pie"
         case .largeFiles: "doc.badge.clock"; case .duplicates: "square.on.square"; case .cloud: "icloud"; case .quarantine: "archivebox"
@@ -31,7 +31,7 @@ enum Page: String, CaseIterable, Identifiable {
     }
     static var groups: [(String, [Page])] { [
         ("", [.smartScan]),
-        (tr("Dọn dẹp"), [.systemJunk, .mail, .photoJunk, .devJunk, .trash, .privacy]),
+        (tr("Dọn dẹp"), [.systemJunk, .mail, .photoJunk, .devJunk, .ai, .trash, .privacy]),
         (tr("Bảo vệ"), [.protection, .malware]),
         (tr("Tốc độ"), [.optimization, .maintenance]),
         (tr("Ứng dụng"), [.uninstaller, .extensions, .updater]),
@@ -39,7 +39,7 @@ enum Page: String, CaseIterable, Identifiable {
     ] }
     /// Module dọn dẹp tương ứng, nếu có.
     var cleanupID: String? {
-        switch self { case .systemJunk: "system-junk"; case .devJunk: "dev-junk"; case .trash: "trash"; case .privacy: "privacy"; case .mail: "mail"; case .photoJunk: "photos"; default: nil }
+        switch self { case .systemJunk: "system-junk"; case .devJunk: "dev-junk"; case .ai: "ai"; case .trash: "trash"; case .privacy: "privacy"; case .mail: "mail"; case .photoJunk: "photos"; default: nil }
     }
 }
 
@@ -536,6 +536,7 @@ final class AppState: ObservableObject {
         case "privacy": return Cleaners.privacy(rules: rules)
         case "mail": return Cleaners.mail(rules: rules)
         case "photos": return Cleaners.photos(rules: rules)
+        case "ai": return Cleaners.ai(rules: rules)
         default: return Cleaners.systemJunk(rules: rules)
         }
     }
