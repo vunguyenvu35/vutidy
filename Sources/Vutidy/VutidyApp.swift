@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let url = Bundle.module.url(forResource: "appicon", withExtension: "png", subdirectory: "Resources"),
            let img = NSImage(contentsOf: url) { NSApplication.shared.applicationIconImage = img }
         NSApp.activate(ignoringOtherApps: true)
+        StatusItemMenu.shared.install()   // menu chuột phải trên biểu tượng thanh menu
 
         // Đóng cửa sổ cuối cùng → ẩn icon Dock, app tiếp tục chạy ở thanh menu.
         NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: nil, queue: .main) { _ in
@@ -134,7 +135,7 @@ struct VutidyApp: App {
                 }
             }
             CommandGroup(replacing: .appSettings) {
-                Button(tr("Cài đặt…")) { state.openSettings(.general) }
+                Button(tr("Cài đặt…")) { state.openSettings(.general) }.keyboardShortcut(",")
             }
             CommandGroup(replacing: .appTermination) {
                 Button(tr("Đóng về thanh menu")) { AppDelegate.hideToMenuBar() }.keyboardShortcut("q")

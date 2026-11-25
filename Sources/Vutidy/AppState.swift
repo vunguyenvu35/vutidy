@@ -307,6 +307,7 @@ final class AppState: ObservableObject {
     private var timer: Timer?
 
     init() {
+        defer { StatusItemMenu.shared.state = self }
         let days = UserDefaults.standard.object(forKey: "retentionDays") as? Int ?? 7
         executor = ActionExecutor(paths: .default, retentionDays: days)
         mode = defaultMode
