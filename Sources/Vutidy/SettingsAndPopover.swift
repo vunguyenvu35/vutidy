@@ -103,7 +103,7 @@ struct PopoverView: View {
         let s = state.snapshot
         // Nền gắn vào chính nội dung; PopoverTopPin giữ cạnh trên của cửa sổ khi nó co/giãn theo nội dung.
         ScrollView(.vertical, showsIndicators: false) {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
                 recommendations
                 togglesRow
                 protectionCard
@@ -171,17 +171,17 @@ struct PopoverView: View {
 
     func recommendationCard(_ r: Recommendation) -> some View {
         let urgent = r.priority >= 80
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top) {
-                Image(systemName: r.icon).font(.system(size: 20, weight: .regular)).foregroundStyle(.white).frame(height: 24)
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: r.icon).font(.system(size: 16, weight: .regular)).foregroundStyle(.white).frame(width: 20, height: 20)
+                Text(r.title).font(.vt(size: 12, weight: .medium)).foregroundStyle(.white)
+                    .lineLimit(3).fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
                 Button { state.dismissStore.dismiss(r); state.pollSystem() } label: {
-                    Image(systemName: "xmark.circle.fill").font(.system(size: 15)).foregroundStyle(Theme.Text.tertiary)
+                    Image(systemName: "xmark.circle.fill").font(.system(size: 14)).foregroundStyle(Theme.Text.tertiary)
                 }.buttonStyle(PlainPointerStyle()).help(tr("Ẩn thông báo"))
             }
-            Text(r.title).font(.vt(size: 13, weight: .medium)).foregroundStyle(.white)
-                .lineLimit(3).fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 4)
+            Spacer(minLength: 2)
             Group {
                 if urgent {
                     Button { state.perform(r.action); activate() } label: { Text(r.actionTitle) }.buttonStyle(PrimaryButtonStyle(fullWidth: true))
@@ -190,8 +190,8 @@ struct PopoverView: View {
                 }
             }.controlSize(.small)
         }
-        .padding(12)
-        .frame(width: 168, height: 148, alignment: .topLeading)
+        .padding(10)
+        .frame(width: 168, height: 112, alignment: .topLeading)
         .glassSurface(radius: 14, strong: false)
     }
 
@@ -228,35 +228,35 @@ struct PopoverView: View {
             : (review > 0 ? ("exclamationmark.shield.fill", Theme.Review.base, trf("%@ mục cần xem", "\(review)"))
                           : ("checkmark.shield.fill", Theme.Signal.base, tr("Đã bảo vệ")))
         let checking = state.malwareScanning
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 10) {
-                Image(systemName: symbol).font(.system(size: 24, weight: .semibold)).foregroundStyle(color)
-                Text(tr("Bảo vệ")).font(.vt(size: 15, weight: .bold, design: .rounded)).foregroundStyle(.white)
-                Spacer()
-                Text(badge).font(.vt(size: 12, weight: .semibold)).foregroundStyle(color)
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Image(systemName: symbol).font(.system(size: 20, weight: .semibold)).foregroundStyle(color)
+                Text(tr("Bảo vệ")).font(.vt(size: 14, weight: .bold, design: .rounded)).foregroundStyle(.white)
+                Text(badge).font(.vt(size: 11.5, weight: .semibold)).foregroundStyle(color)
+                Spacer(minLength: 0)
+                SwitchRow(isOn: Binding(get: { state.realtimeOn }, set: { state.setRealtime($0) }), label: "Real-time")
+                    .help(tr("Theo dõi file mới"))
             }
-            VStack(alignment: .leading, spacing: 3) {
-                Text(on ? tr("Giám sát malware thời gian thực đang bật") : tr("Giám sát malware thời gian thực đang tắt"))
-                    .font(.vt(size: 13.5, weight: .semibold)).foregroundStyle(.white)
-                // Có cảnh báo thì nói rõ là file nào (nếu chỉ hiện "1 mục cần xem" thì không biết phải xem gì).
-                if let a = state.alerts.first {
-                    Text(trf("Cần xem: %@", URL(fileURLWithPath: a.path).lastPathComponent))
-                        .font(Theme.Font.caption).foregroundStyle(Theme.Review.base).lineLimit(1).truncationMode(.middle)
-                } else {
-                    Text(on ? (state.lastScanned.map { trf("File vừa quét: %@", URL(fileURLWithPath: $0).lastPathComponent) } ?? tr("Đang chờ file mới"))
-                            : tr("Bật Real-time để theo dõi file mới"))
-                        .font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary).lineLimit(1)
+            HStack(alignment: .bottom) {
+                VStack(alignment: .leading, spacing: 2) {
+                    // Có cảnh báo thì nói rõ là file nào (nếu chỉ hiện "1 mục cần xem" thì không biết phải xem gì).
+                    if let a = state.alerts.first {
+                        Text(trf("Cần xem: %@", URL(fileURLWithPath: a.path).lastPathComponent))
+                            .font(Theme.Font.caption).foregroundStyle(Theme.Review.base).lineLimit(1).truncationMode(.middle)
+                    } else {
+                        Text(on ? (state.lastScanned.map { trf("File vừa quét: %@", URL(fileURLWithPath: $0).lastPathComponent) } ?? tr("Đang chờ file mới"))
+                                : tr("Bật Real-time để theo dõi file mới"))
+                            .font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary).lineLimit(1)
+                    }
+                    // Đếm từng giây: TimelineView vẽ lại mỗi giây nên 15s → 16s → 17s, không nhảy cóc theo lần vẽ lại của popover.
+                    Group {
+                        if let date = state.malwareReport?.date {
+                            TimelineView(.periodic(from: .now, by: 1)) { ctx in
+                                Text(trf("Kiểm tra lần cuối %@", Self.agoText(from: date, to: ctx.date))).monospacedDigit()
+                            }
+                        } else { Text(tr("Chưa kiểm tra")) }
+                    }.font(Theme.Font.caption).foregroundStyle(Theme.Text.tertiary).lineLimit(1)
                 }
-            }
-            HStack {
-                // Đếm từng giây: TimelineView vẽ lại mỗi giây nên 15s → 16s → 17s, không nhảy cóc theo lần vẽ lại của popover.
-                Group {
-                    if let date = state.malwareReport?.date {
-                        TimelineView(.periodic(from: .now, by: 1)) { ctx in
-                            Text(trf("Kiểm tra lần cuối %@", Self.agoText(from: date, to: ctx.date))).monospacedDigit()
-                        }
-                    } else { Text(tr("Chưa kiểm tra")) }
-                }.font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary).lineLimit(1)
                 Spacer(minLength: 8)
                 Button { Task { await state.runMalwareCheck() } } label: {
                     HStack(spacing: 5) {
@@ -266,7 +266,7 @@ struct PopoverView: View {
                 }.buttonStyle(MiniButtonStyle()).disabled(checking)
             }
         }
-        .padding(14).frame(maxWidth: .infinity, alignment: .leading).glassSurface(radius: 14, strong: false)
+        .padding(12).frame(maxWidth: .infinity, alignment: .leading).glassSurface(radius: 14, strong: false)
         .clickable {
             // Cảnh báo real-time chỉ hiện (và dọn được) ở trang Bảo vệ; kết quả quét malware nằm ở trang Malware.
             state.section = (state.malwareReport?.highCount ?? 0) > 0 ? .malware : .protection; activate()
@@ -275,13 +275,9 @@ struct PopoverView: View {
 
     /// Hai công tắc nhanh cạnh nhau: Real-time và (chỉ Mac Intel) Turbo Boost. Mỗi ô: biểu tượng + công tắc ở trên, tên + trạng thái ở dưới.
     @ViewBuilder var togglesRow: some View {
-        HStack(spacing: 10) {
-            toggleTile(symbol: "v.wifi", tint: Theme.Signal.base, title: "Real-time",
-                       status: state.realtimeOn ? (state.lastScanned.map { URL(fileURLWithPath: $0).lastPathComponent } ?? tr("Đang theo dõi")) : tr("Đang tắt"),
-                       isOn: Binding(get: { state.realtimeOn }, set: { state.setRealtime($0) }), busy: false,
-                       help: tr("Theo dõi file mới"))
-            if let t = turbo, t.isIntel, t.kextPath != nil || t.lowPowerMode != nil {
-                let limited = t.turboLimited
+        if let t = turbo, t.isIntel, t.kextPath != nil || t.lowPowerMode != nil {
+            let limited = t.turboLimited
+            HStack(spacing: 10) {
                 toggleTile(symbol: "bolt.fill", tint: Theme.orange, title: "Turbo Boost",
                            status: limited ? tr("Đã hạ xung") : tr("Hiệu năng tối đa"),
                            isOn: Binding(get: { !limited }, set: { setTurbo(enabled: $0, status: t) }), busy: turboBusy,
