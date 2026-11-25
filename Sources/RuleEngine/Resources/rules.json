@@ -1,6 +1,6 @@
 [
   {"id":"user-caches","module":"system-junk","title":"Cache người dùng","group":"Cache","paths":["~/Library/Caches/*"],
-   "exclude":["~/Library/Caches/com.apple.*","~/Library/Caches/CloudKit","~/Library/Caches/JetBrains","~/Library/Caches/Homebrew","~/Library/Caches/go-build","~/Library/Caches/pip","~/Library/Caches/Yarn","~/Library/Caches/CocoaPods","~/Library/Caches/composer","~/Library/Caches/Google","~/Library/Caches/BraveSoftware","~/Library/Caches/Microsoft Edge","~/Library/Caches/Firefox","~/Library/Caches/company.thebrowser.Browser"],
+   "exclude":["~/Library/Caches/com.apple.*","~/Library/Caches/CloudKit","~/Library/Caches/JetBrains","~/Library/Caches/Homebrew","~/Library/Caches/go-build","~/Library/Caches/pip","~/Library/Caches/Yarn","~/Library/Caches/CocoaPods","~/Library/Caches/composer","~/Library/Caches/Google","~/Library/Caches/BraveSoftware","~/Library/Caches/Microsoft Edge","~/Library/Caches/Firefox","~/Library/Caches/company.thebrowser.Browser","~/Library/Caches/com.openai.chat"],
    "appNotRunning":true,"safety":"safe"},
   {"id":"user-logs","module":"system-junk","title":"Log người dùng","group":"Log","paths":["~/Library/Logs/*"],
    "exclude":["~/Library/Logs/JetBrains","~/Library/Logs/DiagnosticReports"],"safety":"safe"},
@@ -49,5 +49,8 @@
   {"id":"codex-cli-temp","module":"dev-junk","title":"Cache Codex CLI","group":"Codex","paths":["~/.codex/{cache,tmp}/*"],"minAgeDays":7,"safety":"safe"},
   {"id":"codex-old-sessions","module":"dev-junk","title":"Phiên Codex cũ","group":"Codex","paths":["~/.codex/sessions/*/*/*"],"minAgeDays":90,"safety":"review","detail":"Phiên cũ hơn 90 ngày: xóa thì không mở lại được các phiên đó"},
   {"id":"antigravity-cache","module":"dev-junk","title":"Cache Antigravity","group":"Antigravity","paths":["~/Library/Application Support/Antigravity/{Cache,CachedData,CachedExtensionVSIXs,Code Cache,GPUCache,DawnGraphiteCache,DawnWebGPUCache,GraphiteDawnCache,GPUPersistentCache,Shared Dictionary}"],"skipIfRunningBundle":"com.google.antigravity","safety":"safe"},
-  {"id":"gemini-cli-temp","module":"dev-junk","title":"Cache Gemini CLI","group":"Gemini","paths":["~/.gemini/tmp/*"],"minAgeDays":7,"safety":"safe"}
+  {"id":"gemini-cli-temp","module":"dev-junk","title":"Cache Gemini CLI","group":"Gemini","paths":["~/.gemini/tmp/*"],"minAgeDays":7,"safety":"safe"},
+  {"id":"cursor-cache","module":"dev-junk","title":"Cache Cursor","group":"Cursor","paths":["~/Library/Application Support/Cursor/{Cache,CachedData,CachedExtensionVSIXs,Code Cache,GPUCache,DawnGraphiteCache,DawnWebGPUCache,GraphiteDawnCache,GPUPersistentCache,Shared Dictionary,logs}"],"skipIfRunningBundle":"com.todesktop.230313mzl4w4u92","safety":"safe"},
+  {"id":"windsurf-cache","module":"dev-junk","title":"Cache Windsurf","group":"Windsurf","paths":["~/Library/Application Support/Windsurf/{Cache,CachedData,CachedExtensionVSIXs,Code Cache,GPUCache,DawnGraphiteCache,DawnWebGPUCache,GraphiteDawnCache,GPUPersistentCache,Shared Dictionary,logs}"],"skipIfRunningBundle":"com.exafunction.windsurf","safety":"safe"},
+  {"id":"chatgpt-cache","module":"dev-junk","title":"Cache ChatGPT","group":"ChatGPT","paths":["~/Library/Caches/com.openai.chat"],"quitBundle":"com.openai.chat","safety":"safe"}
 ]
