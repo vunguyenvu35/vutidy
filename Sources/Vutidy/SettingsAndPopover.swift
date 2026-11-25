@@ -149,11 +149,13 @@ struct PopoverView: View {
                 }
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 10) {
-                        ForEach(cards) { r in recommendationCard(r) }
+                        // Từ 3 thẻ trở lên: nhân đôi dãy thẻ để băng chuyền chạy vòng liên tục (CarouselDriver quay về đầu dãy).
+                        let loop = cards.count >= 3
+                        ForEach(0..<(loop ? cards.count * 2 : cards.count), id: \.self) { i in recommendationCard(cards[i % cards.count]) }
                     }
                     .padding(.horizontal, 14)
                 }
-                .background(CarouselDriver())
+                .background(CarouselDriver(period: cards.count >= 3 ? CGFloat(cards.count) * 178 : 0))
                 .padding(.horizontal, -14)   // băng chuyền chạy sát mép popover, thẻ đầu vẫn thẳng hàng với phần còn lại
             }
         }
@@ -681,18 +683,20 @@ private struct FooterGearLabel: View {
 
 
 /// Điều khiển băng chuyền "Gợi ý" bằng cách bám vào NSScrollView của ScrollView ngang phía trước nó:
-/// tự trượt chậm qua lại (dừng khi rê chuột vào hoặc bật Reduce Motion), kéo thả bằng chuột (con trỏ bàn tay mở/nắm),
+/// tự trượt chậm theo vòng lặp (dừng khi rê chuột vào hoặc bật Reduce Motion), kéo thả bằng chuột (con trỏ bàn tay mở/nắm),
 /// con lăn dọc cuộn ngang, và nút ‹ › (CarouselDriver.stepNotification) trượt mượt một thẻ.
 private struct CarouselDriver: NSViewRepresentable {
     static let stepNotification = Notification.Name("vutidy.carousel.step")
-    func makeNSView(context: Context) -> NSView { DriverView() }
-    func updateNSView(_ nsView: NSView, context: Context) {}
+    /// Chu kỳ lặp (độ rộng một dãy thẻ); 0 = không lặp (ít thẻ, không cần cuộn).
+    var period: CGFloat
+    func makeNSView(context: Context) -> NSView { let v = DriverView(); v.period = period; return v }
+    func updateNSView(_ nsView: NSView, context: Context) { (nsView as? DriverView)?.period = period }
 
     final class DriverView: NSView {
         private var monitor: Any?
         private var timer: Timer?
         private var observer: NSObjectProtocol?
-        private var direction: CGFloat = 1
+        var period: CGFloat = 0
         private var holdUntil = Date().addingTimeInterval(2)   // đứng yên một lúc ở hai đầu và lúc mới mở
         private var stepTarget: CGFloat?
         private var dragging = false, dragMoved = false, dragStartX: CGFloat = 0, dragStartScroll: CGFloat = 0
@@ -706,7 +710,8 @@ private struct CarouselDriver: NSViewRepresentable {
             timer = Timer.scheduledTimer(withTimeInterval: 1 / 60, repeats: true) { [weak self] _ in self?.tick() }
             observer = NotificationCenter.default.addObserver(forName: CarouselDriver.stepNotification, object: nil, queue: .main) { [weak self] n in
                 guard let self, let sv = self.scroll, let step = n.object as? Int else { return }
-                self.stepTarget = max(0, min(self.maxX(sv), sv.contentView.bounds.origin.x + CGFloat(step) * self.cardStep))
+                self.stepTarget = sv.contentView.bounds.origin.x + CGFloat(step) * self.cardStep
+                if self.period == 0 { self.stepTarget = max(0, min(self.maxX(sv), self.stepTarget!)) }
                 self.holdUntil = Date().addingTimeInterval(4)
             }
         }
@@ -735,10 +740,15 @@ private struct CarouselDriver: NSViewRepresentable {
             return nil
         }
         private func maxX(_ s: NSScrollView) -> CGFloat { max(0, (s.documentView?.frame.width ?? 0) - s.contentView.bounds.width) }
-        private func setX(_ x: CGFloat, _ s: NSScrollView) {
+        /// Đặt vị trí cuộn; khi lặp thì quấn vòng theo `period`. Trả về vị trí thực đã đặt.
+        @discardableResult
+        private func setX(_ x: CGFloat, _ s: NSScrollView) -> CGFloat {
             let clip = s.contentView
-            clip.scroll(to: NSPoint(x: max(0, min(maxX(s), x)), y: clip.bounds.origin.y))
+            var nx = x
+            if period > 0 { nx = x - floor(x / period) * period } else { nx = max(0, min(maxX(s), x)) }
+            clip.scroll(to: NSPoint(x: nx, y: clip.bounds.origin.y))
             s.reflectScrolledClipView(clip)
+            return nx
         }
         private func inside(_ e: NSEvent) -> Bool { e.window === window && bounds.contains(convert(e.locationInWindow, from: nil)) }
         private var mouseInside: Bool {
@@ -786,15 +796,13 @@ private struct CarouselDriver: NSViewRepresentable {
             let hovering = mouseInside
             if hovering, !dragging, NSCursor.current != .pointingHand { NSCursor.openHand.set() }
             if let t = stepTarget {
-                let nx = x + (t - x) * 0.18
-                if abs(t - x) < 0.5 { setX(t, sv); stepTarget = nil } else { setX(nx, sv) }
+                if abs(t - x) < 0.5 { setX(t, sv); stepTarget = nil; return }
+                let raw = x + (t - x) * 0.18
+                stepTarget = t - (raw - setX(raw, sv))   // nếu vừa quấn vòng thì dời đích theo
                 return
             }
             if hovering || dragging || NSWorkspace.shared.accessibilityDisplayShouldReduceMotion || Date() < holdUntil { return }
-            let nx = x + direction * speed
-            setX(nx, sv)
-            if nx >= m { direction = -1; holdUntil = Date().addingTimeInterval(1.5) }
-            else if nx <= 0 { direction = 1; holdUntil = Date().addingTimeInterval(1.5) }
+            setX(x + speed, sv)
         }
     }
 }
