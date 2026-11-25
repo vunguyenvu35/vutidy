@@ -137,16 +137,34 @@ struct PopoverView: View {
         let cards = state.recommendations
         if !cards.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
-                Text(tr("Gợi ý")).font(.vt(size: 15, weight: .bold, design: .rounded)).foregroundStyle(.white)
+                HStack {
+                    Text(tr("Gợi ý")).font(.vt(size: 15, weight: .bold, design: .rounded)).foregroundStyle(.white)
+                    Spacer(minLength: 0)
+                    if cards.count > 2 {
+                        HStack(spacing: 6) {
+                            carouselButton("chevron.left", step: -1)
+                            carouselButton("chevron.right", step: 1)
+                        }
+                    }
+                }
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 10) {
                         ForEach(cards) { r in recommendationCard(r) }
                     }
                     .padding(.horizontal, 14)
                 }
+                .background(CarouselDriver())
                 .padding(.horizontal, -14)   // băng chuyền chạy sát mép popover, thẻ đầu vẫn thẳng hàng với phần còn lại
             }
         }
+    }
+
+    /// Nút ‹ › cho băng chuyền (xem CarouselDriver): chuột không có trackpad vẫn xem được các thẻ còn lại.
+    func carouselButton(_ icon: String, step: Int) -> some View {
+        Button { NotificationCenter.default.post(name: CarouselDriver.stepNotification, object: step) } label: {
+            Image(systemName: icon).font(.system(size: 11, weight: .bold)).foregroundStyle(.white)
+                .frame(width: 22, height: 22).background(Circle().fill(Color.white.opacity(0.14)))
+        }.buttonStyle(PlainPointerStyle())
     }
 
     func recommendationCard(_ r: Recommendation) -> some View {
@@ -658,5 +676,125 @@ private struct FooterGearLabel: View {
             .animation(.easeOut(duration: 0.12), value: hover)
             .contentShape(Circle())
             .onHover { hover = $0 }
+    }
+}
+
+
+/// Điều khiển băng chuyền "Gợi ý" bằng cách bám vào NSScrollView của ScrollView ngang phía trước nó:
+/// tự trượt chậm qua lại (dừng khi rê chuột vào hoặc bật Reduce Motion), kéo thả bằng chuột (con trỏ bàn tay mở/nắm),
+/// con lăn dọc cuộn ngang, và nút ‹ › (CarouselDriver.stepNotification) trượt mượt một thẻ.
+private struct CarouselDriver: NSViewRepresentable {
+    static let stepNotification = Notification.Name("vutidy.carousel.step")
+    func makeNSView(context: Context) -> NSView { DriverView() }
+    func updateNSView(_ nsView: NSView, context: Context) {}
+
+    final class DriverView: NSView {
+        private var monitor: Any?
+        private var timer: Timer?
+        private var observer: NSObjectProtocol?
+        private var direction: CGFloat = 1
+        private var holdUntil = Date().addingTimeInterval(2)   // đứng yên một lúc ở hai đầu và lúc mới mở
+        private var stepTarget: CGFloat?
+        private var dragging = false, dragMoved = false, dragStartX: CGFloat = 0, dragStartScroll: CGFloat = 0
+        private let speed: CGFloat = 0.35      // pt mỗi khung hình (~21 pt/giây): chậm, đủ để liếc thấy thẻ khác
+        private let cardStep: CGFloat = 178    // chiều rộng thẻ + khoảng cách
+
+        override func viewDidMoveToWindow() {
+            teardown()
+            guard window != nil else { return }
+            monitor = NSEvent.addLocalMonitorForEvents(matching: [.scrollWheel, .leftMouseDown, .leftMouseDragged, .leftMouseUp]) { [weak self] e in self?.handle(e) ?? e }
+            timer = Timer.scheduledTimer(withTimeInterval: 1 / 60, repeats: true) { [weak self] _ in self?.tick() }
+            observer = NotificationCenter.default.addObserver(forName: CarouselDriver.stepNotification, object: nil, queue: .main) { [weak self] n in
+                guard let self, let sv = self.scroll, let step = n.object as? Int else { return }
+                self.stepTarget = max(0, min(self.maxX(sv), sv.contentView.bounds.origin.x + CGFloat(step) * self.cardStep))
+                self.holdUntil = Date().addingTimeInterval(4)
+            }
+        }
+        private func teardown() {
+            if let m = monitor { NSEvent.removeMonitor(m); monitor = nil }
+            timer?.invalidate(); timer = nil
+            if let o = observer { NotificationCenter.default.removeObserver(o); observer = nil }
+        }
+        deinit { teardown() }
+
+        // MARK: Tìm ScrollView ngang
+        private var scroll: NSScrollView? {
+            var node: NSView? = superview
+            while let v = node {
+                if let f = Self.find(in: v, probe: self) { return f }
+                node = v.superview
+            }
+            return nil
+        }
+        private static func find(in root: NSView, probe: NSView) -> NSScrollView? {
+            for sub in root.subviews {
+                if let s = sub as? NSScrollView, s.documentView.map({ $0.frame.width > s.contentView.bounds.width }) == true,
+                   s.convert(s.bounds, to: nil).intersects(probe.convert(probe.bounds, to: nil)) { return s }
+                if let f = find(in: sub, probe: probe) { return f }
+            }
+            return nil
+        }
+        private func maxX(_ s: NSScrollView) -> CGFloat { max(0, (s.documentView?.frame.width ?? 0) - s.contentView.bounds.width) }
+        private func setX(_ x: CGFloat, _ s: NSScrollView) {
+            let clip = s.contentView
+            clip.scroll(to: NSPoint(x: max(0, min(maxX(s), x)), y: clip.bounds.origin.y))
+            s.reflectScrolledClipView(clip)
+        }
+        private func inside(_ e: NSEvent) -> Bool { e.window === window && bounds.contains(convert(e.locationInWindow, from: nil)) }
+        private var mouseInside: Bool {
+            guard let w = window, w.isVisible else { return false }
+            return bounds.contains(convert(w.convertPoint(fromScreen: NSEvent.mouseLocation), from: nil))
+        }
+
+        // MARK: Sự kiện chuột
+        private func handle(_ e: NSEvent) -> NSEvent? {
+            guard let sv = scroll, maxX(sv) > 0 else { return e }
+            switch e.type {
+            case .scrollWheel:
+                guard abs(e.scrollingDeltaY) > abs(e.scrollingDeltaX), inside(e) else { return e }
+                stepTarget = nil
+                setX(sv.contentView.bounds.origin.x - e.scrollingDeltaY * (e.hasPreciseScrollingDeltas ? 1 : 8), sv)
+                return nil
+            case .leftMouseDown:
+                if inside(e) { dragging = true; dragMoved = false; dragStartX = e.locationInWindow.x; dragStartScroll = sv.contentView.bounds.origin.x; stepTarget = nil }
+                return e
+            case .leftMouseDragged:
+                guard dragging else { return e }
+                let dx = e.locationInWindow.x - dragStartX
+                if !dragMoved, abs(dx) < 4 { return e }   // chưa đủ xa: vẫn là một cú bấm
+                dragMoved = true
+                NSCursor.closedHand.set()
+                setX(dragStartScroll - dx, sv)
+                return nil
+            case .leftMouseUp:
+                defer { dragging = false; dragMoved = false; holdUntil = Date().addingTimeInterval(3) }
+                guard dragging, dragMoved else { return e }
+                // Thả sau khi kéo: báo cho nút bên dưới là nhả ở ngoài cửa sổ để nó không coi đó là một cú bấm.
+                return NSEvent.mouseEvent(with: .leftMouseUp, location: NSPoint(x: -5000, y: -5000), modifierFlags: e.modifierFlags,
+                                          timestamp: e.timestamp, windowNumber: e.windowNumber, context: nil,
+                                          eventNumber: e.eventNumber, clickCount: 1, pressure: 0) ?? e
+            default: return e
+            }
+        }
+
+        // MARK: Tự trượt
+        private func tick() {
+            guard let sv = scroll else { return }
+            let m = maxX(sv)
+            guard m > 0, window?.isVisible == true else { return }
+            let x = sv.contentView.bounds.origin.x
+            let hovering = mouseInside
+            if hovering, !dragging, NSCursor.current != .pointingHand { NSCursor.openHand.set() }
+            if let t = stepTarget {
+                let nx = x + (t - x) * 0.18
+                if abs(t - x) < 0.5 { setX(t, sv); stepTarget = nil } else { setX(nx, sv) }
+                return
+            }
+            if hovering || dragging || NSWorkspace.shared.accessibilityDisplayShouldReduceMotion || Date() < holdUntil { return }
+            let nx = x + direction * speed
+            setX(nx, sv)
+            if nx >= m { direction = -1; holdUntil = Date().addingTimeInterval(1.5) }
+            else if nx <= 0 { direction = 1; holdUntil = Date().addingTimeInterval(1.5) }
+        }
     }
 }

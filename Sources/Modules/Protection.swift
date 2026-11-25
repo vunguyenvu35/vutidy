@@ -205,7 +205,11 @@ public final class RealtimeMonitor: @unchecked Sendable {
         }
         guard ["app", "dmg", "pkg", "mpkg", "sh", "command", "dylib"].contains(ext) || isMachO(path) else { return }
         let trust = PersistenceScanner.trust(of: path)
-        if trust == .unsigned || ["dmg", "pkg", "sh", "command"].contains(ext) {
+        // Chỉ báo khi thật sự đáng ngờ: file tải từ Internet mà chưa được ký/Apple, hoặc file chưa ký nằm trong thư mục Ứng dụng.
+        // Script/bản build do chính người dùng tạo (không có dấu quarantine) hay file đã ký thì bỏ qua để khỏi báo nhầm.
+        let trusted = trust == .apple || trust == .signed
+        let inApps = path.hasPrefix("/Applications/") || path.contains("/Applications/")
+        if (quarantined && !trusted) || (trust == .unsigned && inApps) {
             onAlert(FileAlert(path: path, reason: trf("File thực thi/cài đặt mới%@ — %@", "\(reasonSuffix)", "\(trust.title)"), trust: trust))
         }
     }
