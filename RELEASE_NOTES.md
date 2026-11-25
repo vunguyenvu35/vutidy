@@ -1,5 +1,14 @@
 <p align="center"><img src="docs/assets/brand/logo-mark-256.png" alt="Vutidy" width="88"></p>
 
+# Vutidy 0.11.1
+
+Release date: 2026-11-25 · Platform: macOS 13 or later (only tried on Apple Silicon and one Intel Mac) · Status: **pre-release**. The [known issues of 0.1.0](#vutidy-010) still apply.
+
+## What's new in 0.11.1
+
+- **Smart Scan now includes AI Tools.** The caches and temp data of Claude, Codex, Antigravity, Gemini, Cursor, Windsurf and ChatGPT are scanned together with System Junk, Dev Junk and the Trash, listed under *What will be cleaned*, and cleaned by **Clean**, by automatic cleaning and by the AI Advisor steps. Only the **Safe** items are cleaned; the Cowork virtual disk, old history and local models stay on the *AI Tools* page for you to choose. If Claude Desktop, Codex or ChatGPT is open, the confirmation says it will be closed and reopened. (0.11.0 said AI Tools was not part of Smart Scan; this release changes that.)
+- A group of AI Tools in the Smart Scan list now opens the *AI Tools* page, and `vutidy-cli scan all` includes it.
+
 # Vutidy 0.11.0
 
 Release date: 2026-11-25 · Platform: macOS 13 or later (only tried on Apple Silicon and one Intel Mac) · Status: **pre-release**. The [known issues of 0.1.0](#vutidy-010) still apply.
