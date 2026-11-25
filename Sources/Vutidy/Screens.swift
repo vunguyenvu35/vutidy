@@ -424,7 +424,7 @@ struct ProtectionView: View {
     @ViewState private var scanning = false
     @ViewState private var scanned = false
 
-    var flagged: Int { items.filter(\.suspicious).count }
+    var flagged: Int { items.filter { $0.suspicious && !state.isReviewed("launch:" + $0.plist.path) }.count }
 
     enum LaunchFilter: String, CaseIterable, Hashable {
         case all = "Tất cả", attention = "Cần chú ý", signed = "Đã ký"
@@ -433,7 +433,7 @@ struct ProtectionView: View {
     @ViewState private var launchFilter: LaunchFilter = .all
 
     func matches(_ i: PersistenceItem, _ f: LaunchFilter) -> Bool {
-        switch f { case .all: return true; case .attention: return i.trust.severity <= 1; case .signed: return i.trust.severity >= 2 }
+        switch f { case .all: return true; case .attention: return i.trust.severity <= 1 && !state.isReviewed("launch:" + i.plist.path); case .signed: return i.trust.severity >= 2 || state.isReviewed("launch:" + i.plist.path) }
     }
     var shownItems: [PersistenceItem] { items.filter { matches($0, launchFilter) } }
 
@@ -496,8 +496,8 @@ struct ProtectionView: View {
                                         Image(systemName: "folder").font(.system(size: 13))
                                     }.buttonStyle(PlainPointerStyle()).foregroundStyle(Theme.Text.secondary).help(tr("Hiện trong Finder"))
                                 }
-                                Button { state.alerts.removeAll { $0.id == a.id } } label: { Image(systemName: "eye.slash").font(.system(size: 13)) }
-                                    .buttonStyle(PlainPointerStyle()).foregroundStyle(Theme.Text.secondary).help(tr("Bỏ qua cảnh báo này"))
+                                Button { state.setReviewed("file:" + a.path, true) } label: { Image(systemName: "checkmark.circle").font(.system(size: 13)) }
+                                    .buttonStyle(PlainPointerStyle()).foregroundStyle(Theme.Text.secondary).help(tr("Đánh dấu an toàn, không cảnh báo file này nữa"))
                             }
                         })
                     }
@@ -515,7 +515,8 @@ struct ProtectionView: View {
             VStack(alignment: .leading, spacing: 5) {
                 Text(!scanned ? tr("Chưa quét") : (flagged == 0 ? tr("Mọi mục khởi động đều hợp lệ") : trf("%@ mục cần chú ý", "\(flagged)")))
                     .font(.vt(size: 22, weight: .bold)).foregroundStyle(Theme.Text.primary)
-                Text(trf("%@ mục đã kiểm tra chữ ký", "\(items.count)")).font(Theme.Font.body).foregroundStyle(Theme.Text.secondary)
+                Text(trf("%@ mục đã kiểm tra chữ ký", "\(items.count)") + (state.lastDeepScan.map { " · " + $0.formatted(date: .omitted, time: .standard) } ?? ""))
+                    .font(Theme.Font.body).foregroundStyle(Theme.Text.secondary)
             }
             Spacer()
             Button(scanning ? tr("Đang quét…") : tr("Quét persistence")) { Task { await scan() } }
@@ -526,7 +527,11 @@ struct ProtectionView: View {
     func scan() async {
         scanning = true
         state.pruneAlerts()
+        // Quét xong gần như tức thì và kết quả thường y hệt lần trước, nên giữ vòng quay một lúc và báo kết quả để người dùng thấy nút đã chạy.
+        async let minimum: Void = { try? await Task.sleep(nanoseconds: 700_000_000) }()
         items = await Task.detached { PersistenceScanner.scan() }.value
+        await minimum
+        defer { state.toast = flagged == 0 ? tr("Mọi mục khởi động đều hợp lệ") : trf("%@ mục cần chú ý", "\(flagged)") }
         state.lastDeepScan = Date(); UserDefaults.standard.set(state.lastDeepScan, forKey: "lastDeepScan")
         scanning = false; scanned = true
     }
@@ -721,6 +726,7 @@ private struct TrustBadge: View {
 }
 
 private struct PersistenceRow: View {
+    @EnvironmentObject var state: AppState
     let item: PersistenceItem
     let showDivider: Bool
     @ViewState private var hover = false
@@ -728,6 +734,8 @@ private struct PersistenceRow: View {
     var body: some View {
         let appURL = AppLookup.bundleURL(containing: item.program).flatMap { FileManager.default.fileExists(atPath: $0.path) ? $0 : nil }
         let title = appURL.map(AppLookup.name(forAppAt:)) ?? item.label
+        let key = "launch:" + item.plist.path
+        let reviewed = state.isReviewed(key)
         VStack(spacing: 0) {
             HStack(alignment: .center, spacing: 14) {
                 AppIconView(image: AppLookup.icon(forAppAt: appURL), fallback: fallbackSymbol, size: 34)
@@ -738,13 +746,28 @@ private struct PersistenceRow: View {
                     }
                     Text(item.program ?? item.plist.path).font(Theme.Font.mono.leading(.tight)).foregroundStyle(Theme.Text.secondary)
                         .lineLimit(1).truncationMode(.middle)
-                    if let note = item.note, item.trust.severity <= 1 {
+                    if let note = item.note, item.trust.severity <= 1, !reviewed {
                         Text(note).font(Theme.Font.caption).foregroundStyle(item.suspicious ? Theme.Review.text : Theme.Text.tertiary)
                             .lineLimit(2).fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 Spacer(minLength: 12)
-                TrustBadge(trust: item.trust)
+                if reviewed {
+                    Button { state.setReviewed(key, false) } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: "checkmark.seal.fill").font(.system(size: 10.5, weight: .semibold))
+                            Text(tr("Đã xác nhận an toàn")).font(Theme.Font.label)
+                        }
+                        .foregroundStyle(Theme.Signal.text).padding(.horizontal, 9).padding(.vertical, 4)
+                        .background(Capsule().fill(Theme.Signal.text.opacity(0.10))).fixedSize()
+                    }.buttonStyle(PlainPointerStyle()).help(tr("Bấm để bỏ đánh dấu"))
+                } else {
+                    TrustBadge(trust: item.trust)
+                    if item.trust.severity <= 1 {
+                        Button(tr("Đánh dấu an toàn")) { state.setReviewed(key, true) }.buttonStyle(TextActionStyle())
+                            .help(tr("Bạn đã xem mục này và thấy ổn: Vutidy sẽ không cảnh báo nữa"))
+                    }
+                }
                 Button { NSWorkspace.shared.activateFileViewerSelecting([item.plist]) } label: {
                     Image(systemName: "folder").font(.system(size: 13))
                 }.buttonStyle(PlainPointerStyle()).foregroundStyle(Theme.Text.secondary).help(tr("Hiện trong Finder"))

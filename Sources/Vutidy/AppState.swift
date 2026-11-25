@@ -117,6 +117,14 @@ final class AppState: ObservableObject {
     @Published var cpuSystemHistory: [Double] = []
     @Published var recommendations: [Recommendation] = []
     @Published var alerts: [FileAlert] = []
+    /// Mục người dùng đã xem và xác nhận an toàn (khoá "launch:<plist>" hoặc "file:<đường dẫn>"): không tính vào cảnh báo nữa. Lưu lại giữa các lần mở app.
+    @Published var reviewedKeys: Set<String> = Set(UserDefaults.standard.stringArray(forKey: "reviewedItems") ?? [])
+    func isReviewed(_ key: String) -> Bool { reviewedKeys.contains(key) }
+    func setReviewed(_ key: String, _ on: Bool) {
+        if on { reviewedKeys.insert(key) } else { reviewedKeys.remove(key) }
+        UserDefaults.standard.set(Array(reviewedKeys), forKey: "reviewedItems")
+        if on, key.hasPrefix("file:") { let p = String(key.dropFirst(5)); alerts.removeAll { $0.path == p } }
+    }
     @Published var lastScanned: String?
     @Published var realtimeOn = false
     @Published var confirmBeforeClean: Bool = UserDefaults.standard.object(forKey: "confirmBeforeClean") as? Bool ?? true {
@@ -689,7 +697,7 @@ final class AppState: ObservableObject {
         realtimeOn = on
         if on {
             let m = RealtimeMonitor(onScan: { [weak self] p in Task { @MainActor in self?.lastScanned = p } },
-                                    onAlert: { [weak self] a in Task { @MainActor in self?.alerts.insert(a, at: 0) } })
+                                    onAlert: { [weak self] a in Task { @MainActor in guard let self, !self.isReviewed("file:" + a.path) else { return }; self.alerts.insert(a, at: 0) } })
             m.start(); realtime = m
         } else { realtime?.stop(); realtime = nil }
     }
