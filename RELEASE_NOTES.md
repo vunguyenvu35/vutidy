@@ -1,5 +1,19 @@
 <p align="center"><img src="docs/assets/brand/logo-mark-256.png" alt="Vutidy" width="88"></p>
 
+# Vutidy 0.11.0
+
+Release date: 2026-11-25 · Platform: macOS 13 or later (only tried on Apple Silicon and one Intel Mac) · Status: **pre-release**. The [known issues of 0.1.0](#vutidy-010) still apply.
+
+## What's new in 0.11.0
+
+- **A new page: AI Tools.** Caches and temporary data of the AI tools on your Mac, grouped by tool: **Claude** (Desktop caches, Claude Code temp files, and, for review, the Cowork virtual disk, which is often 10 GB or more, plus old history and file checkpoints), **Codex**, **Antigravity**, **Gemini**, **Cursor**, **Windsurf** and **ChatGPT**, together with local models (**Ollama**, **Hugging Face**, moved here from Dev Junk). Safe items are preselected; old conversations and the virtual disk are only listed. Conversations, project memory and settings are never touched, and everything goes through Quarantine. A tool that is not installed does not appear. It is not part of Smart Scan. Shortcut: ⇧⌘A; command line: `vutidy-cli scan ai`.
+- **Protection: mark as safe, and AI Advisor.** Launch items and real-time alerts have **Mark as safe**: the item gets a green *Confirmed safe* badge, leaves the attention count and does not alert again (remembered between launches). **Analyze with AI** (needs AI Advisor on) reads the anonymized description of the items that need attention and says which look benign; it only suggests, and **Mark N items as safe** is one click away. *Show data sent* shows exactly what left your Mac.
+- **Fewer false alerts.** The real-time monitor used to flag every new `.sh`, `.dmg`, `.pkg` and `.command` file, including your own scripts. It now flags a file only when it came from the Internet and is not signed, or when an unsigned file lands in *Applications*. **Scan persistence** now shows that it ran: a short spinner, the time of the scan and a message with the result.
+- **Uninstaller redesigned.** Airy rows with a bar that shows each app's size next to the biggest one, quick filters (*All*, *Large*, *Unused*), sorting by size, last used or vendor, and a detail panel that slides in with the **Uninstall** button right under the list.
+- **Every card can be folded.** Click the title or the arrow of a card to collapse it; Vutidy remembers which ones.
+- **Menu bar popover.** The *Recommendations* carousel now slides slowly in a loop (it pauses while you hover and respects *Reduce Motion*) and you can drag it, scroll it with the mouse wheel or use the arrow buttons.
+- **Updater keeps its state.** Leaving the *Updater* page while an app is upgrading no longer drops the *Updating…* state or allows a second run of the same upgrade.
+
 # Vutidy 0.10.0
 
 Release date: 2026-11-20 · Platform: macOS 13 or later (only tried on Apple Silicon and one Intel Mac) · Status: **pre-release**. The [known issues of 0.1.0](#vutidy-010) still apply.
