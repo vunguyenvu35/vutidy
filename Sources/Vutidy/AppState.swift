@@ -164,6 +164,9 @@ final class AppState: ObservableObject {
     var trashWatchTask: Task<Void, Never>?
     @Published var outdatedApps: [OutdatedApp] = []
     @Published var outdatedLoading = false
+    /// Cask đang được `brew upgrade` và lỗi của lần thử gần nhất. Giữ ở đây (không ở view) để chuyển tab rồi quay lại vẫn thấy.
+    @Published var upgradingApps: Set<String> = []
+    @Published var upgradeErrors: [String: String] = [:]
     @Published var lastAppsCheck: Date? = UserDefaults.standard.object(forKey: "lastAppsCheck") as? Date
     var appsCheckTask: Task<Void, Never>?
     @Published var lastUpdateCheck: Date? = UserDefaults.standard.object(forKey: "lastUpdateCheck") as? Date

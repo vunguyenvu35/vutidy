@@ -6,7 +6,7 @@ import Modules
 extension AppState {
     /// Đang có việc dở mà đóng app sẽ làm gián đoạn.
     var selfUpdateBusyWithWork: Bool {
-        !scanning.isEmpty || !cleaning.isEmpty || smartScanning || malwareScanning || fileChecking || outdatedLoading
+        !scanning.isEmpty || !cleaning.isEmpty || smartScanning || malwareScanning || fileChecking || outdatedLoading || !upgradingApps.isEmpty
             || { if case .downloading = appUpdate { return true }; if case .installing = appUpdate { return true }; return false }()
     }
 

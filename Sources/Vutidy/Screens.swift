@@ -539,8 +539,8 @@ struct UpdaterView: View {
     private var outdated: [OutdatedApp] { state.outdatedApps }
     private var loading: Bool { state.outdatedLoading }
     private var checked: Bool { state.lastAppsCheck != nil }
-    @ViewState private var updating: Set<String> = []
-    @ViewState private var errors: [String: String] = [:]
+    private var updating: Set<String> { state.upgradingApps }
+    private var errors: [String: String] { state.upgradeErrors }
     @ViewState private var confirmAll = false
 
     var body: some View {
@@ -598,23 +598,9 @@ struct UpdaterView: View {
         }
     }
 
-    func check() async { errors = [:]; await state.checkAppUpdates() }
+    func check() async { state.upgradeErrors = [:]; await state.checkAppUpdates() }
 
-    func upgrade(_ a: OutdatedApp) async {
-        updating.insert(a.id); errors[a.id] = nil
-        let r = await Updater.upgrade(a)
-        state.executor.audit.append(AuditRecord(date: Date(), action: "command", path: "brew upgrade --cask \(a.name)", bytes: 0,
-                                                ruleID: "updater", mode: "run", result: r.ok ? "done" : "failed: \(r.stderr.prefix(200))"))
-        updating.remove(a.id)
-        if r.ok {
-            state.outdatedApps.removeAll { $0.id == a.id }
-            state.toast = trf("Đã cập nhật %@", a.name)
-        } else {
-            let line = r.stderr.split(separator: "\n").map(String.init).last(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty }) ?? "exit \(r.status)"
-            errors[a.id] = line
-            state.notify(trf("Cập nhật %@ thất bại", a.name), .error)
-        }
-    }
+    func upgrade(_ a: OutdatedApp) async { await state.upgradeApp(a) }
 }
 
 /// Chọn kiểu nút theo điều kiện (hai kiểu nút khác kiểu nên không thể dùng toán tử ba ngôi).

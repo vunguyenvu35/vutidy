@@ -1,6 +1,7 @@
 import SwiftUI
 import CoreKit
 import Modules
+import SafetyLayer
 
 extension AppState {
     static let appsCheckInterval: TimeInterval = 24 * 3600
@@ -17,6 +18,24 @@ extension AppState {
         let fresh = found.filter { !before.contains($0.id) }
         if silent, !fresh.isEmpty {
             notify(trf("%@ ứng dụng có bản cập nhật.", "\(found.count)"), .success, action: .openApps)
+        }
+    }
+
+    /// Chạy `brew upgrade --cask` cho một ứng dụng; trạng thái nằm trong AppState nên không mất khi đổi trang.
+    func upgradeApp(_ a: OutdatedApp) async {
+        guard !upgradingApps.contains(a.id) else { return }
+        upgradingApps.insert(a.id); upgradeErrors[a.id] = nil
+        let r = await Updater.upgrade(a)
+        executor.audit.append(AuditRecord(date: Date(), action: "command", path: "brew upgrade --cask \(a.name)", bytes: 0,
+                                          ruleID: "updater", mode: "run", result: r.ok ? "done" : "failed: \(r.stderr.prefix(200))"))
+        upgradingApps.remove(a.id)
+        if r.ok {
+            outdatedApps.removeAll { $0.id == a.id }
+            toast = trf("Đã cập nhật %@", a.name)
+        } else {
+            let line = r.stderr.split(separator: "\n").map(String.init).last(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty }) ?? "exit \(r.status)"
+            upgradeErrors[a.id] = line
+            notify(trf("Cập nhật %@ thất bại", a.name), .error)
         }
     }
 
