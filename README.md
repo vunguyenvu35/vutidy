@@ -28,7 +28,7 @@
 
 | | |
 | --- | --- |
-| **Scan everything in one click** | **Smart Scan** looks at System Junk, Dev Junk, Trash, launch items and heavy processes together, then lists what *Clean* will take (only items marked *Safe*). |
+| **Scan everything in one click** | **Smart Scan** looks at System Junk, Dev Junk, AI Tools, Trash, launch items and heavy processes together, then lists what *Clean* will take (only items marked *Safe*). |
 | **Clean up** | **System Junk** (caches, logs, crash reports, Mail and Photos caches), **Dev Junk**, **AI Tools** (Claude, Codex, Cursor, ChatGPT and other AI tools' caches), **Trash** and **Privacy** (browser caches; never history or passwords). |
 | **Find where the space went** | **Space Lens** (bubbles, treemap or list; area = size), **Large & Old Files**, **Duplicates** (size, then hashes) and iCloud **Cloud Cleanup**. |
 | **Remove apps completely** | **Uninstaller** finds leftovers by bundle ID. **Updates** upgrades your Homebrew casks. |

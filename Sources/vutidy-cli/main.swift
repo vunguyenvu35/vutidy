@@ -38,7 +38,7 @@ func modules(_ name: String) -> [CleanerModule] {
     case "mail": return [Cleaners.mail(rules: rules)]
     case "photos": return [Cleaners.photos(rules: rules)]
     case "ai": return [Cleaners.ai(rules: rules)]
-    case "all": return [Cleaners.systemJunk(rules: rules), DevJunkModule(rules: rules, projectRoots: projects), TrashModule()]
+    case "all": return [Cleaners.systemJunk(rules: rules), DevJunkModule(rules: rules, projectRoots: projects), Cleaners.ai(rules: rules), TrashModule()]
     default: fail("module không hợp lệ: \(name)\n\(usage)")
     }
 }

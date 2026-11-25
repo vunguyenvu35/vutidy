@@ -28,7 +28,7 @@ struct SmartScanView: View {
     /// Các mục `safe` mà nút Dọn sẽ xử lý, gom theo nhóm (cùng quy tắc với `cleanSmart`).
     var safeGroups: [(name: String, module: String, count: Int, size: Int64)] {
         var out: [(String, String, Int, Int64)] = []
-        for id in ["system-junk", "dev-junk", "trash"] {
+        for id in ["system-junk", "dev-junk", "ai", "trash"] {
             let safe = (state.results[id] ?? []).filter { $0.safety == .safe }
             for (cat, items) in Dictionary(grouping: safe, by: \.category) {
                 out.append((cat, id, items.count, items.reduce(0) { $0 + $1.allocatedSize }))
@@ -40,7 +40,7 @@ struct SmartScanView: View {
     /// Một dòng tóm tắt cho hộp thoại xác nhận: "Cache 2,44 GB · Docker 7,18 GB · …" (6 nhóm lớn nhất).
     /// Các app đang chạy phải đóng để dọn cache của chúng (rồi tự mở lại).
     var quitNotice: String {
-        let names = Set(["system-junk", "dev-junk", "trash"].flatMap { state.appsToQuit(for: $0).map(\.name) }).sorted()
+        let names = Set(["system-junk", "dev-junk", "ai", "trash"].flatMap { state.appsToQuit(for: $0).map(\.name) }).sorted()
         return names.isEmpty ? "" : "\n\n" + trf("Sẽ đóng rồi mở lại: %@. Lưu công việc của bạn trước.", names.joined(separator: ", "))
     }
 
@@ -69,7 +69,7 @@ struct SmartScanView: View {
             }.buttonStyle(PlainPointerStyle())
             if showDetails { ForEach(Array(groups.enumerated()), id: \.offset) { _, g in
                 Divider().overlay(Theme.Border.subtle)
-                Button { state.section = g.module == "system-junk" ? .systemJunk : (g.module == "dev-junk" ? .devJunk : .trash) } label: {
+                Button { state.section = Page.allCases.first { $0.cleanupID == g.module } ?? .trash } label: {
                     HStack(spacing: 14) {
                         Text(g.name).font(.vt(size: 13.5, weight: .semibold)).foregroundStyle(Theme.Text.primary).frame(width: 150, alignment: .leading)
                         MeterBar(value: Double(g.size) / Double(total), color: Color.white.opacity(0.85), height: 4).frame(maxWidth: 220)

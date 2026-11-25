@@ -124,7 +124,7 @@ What AI tools leave behind, grouped by tool. It sits next to Dev Junk because ma
 | **ChatGPT** | the app cache; conversations are never touched | Safe | files; ChatGPT is asked to quit first |
 | **Ollama, Hugging Face** | local models | Review | files; listed only, never preselected |
 
-A tool that is not installed simply does not appear. AI Tools is not part of Smart Scan: open the page to clean it. Its shortcut is ⌘ ⇧ A ([Shortcuts](11-shortcuts.md)).
+A tool that is not installed simply does not appear. AI Tools is part of Smart Scan, which cleans only its Safe items; open the page to look at or clean the *Review* ones. Its shortcut is ⌘ ⇧ A ([Shortcuts](11-shortcuts.md)).
 
 ## Trash
 

@@ -663,7 +663,7 @@ final class AppState: ObservableObject {
         smartScanning = true
         let rules = RuleLoader.loadAll()
         let roots = projectRoots.map { URL(fileURLWithPath: expandTilde($0)) }
-        let mods: [CleanerModule] = [Cleaners.systemJunk(rules: rules), DevJunkModule(rules: rules, projectRoots: roots, staleProjectDays: staleProjectDays), TrashModule()]
+        let mods: [CleanerModule] = [Cleaners.systemJunk(rules: rules), DevJunkModule(rules: rules, projectRoots: roots, staleProjectDays: staleProjectDays), Cleaners.ai(rules: rules), TrashModule()]
         // Chạy song song: dọn dẹp + persistence + tối ưu, kiểm tra malware, và phần Smart Care (ứng dụng, file lớn…).
         async let careTask = SmartCare.gather()
         async let malwareTask: Void = runMalwareCheck()
@@ -674,7 +674,7 @@ final class AppState: ObservableObject {
         await malwareTask
         lastDeepScan = Date(); UserDefaults.standard.set(lastDeepScan, forKey: "lastDeepScan")
         // Chia kết quả về từng module để các màn chi tiết dùng lại.
-        for id in ["system-junk", "dev-junk", "trash"] { results[id] = [] }
+        for id in ["system-junk", "dev-junk", "ai", "trash"] { results[id] = [] }
         for item in r.cleanup {
             results[ModuleRouting.moduleID(forRuleID: item.ruleID, rules: rules), default: []].append(item)
         }
@@ -687,7 +687,7 @@ final class AppState: ObservableObject {
 
     /// Dọn tất cả mục `safe` đã quét bởi Smart Scan.
     func cleanSmart(mode: CleanMode) async {
-        for id in ["system-junk", "dev-junk", "trash"] {
+        for id in ["system-junk", "dev-junk", "ai", "trash"] {
             guard var arr = results[id] else { continue }
             for i in arr.indices { arr[i].selected = arr[i].safety == .safe }
             results[id] = arr

@@ -70,7 +70,7 @@ extension AppState {
         switch act.kind {
         case .clean:
             var cleaned = false
-            for id in ["system-junk", "dev-junk"] {
+            for id in ["system-junk", "dev-junk", "ai"] {
                 guard var arr = results[id] else { continue }
                 var any = false
                 for i in arr.indices {
@@ -89,7 +89,7 @@ extension AppState {
             smart = r
         case .cleanTool:
             var cleaned = false
-            for id in ["system-junk", "dev-junk"] {
+            for id in ["system-junk", "dev-junk", "ai"] {
                 guard var arr = results[id] else { continue }
                 var any = false
                 for i in arr.indices {
@@ -108,8 +108,8 @@ extension AppState {
         case .terminateAgents:
             for a in (smart?.flaggedAgents ?? []) { await terminateAgent(a) }
         case .review:
-            let inSystem = (results["system-junk"] ?? []).contains { AdvisorPlanner.sanitizedCategory($0.category) == act.category }
-            section = inSystem ? .systemJunk : .devJunk
+            func has(_ id: String) -> Bool { (results[id] ?? []).contains { AdvisorPlanner.sanitizedCategory($0.category) == act.category } }
+            section = has("system-junk") ? .systemJunk : (has("ai") ? .ai : .devJunk)
             return   // chỉ mở trang, không tính là "đã xong"
         }
         planDone.insert(step.id)
@@ -126,7 +126,7 @@ extension AppState {
                 message: trf("Các mục sẽ được chuyển vào Quarantine và khôi phục được trong %@ ngày.", "\(retentionDays)"),
                 confirmTitle: tr("Chuyển vào Quarantine"), symbol: "v.smartScan", action: { Task { await self.perform(step) } })
         case .cleanTool:
-            let what = Set(((results["system-junk"] ?? []) + (results["dev-junk"] ?? []))
+            let what = Set(((results["system-junk"] ?? []) + (results["dev-junk"] ?? []) + (results["ai"] ?? []))
                 .filter { $0.safety == .safe && $0.command != nil && AdvisorPlanner.sanitizedCategory($0.category) == a.category }.map(\.title)).sorted().joined(separator: ", ")
             confirmRequest = ConfirmRequest(
                 title: trf("Dọn %@?", "\(a.category) · \(ByteFormat.string(Int64(a.megabytes) * 1_000_000))"),

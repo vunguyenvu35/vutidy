@@ -24,6 +24,7 @@ Smart Scan runs these in parallel:
 | --- | --- |
 | System Junk | Caches, logs, crash reports, broken preferences, Mail downloads, the Photos cache ([Cleanup](03-cleanup.md#system-junk)) |
 | Dev Junk | Docker, JetBrains, Node, Go, Xcode, Homebrew… and the project folders you chose ([Cleanup](03-cleanup.md#dev-junk)) |
+| AI Tools | caches and temp data of Claude, Codex, Cursor, ChatGPT… ([Cleanup](03-cleanup.md#ai-tools)); only the Safe items are cleaned |
 | Trash | Your Trash and the Trash of external drives |
 | Persistence | Launch agents and daemons with their code-signature state ([Protection](04-protection.md)) |
 | Malware check | App signatures, launch items, shell profiles and the security settings of your Mac ([Protection](04-protection.md#malware-page)) |

@@ -14,7 +14,7 @@ extension AppState {
         func eligible(_ i: ScanItem) -> Bool { all ? i.safety == .safe : i.isAutoCleanable }
         var bytes: Int64 = 0, done = 0, failed = 0, permanent: Int64 = 0   // permanent: phần Thùng rác đã xóa hẳn (để quyết định có nút Hoàn tác)
 
-        for id in ["system-junk", "dev-junk", "trash"] {
+        for id in ["system-junk", "dev-junk", "ai", "trash"] {
             if id == "trash" && !all { continue }                       // Thùng rác chỉ khi người dùng cho phép xóa vĩnh viễn
             guard var arr = results[id], arr.contains(where: eligible) else { continue }
             for i in arr.indices { arr[i].selected = eligible(arr[i]) }
@@ -30,7 +30,7 @@ extension AppState {
         r.cleanup = results.values.flatMap { $0 }
         smart = r
 
-        let waiting = ["system-junk", "dev-junk", "trash"].flatMap { results[$0] ?? [] }.filter { $0.safety == .safe }
+        let waiting = ["system-junk", "dev-junk", "ai", "trash"].flatMap { results[$0] ?? [] }.filter { $0.safety == .safe }
         let waitingBytes = waiting.reduce(Int64(0)) { $0 + $1.allocatedSize }
         guard done > 0 || failed > 0 else {
             if waitingBytes > 0 { notify(trf("Không có gì tự dọn được. %@ chờ bạn bấm Dọn.", ByteFormat.string(waitingBytes)), .warning) }
