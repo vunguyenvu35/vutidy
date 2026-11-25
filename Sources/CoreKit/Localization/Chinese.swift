@@ -255,6 +255,7 @@ enum Chinese {
         "Nhà sản xuất": "开发者",
         "Không có ứng dụng nào khớp": "没有匹配的应用",
         "Gỡ cùng %@ mục liên quan": "同时移除 %@ 个相关项",
+        "Mở rộng": "展开",
         "Bỏ qua cảnh báo này": "忽略此警告",
         "Kiểm tra ổ đĩa (chỉ verify)": "验证磁盘（仅验证）",
         "LLM": "LLM",

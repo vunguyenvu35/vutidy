@@ -251,6 +251,7 @@ enum English {
         "Nhà sản xuất": "Vendor",
         "Không có ứng dụng nào khớp": "No matching apps",
         "Gỡ cùng %@ mục liên quan": "Removes %@ related item(s)",
+        "Mở rộng": "Expand",
         "Bỏ qua cảnh báo này": "Dismiss this alert",
         "Tự kiểm tra cập nhật ứng dụng": "Check app updates automatically",
         "Mỗi 24 giờ, kiểm tra cask Homebrew ở nền và báo khi có bản mới. Không tự cài.": "Every 24 hours, checks Homebrew casks in the background and notifies you when updates appear. Never installs automatically.",

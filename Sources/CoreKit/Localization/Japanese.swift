@@ -254,6 +254,7 @@ enum Japanese {
         "Nhà sản xuất": "開発元",
         "Không có ứng dụng nào khớp": "一致するアプリはありません",
         "Gỡ cùng %@ mục liên quan": "関連項目 %@ 件も削除",
+        "Mở rộng": "展開",
         "Bỏ qua cảnh báo này": "この警告を無視",
         "Kiểm tra ổ đĩa (chỉ verify)": "ディスクを検証（検証のみ）",
         "LLM": "LLM",

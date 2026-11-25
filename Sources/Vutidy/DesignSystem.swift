@@ -142,20 +142,43 @@ struct SectionCard<Content: View, Trailing: View>: View {
         self.trailing = trailing(); self.content = content()
     }
 
+    @ViewState private var open = true
+    /// Tiêu đề các card người dùng đã thu gọn: nhớ giữa các lần mở app.
+    private static var collapsedTitles: Set<String> { Set(UserDefaults.standard.stringArray(forKey: "collapsedCards") ?? []) }
+
+    private func toggle() {
+        withAnimation(.easeInOut(duration: 0.22)) { open.toggle() }
+        var set = Self.collapsedTitles
+        if open { set.remove(title) } else { set.insert(title) }
+        UserDefaults.standard.set(Array(set), forKey: "collapsedCards")
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 12) {
-                if let symbol { IconTile(symbol: symbol, tint: tint, size: 32) }
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(Theme.Font.heading).foregroundStyle(Theme.Text.primary)
-                    if let subtitle { Text(subtitle).font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary) }
+                // Bấm vùng tiêu đề để thu gọn/mở; nút ở `trailing` vẫn bấm riêng được.
+                HStack(spacing: 12) {
+                    if let symbol { IconTile(symbol: symbol, tint: tint, size: 32) }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title).font(Theme.Font.heading).foregroundStyle(Theme.Text.primary)
+                        if let subtitle { Text(subtitle).font(Theme.Font.caption).foregroundStyle(Theme.Text.secondary) }
+                    }
+                    Spacer(minLength: 12)
                 }
-                Spacer(minLength: 12)
+                .contentShape(Rectangle()).onTapGesture { toggle() }.pointerCursor()
                 trailing
+                Button { toggle() } label: {
+                    Image(systemName: "chevron.down").font(.system(size: 11, weight: .bold)).foregroundStyle(Theme.Text.tertiary)
+                        .rotationEffect(.degrees(open ? 0 : -90)).frame(width: 22, height: 22)
+                }.buttonStyle(PlainPointerStyle()).help(open ? tr("Thu gọn") : tr("Mở rộng"))
             }.padding(.horizontal, 18).padding(.vertical, 14)
-            Divider().overlay(Theme.Border.subtle)
-            content
-        }.cardFlat()
+            if open {
+                Divider().overlay(Theme.Border.subtle)
+                content.transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .clipped().cardFlat()
+        .onAppear { if Self.collapsedTitles.contains(title) { open = false } }
     }
 }
 
