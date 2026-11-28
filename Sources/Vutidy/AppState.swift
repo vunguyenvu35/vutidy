@@ -167,6 +167,13 @@ final class AppState: ObservableObject {
         didSet { UserDefaults.standard.set(notifyTrash, forKey: "notifyTrash") }
     }
     @Published var trashBytes: Int64 = 0
+    @Published var notifyBatteryDrain: Bool = UserDefaults.standard.object(forKey: "notifyBatteryDrain") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(notifyBatteryDrain, forKey: "notifyBatteryDrain") }
+    }
+    /// App đang ngốn CPU khi pin tụt nhanh (rỗng = không có cảnh báo).
+    @Published var batteryDrainApps: [BatteryDrain.Consumer] = []
+    var batteryDrainCheckedAt: Date?
+    var batteryDrainChecking = false
     @Published var fileReport: FileReport?
     @Published var fileChecking = false
     var trashWatchTask: Task<Void, Never>?
@@ -406,6 +413,7 @@ final class AppState: ObservableObject {
             netDownTotal += s.network.downBytesPerSec * dt; netUpTotal += s.network.upBytesPerSec * dt
         }
         snapshot = s
+        checkBatteryDrain(s)
         netDownHistory = Array((netDownHistory + [s.network.downBytesPerSec]).suffix(40))
         netUpHistory = Array((netUpHistory + [s.network.upBytesPerSec]).suffix(40))
         cpuHistory = Array((cpuHistory + [s.cpuLoad]).suffix(40))
@@ -417,6 +425,7 @@ final class AppState: ObservableObject {
         ctx.loginItems = smart?.launchItems.filter { $0.scope == .userAgent }.count ?? 0
         ctx.lastDeepScan = lastDeepScan
         ctx.trashBytes = trashBytes
+        ctx.batteryDrainApps = batteryDrainApps.map(\.name)
         ctx.lastMalwareCheck = malwareReport?.date
         recommendations = RecommendationEngine().cards(for: ctx, dismissed: dismissStore)
     }

@@ -276,8 +276,13 @@ struct SettingsOverlay: View {
                 }
                 SettingRow(title: tr("Báo khi Thùng rác đầy"),
                            desc: tr("Khi Thùng rác vượt 5 GB, Vutidy gửi thông báo và gợi ý dọn. Chỉ báo, không tự xóa. Cần Full Disk Access để đo."),
-                           showDivider: false) {
+                           showDivider: true) {
                     SwitchRow(isOn: $state.notifyTrash, label: tr("Báo khi Thùng rác đầy"))
+                }
+                SettingRow(title: tr("Báo khi pin tụt nhanh"),
+                           desc: tr("Khi đang dùng pin và máy sắp hết pin vì một app ngốn CPU, Vutidy gửi thông báo kèm tên app. Chỉ báo, không tự đóng app."),
+                           showDivider: false) {
+                    SwitchRow(isOn: $state.notifyBatteryDrain, label: tr("Báo khi pin tụt nhanh"))
                 }
             }
             SettingsGroup(title: tr("Tư vấn AI")) {

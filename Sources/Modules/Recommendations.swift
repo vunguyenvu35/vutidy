@@ -26,6 +26,8 @@ public struct SystemContext: Sendable {
     /// Dung lượng Thùng rác (0 = chưa đo được, ví dụ thiếu Full Disk Access).
     public var trashBytes: Int64 = 0
     public var unusedApps: Int = 0
+    /// Tên các app đang làm pin tụt nhanh (rỗng = không có).
+    public var batteryDrainApps: [String] = []
     public var loginItems: Int = 0
     public var lastDeepScan: Date?
     /// Lần kiểm tra malware gần nhất (kèm danh sách quyền nhạy cảm); nil = chưa từng.
@@ -104,6 +106,10 @@ public struct DefaultRecommendations: RecommendationProvider {
         if c.loginItems > t.loginItems {
             r.append(.init(id: "login-items", priority: 50, icon: "bolt", title: trf("%@ mục khởi động cùng máy.", "\(c.loginItems)"),
                            actionTitle: tr("Mở Tối ưu"), action: .openOptimization, severity: Double(c.loginItems)))
+        }
+        if !c.batteryDrainApps.isEmpty {
+            r.append(.init(id: "battery-drain", priority: 92, icon: "battery.25", title: trf("Pin đang tụt nhanh do %@.", c.batteryDrainApps.prefix(2).joined(separator: ", ")),
+                           actionTitle: tr("Xem pin"), action: .openBattery, severity: Double(c.batteryDrainApps.count)))
         }
         if let h = c.battery?.health, h < t.batteryHealth {
             r.append(.init(id: "battery-health", priority: 55, icon: "battery.25", title: trf("Sức khỏe pin %@%%.", "\(Int(h * 100))"),
